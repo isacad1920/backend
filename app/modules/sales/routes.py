@@ -19,6 +19,7 @@ from app.core.exceptions import (
     ValidationError,
 )
 from app.core.response import SuccessResponse, success_response, paginated_response
+from app.middlewares.financial_integrity import financial_integrity, Validate as FinValidate
 from app.db.prisma import get_db
 from app.modules.sales.schema import (
     DailySalesSchema,
@@ -567,7 +568,18 @@ async def list_returns(
         raise HTTPException(status_code=500, detail=f"Failed to retrieve returns: {str(e)}")
 
 
+async def _sale_context_provider(
+    sale_id: int,
+    current_user = Depends(get_current_active_user),
+    db = Depends(get_db),
+):
+    svc = SalesService(db)
+    sale = await svc.get_sale(sale_id=sale_id)
+    items = getattr(sale, 'items', []) if sale else []
+    return {'transaction_obj': sale, 'line_items': items}
+
 @router.get("/{sale_id}", dependencies=[Depends(require_permissions('sales:read'))])
+@financial_integrity(validate=[FinValidate.TRANSACTION_TOTAL], context_provider=_sale_context_provider)
 async def get_sale_details(
     sale_id: int = Path(..., description="Sale ID"),
     current_user = Depends(get_current_active_user),
@@ -579,14 +591,14 @@ async def get_sale_details(
     Retrieve complete sale information including all items and payment details.
     """
     try:
-        sales_service = SalesService(db)
+        sales_service = SalesService(db)  # fetch again to ensure fresh state
         sale = await sales_service.get_sale(sale_id=sale_id)
-        
+
         if not sale:
             raise HTTPException(status_code=404, detail="Sale not found")
 
-        # Return plain shape expected by tests
-        return success_response(data=_serialize_sale_plain(sale), message='Sale details retrieved')
+        payload = _serialize_sale_plain(sale)
+        return success_response(data=payload, message='Sale details retrieved')
     except HTTPException:
         raise
     except Exception as e:
