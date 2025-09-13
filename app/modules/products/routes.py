@@ -44,7 +44,9 @@ security = HTTPBearer()
 
 # Initialize routers
 product_router = APIRouter(prefix="/products", tags=["Products"])
+product_router = APIRouter(prefix="/products", tags=["🛍️ Products"])
 category_router = APIRouter(prefix="/categories", tags=["Categories"])
+category_router = APIRouter(prefix="/categories", tags=["📂 Categories"])
 
 # Product routes
 # Product routes

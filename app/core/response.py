@@ -7,7 +7,7 @@ ResponseBuilder so existing code remains compatible.
 """
 
 import logging
-from datetime import datetime
+from datetime import datetime, timezone
 from enum import Enum
 from typing import Any, Generic, TypeVar
 
@@ -217,7 +217,25 @@ def success_response(
         meta=meta,
         force_success=force_success,
     )
-    return JSONResponse(status_code=status_code, content=jsonable_encoder(payload))
+    return JSONResponse(
+        status_code=status_code,
+        content=jsonable_encoder(payload)
+    )
+
+def iso_utc(dt) -> str:
+    """Return an ISO-8601 UTC string with 'Z' suffix from a datetime-like object.
+
+    Falls back to current UTC time if serialization fails.
+    """
+    try:
+        if dt is None:
+            return datetime.utcnow().replace(tzinfo=timezone.utc).isoformat().replace('+00:00', 'Z')
+        if hasattr(dt, 'isoformat'):
+            return dt.astimezone(timezone.utc).isoformat().replace('+00:00', 'Z')
+        return str(dt)
+    except Exception:
+        return datetime.utcnow().replace(tzinfo=timezone.utc).isoformat().replace('+00:00', 'Z')
+
 
 
 def set_json_body(response: JSONResponse, payload: dict[str, Any]):

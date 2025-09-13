@@ -26,6 +26,7 @@ security = HTTPBearer()
 logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/journal", tags=["Journal"])
+router = APIRouter(prefix="/journal", tags=["📒 Journal"])
 
 
 @router.get("/entries", response_model=SuccessResponse[JournalEntryListSchema])

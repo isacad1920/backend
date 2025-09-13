@@ -257,79 +257,47 @@ A comprehensive business management solution providing:
     openapi_url=settings.openapi_url if not settings.is_production else None,
     lifespan=lifespan,
     openapi_tags=[
-        # Authentication & Users
-        {
-            "name": "🔐 Authentication",
-            "description": "User authentication, login, logout, and token management"
-        },
-        {
-            "name": "👥 User Management", 
-            "description": "User CRUD operations, profile management, and role assignments"
-        },
-        {
-            "name": "🛡️ Permissions & Admin",
-            "description": "Permission management and administrative functions"
-        },
-        
-        # Business Core
-        {
-            "name": "🏢 Branch Management",
-            "description": "Multi-branch operations and branch-specific configurations"
-        },
-        {
-            "name": "🤝 Customer Management", 
-            "description": "Customer profiles, credit management, and relationship tracking"
-        },
-        
-        # Product & Inventory
-        {
-            "name": "📂 Product Categories",
-            "description": "Product categorization and taxonomy management"
-        },
-        {
-            "name": "📦 Product Management",
-            "description": "Product catalog, pricing, and product lifecycle management"
-        },
-        {
-            "name": "📊 Inventory Management",
-            "description": "Stock levels, inventory tracking, and stock movements"
-        },
-        {
-            "name": "📋 Stock Requests",
-            "description": "Inter-branch stock requests and inventory transfers"
-        },
-        
-        # Sales & Financial
-        {
-            "name": "💰 Sales Management",
-            "description": "Point of sale operations, transaction processing, and sales analytics"
-        },
-        {
-            "name": "📈 Financial Analytics",
-            "description": "Financial reports, profit analysis, and business intelligence"
-        },
-        {
-            "name": "📚 Journal Entries",
-            "description": "Accounting journal entries and financial record keeping"
-        },
-        
-        # System & Operations
-        {
-            "name": "⚙️ System Management",
-            "description": "System configuration, maintenance, and administrative tools"
-        },
-        {
-            "name": "🔔 Notifications",
-            "description": "System notifications, alerts, and communication management"
-        },
-        {
-            "name": "🏥 Health & Monitoring",
-            "description": "System health checks, monitoring, and status endpoints"
-        },
-        {
-            "name": "ℹ️ System Information",
-            "description": "API information, version details, and system metadata"
-        }
+        # ---------------------------------------------------------------------
+        # Tag Naming Convention:
+        # Each tag uses the format: "<emoji> <Concise Title>"
+        # - Emoji visually groups related endpoints in Swagger UI
+        # - Title is 1–2 words (Pascal Case or Capitalized) without suffixes
+        #   like "Management" / "Operations" to avoid redundancy.
+        # - Descriptions stay action / domain focused and avoid repeating
+        #   the word "API".
+        # If adding a new router, prefer reusing an existing tag when the
+        # surface logically fits. Only introduce a new tag if it represents
+        # a distinct domain area that would aid navigation.
+        # ---------------------------------------------------------------------
+        # Core Auth & Access Control
+        {"name": "🔐 Authentication", "description": "Login, token issuance/refresh, and auth session utilities"},
+        {"name": "👥 User Management", "description": "User CRUD, profiles, role assignment, activation status"},
+        {"name": "� Permissions", "description": "Permission definitions, assignment, and access policies"},
+
+        # Organizational / Business Entities
+        {"name": "🏢 Branches", "description": "Multi-branch configuration and branch-level metadata"},
+        {"name": "👤 Customers", "description": "Customer accounts, credit, and relationship data"},
+
+        # Catalog & Inventory
+        {"name": "📂 Categories", "description": "Product category taxonomy and hierarchy"},
+        {"name": "�️ Products", "description": "Product catalog, pricing, lifecycle, and SKU data"},
+        {"name": "� Inventory", "description": "Stock levels, valuation, turnover, dead stock analytics"},
+        {"name": "� Stock Requests", "description": "Inter-branch stock transfer and request workflows"},
+
+        # Sales & Finance
+        {"name": "� Sales", "description": "Point of sale operations, transactions, payments"},
+        {"name": "� Financial", "description": "Financial summaries, KPIs, and analytical endpoints"},
+        {"name": "� Journal", "description": "General ledger / journal entry operations"},
+
+        # Reporting & Insights
+        {"name": "📈 Reports", "description": "Business reports and aggregated metrics"},
+
+        # Operations & System
+        {"name": "🔔 Notifications", "description": "User/system notifications and delivery state"},
+        {"name": "🛠️ System", "description": "Operational tools, maintenance, and configuration"},
+        {"name": "🧾 Audit", "description": "Audit trail queries and integrity endpoints"},
+        {"name": "🏥 Health & Monitoring", "description": "Liveness/readiness and runtime diagnostics"},
+        {"name": "ℹ️ System Information", "description": "API metadata, version, and auxiliary info"}
     ]
 )
 

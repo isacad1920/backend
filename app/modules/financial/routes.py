@@ -19,7 +19,7 @@ from app.utils.pdf import generate_table_pdf
 security = HTTPBearer()
 logger = logging.getLogger(__name__)
 
-router = APIRouter(prefix="/financial", tags=["Financial"])
+router = APIRouter(prefix="/financial", tags=["📊 Financial"])
 
 
 @router.get("/balance-sheet")

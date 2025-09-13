@@ -28,6 +28,7 @@ security = HTTPBearer()
 logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/notifications", tags=["Notifications"])
+router = APIRouter(prefix="/notifications", tags=["🔔 Notifications"])
 
 
 @router.get("")

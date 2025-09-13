@@ -33,6 +33,7 @@ security = HTTPBearer()
 logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/branches", tags=["Branches"])
+router = APIRouter(prefix="/branches", tags=["🏢 Branches"])
 
 # ------------------------------------------------------------
 # Lightweight cached summary endpoint infrastructure

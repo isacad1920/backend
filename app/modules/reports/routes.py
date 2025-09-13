@@ -27,7 +27,7 @@ from app.db.prisma import get_db
 from app.modules.financial.services.report_service import ReportService
 from generated.prisma import Prisma
 
-router = APIRouter(prefix="/reports", tags=["Reports"])
+router = APIRouter(prefix="/reports", tags=["📈 Reports"])
 
 _REPORT_JOBS: dict[str, dict[str, Any]] = {}
 

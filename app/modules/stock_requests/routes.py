@@ -15,7 +15,7 @@ from app.modules.stock_requests.service import StockRequestService
 security = HTTPBearer()
 logger = logging.getLogger(__name__)
 
-router = APIRouter(prefix="/stock-requests", tags=["Stock Requests"])
+router = APIRouter(prefix="/stock-requests", tags=["📥 Stock Requests"])
 
 
 @router.post("", status_code=status.HTTP_201_CREATED, dependencies=[Depends(require_permissions('stock:write'))])

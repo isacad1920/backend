@@ -34,7 +34,7 @@ from app.modules.sales.service import SalesService
 security = HTTPBearer()
 logger = logging.getLogger(__name__)
 
-router = APIRouter(prefix="/sales", tags=["Sales"])
+router = APIRouter(prefix="/sales", tags=["💳 Sales"])
 
 # --- Simple in-memory cache for stats (ETag + TTL) ---
 _STATS_CACHE: dict[str, dict[str, Any]] = {"etag": None, "expires": 0, "payload": None}

@@ -20,7 +20,7 @@ from app.modules.inventory.service import InventoryService
 security = HTTPBearer()
 logger = logging.getLogger(__name__)
 
-router = APIRouter(prefix="/inventory", tags=["Inventory"])
+router = APIRouter(prefix="/inventory", tags=["📦 Inventory"])
 
 # ---------------------------------------------------------------------------
 # Unified collection + summary (consolidated pattern) -- non-breaking addition

@@ -24,7 +24,7 @@ from app.modules.customers.service import CustomerService
 security = HTTPBearer()
 logger = logging.getLogger(__name__)
 
-router = APIRouter(prefix="/customers", tags=["Customers"])
+router = APIRouter(prefix="/customers", tags=["👤 Customers"])
 
 
 @router.post("/", status_code=status.HTTP_201_CREATED)

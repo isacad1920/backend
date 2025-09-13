@@ -36,8 +36,12 @@ logger = logging.getLogger(__name__)
 security = HTTPBearer()
 
 # Initialize routers
-auth_router = APIRouter(prefix="/auth", tags=["Authentication"])
-router = APIRouter(prefix="/users", tags=["Users"])
+# Unified icon+label tags (see tagging conventions documentation)
+AUTH_TAG = "🔐 Authentication"
+USERS_TAG = "👥 User Management"
+
+auth_router = APIRouter(prefix="/auth", tags=[AUTH_TAG])
+router = APIRouter(prefix="/users", tags=[USERS_TAG])
 
 
 def _serialize_user_plain(user_obj) -> dict:

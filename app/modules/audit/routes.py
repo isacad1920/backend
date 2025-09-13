@@ -10,6 +10,7 @@ from app.db.prisma import get_db
 from generated.prisma import Prisma
 
 router = APIRouter(prefix="/audit", tags=["Audit"])
+router = APIRouter(prefix="/audit", tags=["🧾 Audit"])
 
 @router.get("/logs")
 async def list_audit_logs(

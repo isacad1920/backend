@@ -26,6 +26,7 @@ security = HTTPBearer()
 logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/system", tags=["System"])
+router = APIRouter(prefix="/system", tags=["🛠️ System"])
 
 # In-memory stores (non-persistent; acceptable for dev/testing)
 _RESTORE_JOBS: dict[str, dict[str, Any]] = {}

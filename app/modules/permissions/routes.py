@@ -22,7 +22,8 @@ logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/permissions", tags=["Permissions"])
 # Legacy/compatibility router mounted under /api/v1/admin
-legacy_router = APIRouter(prefix="/admin/permissions", tags=["Permissions"], include_in_schema=False)
+router = APIRouter(prefix="/permissions", tags=["🔑 Permissions"])
+legacy_router = APIRouter(prefix="/admin/permissions", tags=["🔑 Permissions"], include_in_schema=False)
 
 
 @router.get("/", response_model=SuccessResponse[AvailablePermissionsResponse])
