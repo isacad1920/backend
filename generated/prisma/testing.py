@@ -1,5 +1,5 @@
 import contextlib
-from collections.abc import Iterator
+from typing import Iterator, Optional
 
 from . import client as _client
 from .client import RegisteredClient
@@ -8,7 +8,7 @@ from .errors import ClientNotRegisteredError
 
 @contextlib.contextmanager
 def reset_client(
-    new_client: RegisteredClient | None = None,
+    new_client: Optional[RegisteredClient] = None,
 ) -> Iterator[None]:
     """Context manager to unregister the current client
 

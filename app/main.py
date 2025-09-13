@@ -30,12 +30,12 @@ _correlation_id_var: ContextVar[str] = ContextVar('_correlation_id', default=Non
 
 # Import middlewares
 from app.middlewares.auth import (
-    AuditLogMiddleware,
     AuthenticationMiddleware,
     RateLimitMiddleware,
     SecurityHeadersMiddleware,
 )
 from app.modules.audit import router as audit_router
+from app.modules.accounts import router as accounts_router
 from app.modules.branches import router as branches_router
 from app.modules.customers import router as customers_router
 from app.modules.financial import router as financial_router
@@ -54,44 +54,42 @@ from app.modules.system import backup_router as system_backup_router, router as 
 # Import routers
 from app.modules.users import auth_router, router as users_router
 
-# Configure logging (uses dictConfig for production JSON/logfmt output)
-try:  # pragma: no cover - defensive
-    from app.core.logging_config import setup_logging
-    setup_logging(level=settings.log_level, json=settings.is_production)
-except Exception:  # fallback
-    logging.basicConfig(
-        level=getattr(logging, settings.log_level.upper()),
-        format="%(asctime)s - %(levelname)s - %(name)s - %(message)s"
-    )
+# Configure root logging once (avoid duplicate handlers in reload)
+logging.basicConfig(
+    level=getattr(logging, settings.log_level.upper()),
+    format="%(asctime)s - %(levelname)s - %(name)s - %(message)s"
+)
 logger = logging.getLogger(__name__)
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    """Application lifespan manager."""
-    # Startup
+    """Application lifespan manager.
+
+    Handles database initialization and teardown plus seeding demo users in
+    non-production environments. Previously also attached an audit logging
+    middleware which has since been removed in favor of centralized audit
+    utilities.
+    """
     logger.info("Starting up SOFinance POS System...")
     try:
         await init_db()
         logger.info("Database connected successfully")
-        # Ensure demo/test seed data exists in non-production environments
         if not settings.is_production:
             try:
                 await ensure_demo_user()
-            except Exception as seed_err:
-                logger.warning(f"Seeding demo user failed (non-fatal): {seed_err}")
-    except Exception as e:
-        logger.error(f"Failed to initialize database: {e}")
-        raise
-    
+                logger.info("Demo/test users ensured")
+            except Exception as seed_ex:  # pragma: no cover - defensive
+                logger.warning(f"Demo user seeding failed: {seed_ex}")
+    except Exception as start_ex:  # pragma: no cover - defensive
+        logger.error(f"Startup initialization failed: {start_ex}")
+    # Yield control to application runtime
     yield
-    
-    # Shutdown
     logger.info("Shutting down SOFinance POS System...")
     try:
         await close_db()
         logger.info("Database disconnected successfully")
-    except Exception as e:
-        logger.error(f"Failed to close database: {e}")
+    except Exception as close_ex:  # pragma: no cover - defensive
+        logger.error(f"Failed to close database: {close_ex}")
 
 async def ensure_demo_user() -> None:
     """Ensure a demo user exists with expected test credentials.
@@ -461,14 +459,7 @@ if not settings.debug:
     )
 register_error_middleware(app)
 
-# Add audit logging middleware
-if settings.enable_audit_logging:
-    app.add_middleware(
-        AuditLogMiddleware,
-        log_requests=True,
-        log_responses=False,
-        exclude_paths=["/health", "/ping", "/docs", "/redoc", "/openapi.json"]
-    )
+# AuditLogMiddleware removed; audit events handled via service-level logging.
 
 # Add authentication middleware (excluding public paths)
 app.add_middleware(
@@ -1063,7 +1054,13 @@ app.include_router(
 app.include_router(
     audit_router,
     prefix=settings.api_v1_str,
-    tags=["🛡️ Permissions & Admin"],
+    tags=["🧾 Audit"],
+)
+
+app.include_router(
+    accounts_router,
+    prefix=settings.api_v1_str,
+    tags=["🏦 Accounts"],
 )
 
 # ================================

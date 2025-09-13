@@ -15,6 +15,7 @@ python-dotenv==1.0.0
 # Authentication & Security
 python-jose[cryptography]==3.3.0
 passlib[bcrypt]==1.7.4
+bcrypt==4.3.0  # Explicit pin to avoid backend version attribute warning
 
 # File Upload & Processing
 python-multipart==0.0.6

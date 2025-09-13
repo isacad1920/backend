@@ -1,10 +1,127 @@
-# SOFinance - Complete Point of Sale & Financial Management System
+# SOFinance Backend
 
-## 🎯 Project Overview
+![CI](https://github.com/isacad1920/backend/actions/workflows/ci.yml/badge.svg)
 
-SOFinance is a comprehensive, enterprise-grade Point of Sale (POS) and Financial Management System built with modern technologies. This system provides complete business management capabilities for retail operations, multi-branch management, inventory control, customer relationship management, financial analytics, and comprehensive reporting.
+Enterprise-grade Point of Sale & Financial Management backend for multi-branch retail, inventory control, customer management, and accounting operations.
 
-> NOTE: A temporary response normalization middleware is active to smooth the migration to a universal response envelope. See section "Transitional Compatibility Layer" below.
+> This repository contains the FastAPI backend. A standardized JSON envelope is enforced; a temporary compatibility shim remains for legacy clients and will be removed in a future major release.
+
+## Key Capabilities
+
+- Authentication & RBAC (roles + granular permissions)
+- Multi-branch product & inventory management
+- Sales processing with partial / incremental payments
+- Customers, credit limits, purchase history
+- Double-entry journal & chart of accounts
+- Financial & inventory analytics
+- System configuration, backups, notifications, audit logging
+
+## Technology Stack
+
+| Layer | Technology |
+|-------|-----------|
+| API Framework | FastAPI (async) |
+| Language | Python 3.13 |
+| ORM / DB Toolkit | Prisma (PostgreSQL) |
+| Validation | Pydantic v2 |
+| AuthN | JWT / Bearer Tokens |
+| Packaging | `pyproject.toml` (PEP 621) |
+
+## Quick Start
+
+```bash
+python -m venv .venv
+source .venv/bin/activate
+pip install -r requirements.txt -r requirements-test.txt
+cp .env.example .env  # adjust values
+python run.py  # starts uvicorn
+```
+
+Visit: http://localhost:8000/docs
+
+### Environment Variables (Selected)
+
+| Variable | Purpose |
+|----------|---------|
+| DATABASE_URL | PostgreSQL connection string |
+| ENABLE_AUDIT_LOGGING | Toggle persistent audit trail |
+| ENABLE_KEY_MIRRORING | Legacy response key mirroring (set false when clients updated) |
+| RATE_LIMIT_PER_MINUTE / RATE_LIMIT_BURST | Rate limiting thresholds |
+
+See `app/core/config.py` for the authoritative list.
+
+## Running Tests
+
+```bash
+pytest -q
+```
+
+Key test areas include response envelope integrity, financial integrity decorators, and journal balance validation.
+
+## Migrations
+
+Schema changes are managed via Prisma:
+```bash
+prisma migrate dev --name <change>
+prisma generate
+```
+
+## Project Layout
+
+```
+app/
+	core/            # config, security, error/response systems
+	middlewares/     # auth, rate limit, security headers, normalization
+	modules/         # domain modules (users, products, sales, journal, ...)
+	utils/           # helpers (pdf, decimals, etc.)
+generated/         # Prisma generated client
+prisma/            # schema.prisma & migrations
+tests/             # pytest suite
+scripts/           # (retained) operational / seeding utilities
+```
+
+## Response Contract
+
+Every successful call: `{ "success": true, "message": str, "data": <payload>, "error": null, "meta": {...}, "timestamp": ISO8601 }`
+
+Failures: `{ "success": false, "error": {"code": CODE, "message": str, "details": {} }, "meta": {...}, "timestamp": ... }`
+
+The transitional `ResponseNormalizationMiddleware` wraps legacy free-form JSON and will be deprecated after client migration.
+
+## Error Handling
+
+Custom exceptions (`APIError` and subclasses) are converted by a normalization middleware to structured envelopes. Unhandled exceptions become `INTERNAL_ERROR` with sanitized details. Validation errors (Pydantic / FastAPI) produce `VALIDATION_ERROR`.
+
+## Financial Integrity
+
+Critical financial and sales endpoints use integrity decorators to recompute transactional totals and enforce journal balance. All monetary values are handled internally as `Decimal` and serialized as strings quantized to 2 decimal places.
+
+## Security
+
+- JWT tokens with refresh capability
+- Role + permission enforcement via dependency guards
+- Rate limiting & security headers middleware
+- Optional audit logging for key domain actions
+
+## Development Workflow
+
+1. Create / update schema in `prisma/schema.prisma`
+2. Run migrations (`prisma migrate dev`)
+3. Implement service + routes; return standardized responses
+4. Add/extend tests in `tests/`
+5. Run `pytest` locally; ensure envelope + integrity tests pass
+
+## Deprecation Notes
+
+- Response key mirroring is slated for removal; clients should rely exclusively on the `data` object.
+- Public temporary test endpoints (prefixed with `_test`) are excluded from production documentation.
+
+## License / Compliance
+
+Internal project (proprietary). Ensure GDPR / data retention policies applied to audit & backups per deployment context.
+
+---
+For deeper architectural insight see `ARCHITECTURE.md`; for contributor and environment guidance see `DEVELOPMENT.md`; for deployment & production operations see `OPERATIONS.md`.
 
 ## 🏗️ Architecture & Technology Stack
 

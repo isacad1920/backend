@@ -1,21 +1,21 @@
 from __future__ import annotations
 
 from pathlib import Path
-from typing import TYPE_CHECKING, ClassVar
+from typing import TYPE_CHECKING, Union, Optional, List, ClassVar
 
-import pydantic
 import tomlkit
+import pydantic
 
+from ._proxy import LazyProxy
 from ._compat import (
     PYDANTIC_V2,
     BaseSettings,
     BaseSettingsConfig,
     ConfigDict,
     Field,
-    model_dict,
     model_parse,
+    model_dict,
 )
-from ._proxy import LazyProxy
 
 
 class DefaultConfig(BaseSettings):
@@ -42,13 +42,13 @@ class DefaultConfig(BaseSettings):
     )
 
     # Where to store the downloaded binaries
-    binary_cache_dir: Path | None = Field(
+    binary_cache_dir: Union[Path, None] = Field(
         env='PRISMA_BINARY_CACHE_DIR',
         default=None,
     )
 
     # Workaround to support setting the binary platform until it can be properly implemented
-    binary_platform: str | None = Field(
+    binary_platform: Optional[str] = Field(
         env='PRISMA_BINARY_PLATFORM', default=None
     )
 
@@ -59,7 +59,7 @@ class DefaultConfig(BaseSettings):
     use_nodejs_bin: bool = Field(env='PRISMA_USE_NODEJS_BIN', default=True)
 
     # Extra arguments to pass to nodeenv, arguments are passed after the path, e.g. python -m nodeenv <path> <extra args>
-    nodeenv_extra_args: list[str] = Field(
+    nodeenv_extra_args: List[str] = Field(
         env='PRISMA_NODEENV_EXTRA_ARGS',
         default_factory=list,
     )

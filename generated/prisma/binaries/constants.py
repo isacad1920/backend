@@ -1,5 +1,6 @@
 from . import platform
 
+
 __all__ = ('PRISMA_CLI_NAME',)
 
 

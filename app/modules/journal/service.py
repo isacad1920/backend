@@ -33,6 +33,21 @@ class JournalService:
     ) -> JournalEntrySchema:
         """Create a new journal entry with validation."""
         try:
+            # Defense-in-depth: route layer already enforces balance, but we
+            # re-check here to prevent any future bypass (e.g. internal calls
+            # or refactors). Raising ValidationError keeps envelope semantics.
+            total_debits = sum((line.debit or 0) for line in entry_data.lines)
+            total_credits = sum((line.credit or 0) for line in entry_data.lines)
+            if total_debits != total_credits:
+                diff = float(total_debits - total_credits)
+                raise ValidationError(
+                    message="Journal entry not balanced", 
+                    details={
+                        "debits": float(total_debits),
+                        "credits": float(total_credits),
+                        "difference": diff
+                    }
+                )
             # Create the journal entry
             journal_entry = await self.db.journalentry.create(
                 data={

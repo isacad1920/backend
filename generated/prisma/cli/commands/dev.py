@@ -1,10 +1,10 @@
-from typing import Any, cast
+from typing import Optional, Any, cast
 
 import click
 
-from ...utils import maybe_async_run, module_exists, temp_env_update
 from .. import options
-from ..utils import error, generate_client
+from ..utils import generate_client, error
+from ...utils import maybe_async_run, temp_env_update, module_exists
 
 
 @click.group()
@@ -22,7 +22,7 @@ cli: Any = cast(Any, _cli)
 @cli.command()  # type: ignore[misc]
 @options.schema
 @options.skip_generate
-def playground(schema: str | None, skip_generate: bool) -> None:
+def playground(schema: Optional[str], skip_generate: bool) -> None:
     """Run the GraphQL playground"""
     if skip_generate and not module_exists('prisma.client'):
         error('Prisma Client Python has not been generated yet.')

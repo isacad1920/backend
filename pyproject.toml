@@ -1,5 +1,6 @@
 [tool.ruff]
 line-length = 100
+extend-exclude = ["generated/prisma"]
 select = [
   "E",  # pycodestyle errors
   "F",  # pyflakes
@@ -12,6 +13,7 @@ select = [
 ignore = [
   "E203",  # whitespace before : (black compatibility)
   "B008",  # function call in default argument (common in FastAPI Depends)
+  "E402",  # allow imports after dotenv loading / path setup in a few scripts
 ]
 
 [tool.ruff.isort]
@@ -32,6 +34,8 @@ skip-magic-trailing-comma = false
   "E402",  # import position artifacts in generated code
   "B011",  # deliberate assert False patterns used as sentinels
   "UP007", # allow 'Union' syntax in generated code
+  "UP006", # keep typing.List in generated code
+  "UP013", # keep functional TypedDict style
 ]
 "scripts/**" = [
   "E501",  # permit long instructional/help strings and formatted logging

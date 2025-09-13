@@ -1,21 +1,20 @@
 import os
 import shutil
-from collections.abc import Iterator
-from pathlib import Path
 from textwrap import dedent
-from typing import TYPE_CHECKING, Any, TypeVar
+from typing import Any, List, Dict, Iterator, TypeVar, Union, TYPE_CHECKING
+from pathlib import Path
 
 from ..utils import monkeypatch
 
 if TYPE_CHECKING:
-    from .models import Field, Model
+    from .models import Model, Field
 
 
 T = TypeVar('T')
 
 # we have to use a mapping outside of the `Sampler` class
 # to avoid https://github.com/RobertCraigie/prisma-client-py/issues/402
-SAMPLER_ITER_MAPPING: 'dict[str, Iterator[Field]]' = {}
+SAMPLER_ITER_MAPPING: 'Dict[str, Iterator[Field]]' = {}
 
 
 class Faker:
@@ -45,7 +44,7 @@ class Faker:
         return next(self)
 
     @classmethod
-    def from_list(cls, values: list[T]) -> T:
+    def from_list(cls, values: List[T]) -> T:
         # TODO: actual implementation
         assert values, 'Expected non-empty list'
         return values[0]
@@ -74,11 +73,11 @@ def is_same_path(path: Path, other: Path) -> bool:
     return str(path.resolve()).strip() == str(other.resolve()).strip()
 
 
-def resolve_template_path(rootdir: Path, name: str | Path) -> Path:
+def resolve_template_path(rootdir: Path, name: Union[str, Path]) -> Path:
     return rootdir.joinpath(remove_suffix(name, '.jinja'))
 
 
-def remove_suffix(path: str | Path, suf: str) -> str:
+def remove_suffix(path: Union[str, Path], suf: str) -> str:
     """Remove a suffix from a string, if it exists."""
     # modified from https://stackoverflow.com/a/18723694
     if isinstance(path, Path):

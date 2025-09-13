@@ -8,7 +8,7 @@ from app.main import app
 async def test_sale_details_integrity_validation(monkeypatch):
     # This test assumes a sale with id=1 exists in seed; if not, adjust or mock.
     async with AsyncClient(app=app, base_url="http://testserver") as ac:
-        resp = await ac.get("/api/v1/sales/1")
+        resp = await ac.get("/api/v1/sales/public/1")
     assert resp.status_code in (200, 404)  # allow 404 if fixture absent
     if resp.status_code == 404:
         return  # skip if no sale
@@ -27,7 +27,7 @@ async def test_sale_details_integrity_validation(monkeypatch):
 async def test_integrity_decorator_graceful_on_missing(monkeypatch):
     # Non-existent sale should still 404, not 500
     async with AsyncClient(app=app, base_url="http://testserver") as ac:
-        resp = await ac.get("/api/v1/sales/9999999")
+        resp = await ac.get("/api/v1/sales/public/9999999")
     assert resp.status_code in (404, 200)
     if resp.status_code == 404:
         body = resp.json()

@@ -1,25 +1,20 @@
-import json
-import logging
 import os
-import shutil
 import sys
+import json
+import shutil
+import logging
 import traceback
+from pathlib import Path
 from abc import ABC, abstractmethod
 from contextvars import ContextVar
-from pathlib import Path
-from typing import Any, Generic, cast
+from typing import Generic, Dict, Type, List, Any, Optional, cast
 
 from jinja2 import Environment, FileSystemLoader, StrictUndefined
 from pydantic import BaseModel, ValidationError
 
-from .. import __version__
-from .._compat import cached_property, model_json, model_parse
-from .._types import BaseModelT, InheritsGeneric, get_args
-from ..utils import DEBUG, DEBUG_GENERATOR
 from . import jsonrpc
-from .errors import PartialTypeGeneratorError
-from .filters import quote
 from .jsonrpc import Manifest
+from .filters import quote
 from .models import DefaultData, PythonData
 from .types import PartialModel
 from .utils import (
@@ -27,6 +22,12 @@ from .utils import (
     is_same_path,
     resolve_template_path,
 )
+from .errors import PartialTypeGeneratorError
+from .. import __version__
+from ..utils import DEBUG, DEBUG_GENERATOR
+from .._compat import cached_property, model_json, model_parse
+from .._types import BaseModelT, InheritsGeneric, get_args
+
 
 __all__ = (
     'BASE_PACKAGE_DIR',
@@ -57,7 +58,7 @@ DEFAULT_ENV = Environment(
 # results in an overly restrictive type
 DEFAULT_ENV.filters['quote'] = quote  # pyright: ignore
 
-partial_models_ctx: ContextVar[list[PartialModel]] = ContextVar(
+partial_models_ctx: ContextVar[List[PartialModel]] = ContextVar(
     'partial_models_ctx', default=[]
 )
 
@@ -176,7 +177,7 @@ class GenericGenerator(ABC, Generic[BaseModelT]):
         jsonrpc.reply(response)
 
     @cached_property
-    def data_class(self) -> type[BaseModelT]:
+    def data_class(self) -> Type[BaseModelT]:
         """Return the BaseModel used to parse the Prisma DMMF"""
 
         # we need to cast to object as otherwise pyright correctly marks the code as unreachable,
@@ -188,7 +189,7 @@ class GenericGenerator(ABC, Generic[BaseModelT]):
         if not isinstance(cls, InheritsGeneric):
             raise RuntimeError('Could not resolve generic type arguments.')
 
-        typ: Any | None = None
+        typ: Optional[Any] = None
         for base in cls.__orig_bases__:
             if base.__origin__ == GenericGenerator:
                 typ = base
@@ -216,7 +217,7 @@ class GenericGenerator(ABC, Generic[BaseModelT]):
 
         # we know the type we have resolved is the same as the first generic argument
         # passed to GenericGenerator, safe to cast
-        return cast(type[BaseModelT], model)
+        return cast(Type[BaseModelT], model)
 
 
 class BaseGenerator(GenericGenerator[DefaultData]):
@@ -281,7 +282,7 @@ class Generator(GenericGenerator[PythonData]):
 
 
 def cleanup_templates(
-    rootdir: Path, *, env: Environment | None = None
+    rootdir: Path, *, env: Optional[Environment] = None
 ) -> None:
     """Revert module to pre-generation state"""
     if env is None:
@@ -297,9 +298,9 @@ def cleanup_templates(
 def render_template(
     rootdir: Path,
     name: str,
-    params: dict[str, Any],
+    params: Dict[str, Any],
     *,
-    env: Environment | None = None,
+    env: Optional[Environment] = None,
 ) -> None:
     if env is None:
         env = DEFAULT_ENV

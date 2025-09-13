@@ -1,12 +1,13 @@
 import sys
-from functools import cache
 from types import ModuleType
-from typing import Any, TypeVar, cast
+from functools import lru_cache
+from typing import Type, TypeVar, Any, cast
 
 from pydantic import BaseModel
 
 from ._compat import PYDANTIC_V2, Extra, is_typeddict
 from ._types import Protocol, runtime_checkable
+
 
 __all__ = ('validate',)
 
@@ -23,11 +24,11 @@ class CachedModel(Protocol):
     __pydantic_model__: BaseModel
 
 
-def _get_module(typ: type[Any]) -> ModuleType:
+def _get_module(typ: Type[Any]) -> ModuleType:
     return sys.modules[typ.__module__]
 
 
-@cache
+@lru_cache(maxsize=None)
 def patch_pydantic() -> None:
     """Pydantic does not resolve forward references for TypedDict types properly yet
 
@@ -44,7 +45,7 @@ def patch_pydantic() -> None:
 
     def patched_create_model(
         typeddict_cls: Any, **kwargs: Any
-    ) -> type[BaseModel]:
+    ) -> Type[BaseModel]:
         kwargs.setdefault('__module__', typeddict_cls.__module__)
         return create_model(typeddict_cls, **kwargs)  # type: ignore[no-any-return]
 
@@ -55,7 +56,7 @@ def patch_pydantic() -> None:
 # https://github.com/pydantic/pydantic/issues/7111
 
 
-def validate(type: type[T], data: Any) -> T:
+def validate(type: Type[T], data: Any) -> T:
     """Validate untrusted data matches a given TypedDict
 
     For example:

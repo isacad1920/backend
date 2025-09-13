@@ -101,18 +101,20 @@ class ReportService:
             operating_profit = gross_profit - total_expenses
             net_profit = operating_profit  # Simplified for now
             
+            # Convert Decimals to quantized string form to avoid float precision loss
+            from app.utils.decimal_utils import quantize_money, serialize_decimal
             return IncomeStatementSchema(
                 period_start=start_date,
                 period_end=end_date,
                 revenue=revenue_data,
-                total_revenue=float(total_revenue),
+                total_revenue=serialize_decimal(quantize_money(total_revenue)),
                 cost_of_goods_sold=cogs_data,
-                total_cogs=float(total_cogs),
-                gross_profit=float(gross_profit),
+                total_cogs=serialize_decimal(quantize_money(total_cogs)),
+                gross_profit=serialize_decimal(quantize_money(gross_profit)),
                 expenses=expense_data,
-                total_expenses=float(total_expenses),
-                operating_profit=float(operating_profit),
-                net_profit=float(net_profit),
+                total_expenses=serialize_decimal(quantize_money(total_expenses)),
+                operating_profit=serialize_decimal(quantize_money(operating_profit)),
+                net_profit=serialize_decimal(quantize_money(net_profit)),
                 generated_at=datetime.utcnow()
             )
             

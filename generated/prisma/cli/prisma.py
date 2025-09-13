@@ -1,26 +1,27 @@
 from __future__ import annotations
 
+import os
+import sys
 import json
 import logging
-import os
 import subprocess
-import sys
 from pathlib import Path
-from typing import Any, NamedTuple
+from typing import Any, List, Optional, Dict, NamedTuple
 
 import click
 
+from ._node import node, npm
 from .. import config
 from ..errors import PrismaError
-from ._node import node, npm
+
 
 log: logging.Logger = logging.getLogger(__name__)
 
 
 def run(
-    args: list[str],
+    args: List[str],
     check: bool = False,
-    env: dict[str, str] | None = None,
+    env: Optional[Dict[str, str]] = None,
 ) -> int:
     log.debug('Running prisma command with args: %s', args)
 

@@ -1,5 +1,4 @@
 import click
-
 from .utils import PrismaCLI
 
 

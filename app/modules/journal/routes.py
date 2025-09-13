@@ -10,7 +10,7 @@ from fastapi.responses import StreamingResponse
 from fastapi.security import HTTPBearer
 
 from app.core.dependencies import get_current_active_user
-from app.core.response import ResponseBuilder, SuccessResponse
+from app.core.response import ResponseBuilder, SuccessResponse, failure_response
 from app.db.prisma import get_db
 from app.modules.journal.schema import (
     JournalEntryCreateSchema,
@@ -21,6 +21,7 @@ from app.modules.journal.schema import (
 )
 from app.modules.journal.service import create_journal_service
 from app.utils.pdf import generate_simple_pdf
+from app.core.exceptions import ValidationError
 
 security = HTTPBearer()
 logger = logging.getLogger(__name__)
@@ -128,10 +129,48 @@ async def create_journal_entry(
                 if mismatches:
                     raise HTTPException(status_code=403, detail="Inter-branch transfers require admin role")
 
+        # Enforce balanced journal (total debits == total credits) EARLY so we surface
+        # a consistent validation error even if downstream account IDs are invalid.
+        total_debits = sum((line.debit or 0) for line in entry_data.lines)
+        total_credits = sum((line.credit or 0) for line in entry_data.lines)
+        if total_debits != total_credits:
+            diff = total_debits - total_credits
+            resp = failure_response(
+                message=f"Journal entry not balanced: debits={total_debits} credits={total_credits} (difference={diff})",
+                status_code=400,
+                code="VALIDATION_ERROR",
+                errors={"debits": float(total_debits), "credits": float(total_credits), "difference": float(diff)}
+            )
+            resp.headers['x-normalized-error'] = '1'
+            return resp
+
+        # Enforce that all referenced accounts are active (applies to all journal entries)
+        line_account_ids = sorted({int(l.account_id) for l in entry_data.lines if l.account_id is not None})
+        if line_account_ids:
+            accs = await db.account.find_many(where={"id": {"in": line_account_ids}})
+            found_ids = {a.id for a in accs}
+            missing = [aid for aid in line_account_ids if aid not in found_ids]
+            if missing:
+                resp = failure_response(message=f"Accounts not found: {missing}", status_code=400, code="VALIDATION_ERROR")
+                resp.headers['x-normalized-error'] = '1'
+                return resp
+            inactive = [a.id for a in accs if getattr(a, "active", True) is False]
+            if inactive:
+                resp = failure_response(message=f"Inactive accounts cannot be posted to: {inactive}", status_code=400, code="VALIDATION_ERROR")
+                resp.headers['x-normalized-error'] = '1'
+                return resp
+
+
         service = create_journal_service(db)
         entry = await service.create_journal_entry(entry_data, created_by_user_id=current_user.id)
         return ResponseBuilder.success(data=entry, message="Journal entry created successfully")
+    except ValidationError as e:
+        # Provide raw message so middleware uses it directly
+        raise HTTPException(status_code=400, detail=str(e))
+    except HTTPException:
+        raise
     except Exception as e:
+        # Unexpected errors -> internal server error
         logger.error(f"Failed to create journal entry: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Failed to create journal entry: {str(e)}")
 

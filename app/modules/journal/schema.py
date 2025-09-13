@@ -35,20 +35,13 @@ class JournalEntryCreateSchema(ApiBaseModel):
     reference_id: int | None = Field(None, description="ID of the business record")
     lines: list[JournalEntryLineSchema] = Field(..., min_items=2)
     date: datetime | None = None
-
-    @validator('lines')
-    def validate_balanced_entry(cls, v):
-        """Ensure debits equal credits."""
-        total_debits = sum(line.debit for line in v)
-        total_credits = sum(line.credit for line in v)
-        
-        if total_debits != total_credits:
-            raise ValueError(f"Entry must be balanced: Debits ({total_debits}) != Credits ({total_credits})")
-        
-        if total_debits == 0:
-            raise ValueError("Entry must have non-zero amounts")
-        
-        return v
+    # NOTE: Balanced validation moved to route-level to allow returning
+    # a standardized 400 VALIDATION_ERROR with rich metadata (debits,
+    # credits, difference). Keeping the strict check here would cause
+    # Pydantic model validation to short-circuit with a 422 before the
+    # route logic executes, preventing our custom envelope.
+    # We only enforce per-line constraints below; overall balance is
+    # enforced server-side prior to persistence.
 
     @validator('lines')
     def validate_line_amounts(cls, v):

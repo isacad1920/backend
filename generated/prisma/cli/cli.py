@@ -1,18 +1,19 @@
-import contextlib
-import logging
 import os
 import sys
-from collections.abc import Iterator
-from typing import NoReturn
+import logging
+import contextlib
+from typing import List, Iterator, Optional, NoReturn
 
 import click
 
-from .. import _sync_http as http
-from ..generator import Generator
-from ..utils import DEBUG
 from . import prisma
-from .custom import cli
 from .utils import error
+from .custom import cli
+
+from .. import _sync_http as http
+from ..utils import DEBUG
+from ..generator import Generator
+
 
 __all__ = ('main', 'setup_logging')
 
@@ -23,7 +24,7 @@ log: logging.Logger = logging.getLogger(__name__)
 
 
 def main(
-    args: list[str] | None = None,
+    args: Optional[List[str]] = None,
     use_handler: bool = True,
     do_cleanup: bool = True,
 ) -> NoReturn:

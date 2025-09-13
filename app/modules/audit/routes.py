@@ -5,11 +5,10 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 
 from app.core.config import UserRole
 from app.core.dependencies import get_current_active_user, require_role
-from app.core.response import paginated_response
+from app.core.response import paginated_response, iso_utc
 from app.db.prisma import get_db
 from generated.prisma import Prisma
 
-router = APIRouter(prefix="/audit", tags=["Audit"])
 router = APIRouter(prefix="/audit", tags=["🧾 Audit"])
 
 @router.get("/logs")
@@ -21,6 +20,8 @@ async def list_audit_logs(
     user_id: int | None = Query(None, description="Filter by user id"),
     severity: str | None = Query(None, description="Severity level"),
     search: str | None = Query(None, description="Search entity id contains"),
+    start: str | None = Query(None, description="Start ISO timestamp (inclusive)"),
+    end: str | None = Query(None, description="End ISO timestamp (exclusive)"),
     current_user = Depends(get_current_active_user),
     # Restrict to admin and manager roles (SUPER_ADMIN not defined in UserRole enum)
     _role = Depends(require_role(UserRole.ADMIN, UserRole.MANAGER))
@@ -38,6 +39,13 @@ async def list_audit_logs(
             where['severity'] = severity
         if search:
             where['entityId'] = {'contains': search, 'mode': 'insensitive'}
+        if start or end:
+            created_filter: dict[str, Any] = {}
+            if start:
+                created_filter['gte'] = start
+            if end:
+                created_filter['lt'] = end
+            where['createdAt'] = created_filter
         skip = (page - 1) * page_size
         total = await db.auditlog.count(where=where)
         rows = await db.auditlog.find_many(
@@ -51,7 +59,7 @@ async def list_audit_logs(
         for r in rows:
             items.append({
                 'id': r.id,
-                'timestamp': r.createdAt,
+                'timestamp': iso_utc(r.createdAt),
                 'action': r.action,
                 'entity_type': r.entityType,
                 'entity_id': r.entityId,
@@ -71,7 +79,9 @@ async def list_audit_logs(
                     'entity_type': entity_type,
                     'user_id': user_id,
                     'severity': severity,
-                    'search': search
+                    'search': search,
+                    'start': start,
+                    'end': end,
                 }.items() if v is not None},
             }
         )

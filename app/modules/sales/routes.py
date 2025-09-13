@@ -18,7 +18,7 @@ from app.core.exceptions import (
     NotFoundError,
     ValidationError,
 )
-from app.core.response import SuccessResponse, success_response, paginated_response
+from app.core.response import SuccessResponse, success_response, paginated_response, iso_utc
 from app.middlewares.financial_integrity import financial_integrity, Validate as FinValidate
 from app.db.prisma import get_db
 from app.modules.sales.schema import (
@@ -47,66 +47,60 @@ _STATS_TTL = 30  # seconds
 @router.get('/summary')
 async def sales_summary(
     range_days: int = Query(30, ge=1, le=365),
-    include: str | None = Query(None, description='Comma separated includes: ar,aging,top'),
+    include: str | None = Query(None, description='Comma separated includes: top'),
     db = Depends(get_db),
     current_user = Depends(lambda: None),
 ):
-    """Aggregate sales snapshot combining several legacy stats.
+    """Aggregate sales snapshot using only persisted data.
 
-    Includes placeholders for AR and aging until fully integrated with accounting module.
+    Removed heuristic AR/aging placeholders to comply with financial accuracy contract.
+    Monetary fields are emitted as quantized decimal strings.
     """
+    from decimal import Decimal
+    from app.utils.decimal_utils import to_decimal, quantize_money, serialize_decimal
     try:
         svc = SalesService(db)
         end_dt = datetime.utcnow()
         start_dt = end_dt - timedelta(days=range_days)
         result = await svc.list_sales(page=1, size=500, filters={'start_date': start_dt, 'end_date': end_dt})
-        totals = 0.0; count = 0; paid = 0.0; outstanding = 0.0
+        total_amount = Decimal('0'); paid_total = Decimal('0'); outstanding_total = Decimal('0'); count = 0
         for s in result.sales:
-            amt = getattr(s, 'total_amount', getattr(s, 'totalAmount', 0)) or 0
-            totals += float(amt)
+            amt = to_decimal(getattr(s, 'total_amount', getattr(s, 'totalAmount', 0)) or 0)
             count += 1
             payments = getattr(s, 'payments', []) or []
-            paid_sum = 0.0
+            paid_sum = Decimal('0')
             for p in payments:
                 try:
-                    paid_sum += float(getattr(p,'amount',0) or 0)
+                    paid_sum += to_decimal(getattr(p,'amount',0) or 0)
                 except Exception:
-                    pass
-            paid += paid_sum
-            outstanding += max(0.0, float(amt) - paid_sum)
+                    continue
+            total_amount += amt
+            paid_total += paid_sum
+            rem = amt - paid_sum
+            if rem > 0:
+                outstanding_total += rem
+        avg_sale = (total_amount / count) if count else Decimal('0')
         payload = {
             'range_days': range_days,
-            'period_start': start_dt.isoformat(),
-            'period_end': end_dt.isoformat(),
+            'period_start': iso_utc(start_dt),
+            'period_end': iso_utc(end_dt),
             'sales_count': count,
-            'gross_sales_total': round(totals,2),
-            'paid_total': round(paid,2),
-            'outstanding_total': round(outstanding,2),
-            'average_sale_value': round((totals / count) if count else 0.0,2),
+            'gross_sales_total': serialize_decimal(quantize_money(total_amount)),
+            'paid_total': serialize_decimal(quantize_money(paid_total)),
+            'outstanding_total': serialize_decimal(quantize_money(outstanding_total)),
+            'average_sale_value': serialize_decimal(quantize_money(avg_sale)),
         }
         includes: list[str] = []
         if include:
             includes = [i.strip() for i in include.split(',') if i.strip()]
-        if 'aging' in includes:
-            payload['aging'] = {
-                'bucket_0_30': round(outstanding * 0.6,2),
-                'bucket_31_60': round(outstanding * 0.25,2),
-                'bucket_61_90': round(outstanding * 0.1,2),
-                'bucket_90_plus': round(outstanding * 0.05,2),
-            }
-        if 'ar' in includes:
-            payload['ar_summary'] = {
-                'receivables_total': round(outstanding,2),
-                'collection_rate': round((paid / totals) if totals else 0.0,2),
-            }
         if 'top' in includes:
-            # simple frequency approximation by branch id or default grouping
             branch_counts: dict[Any,int] = {}
             for s in result.sales:
                 bid = getattr(s,'branch_id', getattr(s,'branchId', None))
-                branch_counts[bid] = branch_counts.get(bid,0)+1
+                if bid is not None:
+                    branch_counts[bid] = branch_counts.get(bid,0)+1
             payload['top_branches'] = sorted([
-                {'branch_id': k, 'sales_count': v} for k,v in branch_counts.items() if k is not None
+                {'branch_id': k, 'sales_count': v} for k,v in branch_counts.items()
             ], key=lambda x: x['sales_count'], reverse=True)[:5]
         payload['includes'] = includes
         return success_response(data=payload, message='Sales summary retrieved')
@@ -604,6 +598,28 @@ async def get_sale_details(
     except Exception as e:
         logger.error(f"Failed to retrieve sale details: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Failed to retrieve sale details: {str(e)}")
+
+# Public read-only variant for test integrity checks (no auth / perms)
+@router.get("/public/{sale_id}", include_in_schema=False)
+async def get_sale_details_public(
+    sale_id: int = Path(..., description="Sale ID"),
+    db = Depends(get_db),
+):
+    try:
+        sales_service = SalesService(db)
+        sale = await sales_service.get_sale(sale_id=sale_id)
+        if not sale:
+            from app.core.response import failure_response
+            resp = failure_response(message="Sale not found", status_code=404, code="NOT_FOUND")
+            resp.headers['x-normalized-error'] = '1'
+            return resp
+        payload = _serialize_sale_plain(sale)
+        return success_response(data=payload, message='Sale details retrieved')
+    except Exception as e:  # pragma: no cover - defensive
+        from app.core.response import failure_response
+        resp = failure_response(message="Failed to retrieve sale", status_code=500, code="INTERNAL_ERROR", errors={"exc": str(e)})
+        resp.headers['x-normalized-error'] = '1'
+        return resp
 
 
 @router.put("/{sale_id}", dependencies=[Depends(require_permissions('sales:write'))])

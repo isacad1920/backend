@@ -1,32 +1,36 @@
-from abc import ABC, abstractmethod
-from collections.abc import Coroutine
+from abc import abstractmethod, ABC
 from typing import (
     Any,
-    Generic,
-    TypeVar,
     Union,
+    Coroutine,
+    Type,
+    Dict,
+    TypeVar,
+    Generic,
+    Optional,
     cast,
 )
 
 from httpx import Headers, Limits, Timeout
 
 from ._types import Method
-from .errors import HTTPClientClosedError
 from .utils import _NoneType
+from .errors import HTTPClientClosedError
+
 
 Session = TypeVar('Session')
 Response = TypeVar('Response')
 ReturnType = TypeVar('ReturnType')
 MaybeCoroutine = Union[Coroutine[Any, Any, ReturnType], ReturnType]
 
-DEFAULT_CONFIG: dict[str, Any] = {
+DEFAULT_CONFIG: Dict[str, Any] = {
     'limits': Limits(max_connections=1000),
     'timeout': Timeout(30),
 }
 
 
 class AbstractHTTP(ABC, Generic[Session, Response]):
-    session_kwargs: dict[str, Any]
+    session_kwargs: Dict[str, Any]
 
     __slots__ = (
         '_session',
@@ -39,7 +43,7 @@ class AbstractHTTP(ABC, Generic[Session, Response]):
         # NoneType = not used yet
         # None = closed
         # Session = open
-        self._session: Session | type[_NoneType] | None = _NoneType
+        self._session: Optional[Union[Session, Type[_NoneType]]] = _NoneType
         self.session_kwargs = {
             **DEFAULT_CONFIG,
             **kwargs,
@@ -82,7 +86,7 @@ class AbstractHTTP(ABC, Generic[Session, Response]):
 
     @session.setter
     def session(
-        self, value: Session | None
+        self, value: Optional[Session]
     ) -> None:  # pyright: ignore[reportPropertyTypeMismatch]
         self._session = value
 

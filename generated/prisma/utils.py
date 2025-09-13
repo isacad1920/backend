@@ -1,17 +1,17 @@
 from __future__ import annotations
 
-import asyncio
-import contextlib
-import inspect
-import logging
 import os
 import time
+import asyncio
+import inspect
+import logging
 import warnings
-from collections.abc import Coroutine, Iterator
+import contextlib
 from importlib.util import find_spec
-from typing import Any, NoReturn, TypeVar
+from typing import Any, TypeVar, Union, Dict, Iterator, Coroutine, NoReturn
 
-from ._types import CoroType, FuncType, TypeGuard
+from ._types import FuncType, CoroType, TypeGuard
+
 
 _T = TypeVar('_T')
 
@@ -41,7 +41,7 @@ def setup_logging() -> None:
 
 
 def maybe_async_run(
-    func: FuncType | CoroType,
+    func: Union[FuncType, CoroType],
     *args: Any,
     **kwargs: Any,
 ) -> object:
@@ -64,7 +64,7 @@ def module_exists(name: str) -> bool:
 
 
 @contextlib.contextmanager
-def temp_env_update(env: dict[str, str]) -> Iterator[None]:
+def temp_env_update(env: Dict[str, str]) -> Iterator[None]:
     old = os.environ.copy()
 
     try:
@@ -123,7 +123,9 @@ def assert_never(value: NoReturn) -> NoReturn:
 
     https://github.com/microsoft/pyright/issues/767
     """
-    assert False, f'Unhandled type: {type(value).__name__}'  # pragma: no cover
+    assert False, 'Unhandled type: {}'.format(
+        type(value).__name__
+    )  # pragma: no cover
 
 
 def make_optional(value: _T) -> _T | None:

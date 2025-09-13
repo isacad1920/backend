@@ -1,8 +1,9 @@
-import platform as _platform
 import re
-import subprocess
 import sys
-from functools import cache
+import subprocess
+import platform as _platform
+from functools import lru_cache
+from typing import Tuple
 
 
 def name() -> str:
@@ -32,7 +33,7 @@ def linux_distro() -> str:
     return 'debian'
 
 
-def _get_linux_distro_details() -> tuple[str, str]:
+def _get_linux_distro_details() -> Tuple[str, str]:
     process = subprocess.run(
         ['cat', '/etc/os-release'], stdout=subprocess.PIPE, check=True
     )
@@ -46,7 +47,7 @@ def _get_linux_distro_details() -> tuple[str, str]:
     return distro_id, distro_id_like
 
 
-@cache
+@lru_cache(maxsize=None)
 def binary_platform() -> str:
     platform = name()
     if platform != 'linux':

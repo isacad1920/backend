@@ -11,6 +11,7 @@ from fastapi import HTTPException, Request
 from starlette.middleware.base import BaseHTTPMiddleware
 
 from app.core.response import failure_response
+from app.core.exceptions import APIError
 
 logger = logging.getLogger(__name__)
 
@@ -19,7 +20,16 @@ class NormalizedErrorMiddleware(BaseHTTPMiddleware):
 	async def dispatch(self, request: Request, call_next: Callable):  # type: ignore[override]
 		try:
 			response = await call_next(request)
-		except HTTPException as he:  # Application-raised HTTP errors
+		except APIError as ae:  # First: our structured API errors
+			resp = failure_response(
+				message=ae.message,
+				status_code=ae.status_code,
+				errors=ae.details or None,
+				code=ae.error_code,
+			)
+			resp.headers['x-normalized-error'] = '1'
+			return resp
+		except HTTPException as he:  # FastAPI HTTP errors
 			code = None
 			detail = he.detail
 			details_dict = {}
@@ -31,7 +41,6 @@ class NormalizedErrorMiddleware(BaseHTTPMiddleware):
 			else:
 				message = str(detail) if detail else 'Request failed'
 			resp = failure_response(message=message, status_code=he.status_code, errors=details_dict or None, code=code)
-			# Mark to skip secondary normalization
 			resp.headers['x-normalized-error'] = '1'
 			return resp
 		except Exception as e:  # Unhandled exceptions -> 500 envelope
@@ -41,6 +50,7 @@ class NormalizedErrorMiddleware(BaseHTTPMiddleware):
 		# Post-process non-enveloped error responses (e.g., 404 for unknown route)
 		try:
 			if response.status_code >= 400:
+				# If already normalized (our middleware created it), return as-is
 				if response.headers.get('x-normalized-error') == '1':
 					return response
 				body_bytes = getattr(response, 'body', None)
@@ -51,8 +61,8 @@ class NormalizedErrorMiddleware(BaseHTTPMiddleware):
 					except Exception:
 						return failure_response(message=f"HTTP {response.status_code}", status_code=response.status_code)
 					if isinstance(parsed, dict):
-						# New failure envelope: {'success': False, 'error': {...}}
-						if parsed.get('success') is False and isinstance(parsed.get('error'), dict):
+						# Already standardized failure envelope
+						if parsed.get('success') is False and 'error' in parsed:
 							return response
 						# New success envelope: {'success': True, 'message':..., 'data': ...}
 						if parsed.get('success') is True and 'data' in parsed and 'error' in parsed:
