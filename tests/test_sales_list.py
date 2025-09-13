@@ -3,9 +3,10 @@
 Ensures /api/v1/sales returns a 200 and basic paging shape after seeding.
 """
 import os
+
 import pytest
-from httpx import AsyncClient
 from fastapi import status
+from httpx import AsyncClient
 
 from app.main import app
 
@@ -19,10 +20,13 @@ async def test_sales_list_basic():
         resp = await client.get("/api/v1/sales", params={"size": 5}, headers=headers)
     assert resp.status_code == status.HTTP_200_OK, resp.text
     data = resp.json()
-    assert "items" in data and isinstance(data["items"], list)
-    assert "total" in data
+    wrapper = data.get("data") or {}
+    assert isinstance(wrapper.get("items"), list)
+    pagination = wrapper.get("pagination") or {}
+    for key in ["total", "page", "limit", "total_pages"]:
+        assert key in pagination
     # Each item minimal keys
-    if data["items"]:
-        first = data["items"][0]
+    if wrapper.get("items"):
+        first = wrapper["items"][0]
         for k in ["id", "total"]:
             assert k in first

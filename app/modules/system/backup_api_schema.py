@@ -1,14 +1,16 @@
 """Pydantic schemas for Backup API (aligned with current Prisma model)."""
 from __future__ import annotations
-from pydantic import BaseModel, Field
-from typing import Optional, List, Literal
+
 from datetime import datetime
+from typing import Literal
+
+from pydantic import BaseModel, Field
 
 
 class BackupCreateRequest(BaseModel):
     """Request body for creating a backup."""
     type: Literal["FULL", "INCREMENTAL", "FILES", "DB"] = Field(..., description="Backup type")
-    location: Optional[str] = Field(None, description="Target directory or storage URI")
+    location: str | None = Field(None, description="Target directory or storage URI")
 
 
 class BackupResponse(BaseModel):
@@ -16,13 +18,13 @@ class BackupResponse(BaseModel):
     id: int
     type: str
     location: str
-    file_name: Optional[str] = Field(None, alias="fileName")
-    size_mb: Optional[float] = Field(None, alias="sizeMB")
+    file_name: str | None = Field(None, alias="fileName")
+    size_mb: float | None = Field(None, alias="sizeMB")
     status: str
-    error_log: Optional[str] = Field(None, alias="errorLog")
-    created_by_id: Optional[int] = Field(None, alias="createdById")
+    error_log: str | None = Field(None, alias="errorLog")
+    created_by_id: int | None = Field(None, alias="createdById")
     created_at: datetime = Field(alias="createdAt")
-    completed_at: Optional[datetime] = Field(None, alias="completedAt")
+    completed_at: datetime | None = Field(None, alias="completedAt")
 
     class Config:
         from_attributes = True
@@ -35,13 +37,13 @@ class BackupStats(BaseModel):
     failed: int
     pending: int
     total_size_mb: float
-    last_backup_at: Optional[datetime]
+    last_backup_at: datetime | None
 
 
 class BackupRestoreResponse(BaseModel):
     backup_id: int = Field(alias="backupId")
     mode: str
     dry_run: bool = Field(alias="dryRun")
-    restored_tables: List[str] = Field(default_factory=list)
-    skipped_tables: List[str] = Field(default_factory=list)
+    restored_tables: list[str] = Field(default_factory=list)
+    skipped_tables: list[str] = Field(default_factory=list)
     message: str

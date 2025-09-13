@@ -1,16 +1,15 @@
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
-from typing import TYPE_CHECKING, Any, overload
 from datetime import timedelta
-from typing_extensions import Literal
+from typing import TYPE_CHECKING, Any, Literal, overload
 
-from .._types import TransactionId
 from .._compat import get_running_loop
 from .._constants import DEFAULT_CONNECT_TIMEOUT
+from .._types import TransactionId
 
 if TYPE_CHECKING:
-    from ..types import MetricsFormat, DatasourceOverride  # noqa: TID251
+    from ..types import DatasourceOverride, MetricsFormat  # noqa: TID251
 
 
 __all__ = (

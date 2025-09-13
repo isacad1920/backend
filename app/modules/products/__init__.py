@@ -2,13 +2,18 @@
 Products module initialization.
 """
 from fastapi import APIRouter
-from .routes import product_router, category_router
-from .service import create_product_service, create_category_service
-from .model import ProductModel, CategoryModel
+
+from .model import CategoryModel, ProductModel
+from .routes import category_router, product_router
 from .schema import (
-    ProductCreateSchema, ProductUpdateSchema, ProductResponseSchema,
-    CategoryCreateSchema, CategoryUpdateSchema, CategoryResponseSchema
+    CategoryCreateSchema,
+    CategoryResponseSchema,
+    CategoryUpdateSchema,
+    ProductCreateSchema,
+    ProductResponseSchema,
+    ProductUpdateSchema,
 )
+from .service import create_category_service, create_product_service
 
 # Create a unified router for consistency with other modules
 router = APIRouter()

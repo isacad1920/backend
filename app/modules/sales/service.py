@@ -2,26 +2,33 @@
 Sales service layer for business logic.
 """
 import logging
-from typing import Optional, List, Dict, Any
-from datetime import datetime, date
+from datetime import date, datetime
 from decimal import Decimal
+from typing import Any
 
-from generated.prisma import Prisma
-
-from app.core.config import UserRole
 from app.core.exceptions import (
-    ValidationError, NotFoundError, InsufficientStockError, PaymentError,
-    AuthorizationError, DatabaseError, BusinessRuleError
+    BusinessRuleError,
+    DatabaseError,
+    NotFoundError,
+    ValidationError,
 )
 from app.modules.sales.model import SalesModel
 from app.modules.sales.schema import (
-    SaleCreateSchema, SaleUpdateSchema, SaleResponseSchema,
-    SaleDetailResponseSchema, SaleListResponseSchema, SalesStatsSchema,
-    RefundCreateSchema, RefundResponseSchema, ReceiptSchema,
-    SaleItemResponseSchema,
     DailySalesSchema,
-    SaleStatus, PaymentMethod, RefundListResponseSchema
+    ReceiptSchema,
+    RefundCreateSchema,
+    RefundListResponseSchema,
+    RefundResponseSchema,
+    SaleCreateSchema,
+    SaleDetailResponseSchema,
+    SaleItemResponseSchema,
+    SaleListResponseSchema,
+    SaleResponseSchema,
+    SalesStatsSchema,
+    SaleStatus,
+    SaleUpdateSchema,
 )
+from generated.prisma import Prisma
 
 logger = logging.getLogger(__name__)
 
@@ -61,11 +68,11 @@ class SalesService:
                     branch_id = next(iter(branch_candidates))
                     # update sale_data to keep downstream layers consistent
                     try:
-                        setattr(sale_data, "branch_id", branch_id)
+                        sale_data.branch_id = branch_id
                     except Exception:
                         pass
                     try:
-                        setattr(sale_data, "branchId", branch_id)
+                        sale_data.branchId = branch_id
                     except Exception:
                         pass
                     branch = await self.db.branch.find_unique(where={"id": branch_id})
@@ -77,11 +84,11 @@ class SalesService:
                     if default_branch:
                         branch_id = default_branch.id
                         try:
-                            setattr(sale_data, "branch_id", branch_id)
+                            sale_data.branch_id = branch_id
                         except Exception:
                             pass
                         try:
-                            setattr(sale_data, "branchId", branch_id)
+                            sale_data.branchId = branch_id
                         except Exception:
                             pass
                         branch = default_branch
@@ -110,8 +117,8 @@ class SalesService:
                         })
                         customer_id = new_customer.id
                         try:
-                            setattr(sale_data, "customer_id", customer_id)
-                            setattr(sale_data, "customerId", customer_id)
+                            sale_data.customer_id = customer_id
+                            sale_data.customerId = customer_id
                         except Exception:
                             pass
                     except Exception:
@@ -155,26 +162,26 @@ class SalesService:
                     multi = getattr(sale_data, 'payments', None)
                     paid = Decimal('0')
                     if single and getattr(single, 'amount', 0) > 0:
-                        paid += getattr(single, 'amount')
+                        paid += single.amount
                     if multi:
                         for p in multi:
                             if p and getattr(p, 'amount', 0) > 0:
-                                paid += getattr(p, 'amount')
-                    if getattr(sale_data, 'total_amount', getattr(sale_data, 'totalAmount', None)) and paid >= getattr(sale_data, 'total_amount', getattr(sale_data, 'totalAmount')):
+                                paid += p.amount
+                    if getattr(sale_data, 'total_amount', getattr(sale_data, 'totalAmount', None)) and paid >= getattr(sale_data, 'total_amount', sale_data.totalAmount):
                         pt_val = 'FULL'
                     elif paid > 0:
                         pt_val = 'PARTIAL'
                     else:
                         pt_val = 'UNPAID'
                     try:
-                        setattr(sale_data, 'payment_type', pt_val)
-                        setattr(sale_data, 'paymentType', pt_val)
+                        sale_data.payment_type = pt_val
+                        sale_data.paymentType = pt_val
                     except Exception:
                         pass
                 elif str(pt_val).upper() == 'SPLIT':
                     try:
-                        setattr(sale_data, 'payment_type', 'FULL')
-                        setattr(sale_data, 'paymentType', 'FULL')
+                        sale_data.payment_type = "FULL"
+                        sale_data.paymentType = "FULL"
                     except Exception:
                         pass
             except Exception:
@@ -237,7 +244,7 @@ class SalesService:
             logger.error(f"Error creating sale: {str(e)}")
             raise DatabaseError(detail="Failed to create sale")
     
-    async def get_sale(self, sale_id: int) -> Optional[SaleDetailResponseSchema]:
+    async def get_sale(self, sale_id: int) -> SaleDetailResponseSchema | None:
         """Get sale by ID with full details."""
         try:
             sale = await self.sales_model.get_sale(sale_id)
@@ -297,7 +304,7 @@ class SalesService:
         self,
         page: int = 1,
         size: int = 20,
-        filters: Optional[Dict[str, Any]] = None
+        filters: dict[str, Any] | None = None
     ) -> SaleListResponseSchema:
         """Get paginated list of sales."""
         try:
@@ -324,7 +331,7 @@ class SalesService:
                     outstanding_amount=max(Decimal('0'), (getattr(sale, "total_amount", getattr(sale, "totalAmount", Decimal('0'))) or Decimal('0')) - sum((p.amount for p in getattr(sale, 'payments', []) or []), start=Decimal('0'))),
                 )
                 try:
-                    setattr(schema_obj, 'payments', getattr(sale, 'payments', []) or [])
+                    schema_obj.payments = getattr(sale, "payments", []) or []
                 except Exception:
                     pass
                 items.append(schema_obj)
@@ -441,7 +448,7 @@ class SalesService:
         self,
         page: int = 1,
         size: int = 20,
-        filters: Optional[Dict[str, Any]] = None
+        filters: dict[str, Any] | None = None
     ) -> RefundListResponseSchema:
         """Get paginated list of refunds."""
         try:
@@ -483,9 +490,9 @@ class SalesService:
     
     async def get_sales_stats(
         self,
-        branch_id: Optional[int] = None,
-        start_date: Optional[date] = None,
-        end_date: Optional[date] = None
+        branch_id: int | None = None,
+        start_date: date | None = None,
+        end_date: date | None = None
     ) -> SalesStatsSchema:
         """Get sales statistics."""
         try:
@@ -590,10 +597,10 @@ class SalesService:
 
     async def get_daily_sales_report(
         self,
-        start_date: Optional[date] = None,
-        end_date: Optional[date] = None,
-        branch_id: Optional[int] = None,
-    ) -> List[DailySalesSchema]:
+        start_date: date | None = None,
+        end_date: date | None = None,
+        branch_id: int | None = None,
+    ) -> list[DailySalesSchema]:
         """Compute a daily sales report grouped by day with totals and item counts."""
         try:
             # Default to today if no range provided
@@ -605,7 +612,7 @@ class SalesService:
             elif end_date and not start_date:
                 start_date = end_date
 
-            where_conditions: Dict[str, Any] = {}
+            where_conditions: dict[str, Any] = {}
             if branch_id:
                 where_conditions["branch_id"] = branch_id
             if start_date and end_date:
@@ -624,7 +631,7 @@ class SalesService:
             )
 
             # Group in Python
-            by_day: Dict[date, Dict[str, Any]] = {}
+            by_day: dict[date, dict[str, Any]] = {}
             for s in sales:
                 created = getattr(s, "created_at", getattr(s, "createdAt", None))
                 d = created.date() if hasattr(created, 'date') else created
@@ -639,7 +646,7 @@ class SalesService:
                 by_day[d]["total_items"] += sum(item.quantity for item in s.items or [])
 
             # Build schema list sorted by date
-            results: List[DailySalesSchema] = []
+            results: list[DailySalesSchema] = []
             for d in sorted(by_day.keys()):
                 agg = by_day[d]
                 results.append(

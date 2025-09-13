@@ -1,19 +1,26 @@
 """
 System API routes and endpoints.
 """
-from typing import Dict, Any, Optional
-from fastapi import APIRouter, Depends, HTTPException, Query, status, Request, Response
-from fastapi.responses import FileResponse
-import hashlib, json, time
-from fastapi.security import HTTPBearer
+import hashlib
+import json
 import logging
+import time
+from datetime import UTC
+from typing import Any
 
-from app.core.dependencies import get_current_user, get_current_active_user
+from fastapi import APIRouter, Depends, HTTPException, Query, Request, Response
+from fastapi.security import HTTPBearer
+
 from app.core.authorization import require_permissions
-from app.core.response import ResponseBuilder, SuccessResponse, ErrorResponse, success_response, set_json_body
+from app.core.dependencies import get_current_active_user
+from app.core.response import (
+    ErrorCodes,
+    ResponseBuilder,
+    set_json_body,
+    success_response,
+)
 from app.db.prisma import get_db
 from app.modules.system.service import SystemService
-from app.core.response import ErrorCodes
 
 security = HTTPBearer()
 logger = logging.getLogger(__name__)
@@ -21,9 +28,9 @@ logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/system", tags=["System"])
 
 # In-memory stores (non-persistent; acceptable for dev/testing)
-_RESTORE_JOBS: Dict[str, Dict[str, Any]] = {}
-_RESTORE_CONFIRM_TOKENS: Dict[str, float] = {}
-_RESTORE_JOB_TASKS: Dict[str, Any] = {}  # store asyncio.Task handles
+_RESTORE_JOBS: dict[str, dict[str, Any]] = {}
+_RESTORE_CONFIRM_TOKENS: dict[str, float] = {}
+_RESTORE_JOB_TASKS: dict[str, Any] = {}  # store asyncio.Task handles
 _RESTORE_CONFIRM_TTL = 300  # 5 minutes
 
 # Basic persistence (best-effort) for jobs & tokens so process restarts don't lose all context.
@@ -32,7 +39,9 @@ _JOBS_FILE = f"{_PERSIST_DIR}/restore_jobs.json"
 _TOKENS_FILE = f"{_PERSIST_DIR}/restore_tokens.json"
 
 def _persist_state():
-    import json as _json, os as _os, time as _time
+    import json as _json
+    import os as _os
+    import time as _time
     try:
         _os.makedirs(_PERSIST_DIR, exist_ok=True)
         # prune expired tokens before persisting
@@ -48,15 +57,16 @@ def _persist_state():
         logger.debug(f"Persist state skipped: {_e}")
 
 def _load_state():
-    import json as _json, os as _os
+    import json as _json
+    import os as _os
     try:
         if _os.path.exists(_JOBS_FILE):
-            with open(_JOBS_FILE, 'r', encoding='utf-8') as jf:
+            with open(_JOBS_FILE, encoding='utf-8') as jf:
                 data = _json.load(jf)
                 if isinstance(data, dict):
                     _RESTORE_JOBS.update(data)
         if _os.path.exists(_TOKENS_FILE):
-            with open(_TOKENS_FILE, 'r', encoding='utf-8') as tf:
+            with open(_TOKENS_FILE, encoding='utf-8') as tf:
                 data = _json.load(tf)
                 if isinstance(data, dict):
                     _RESTORE_CONFIRM_TOKENS.update({k: float(v) for k, v in data.items()})
@@ -139,12 +149,12 @@ async def health_check():
     """
     try:
         import platform
-        from datetime import datetime, timezone
+        from datetime import datetime
         
         # Basic health data without psutil
         health_data = {
             "status": "healthy",
-            "timestamp": datetime.now(timezone.utc).isoformat(),
+            "timestamp": datetime.now(UTC).isoformat(),
             "version": "1.0.0",
             "python_version": platform.python_version(),
             "system": platform.system(),
@@ -186,14 +196,14 @@ async def health_check():
         return ResponseBuilder.success(data={
                 "status": "unhealthy",
                 "error": str(e),
-                "timestamp": datetime.now(timezone.utc).isoformat()
+                "timestamp": datetime.now(UTC).isoformat()
             },
             message="System health check failed",
             status=500
         )
 
 
-_SYSTEM_SETTINGS_CACHE: Dict[str, Any] = {"etag": None, "expires": 0, "data": None}
+_SYSTEM_SETTINGS_CACHE: dict[str, Any] = {"etag": None, "expires": 0, "data": None}
 _SYSTEM_SETTINGS_TTL = 60
 
 
@@ -305,7 +315,7 @@ async def update_system_settings(
 
 @router.put("/settings/batch", dependencies=[Depends(require_permissions('system:manage'))])
 async def update_system_settings_batch(
-    payload: Dict[str, Any],
+    payload: dict[str, Any],
     current_user = Depends(get_current_active_user),
     db = Depends(get_db),
 ):
@@ -354,11 +364,11 @@ async def create_system_backup(
     implementation intended for small/medium datasets. For very large datasets
     consider streaming chunked exports or background tasks.
     """
-    from datetime import datetime
     import os
+    from datetime import datetime
     try:
         backup_id = f"backup_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
-        tables: Dict[str, Any] = {}
+        tables: dict[str, Any] = {}
         # Ordered export list (parents before children where possible)
         export_models = [
             ("users", db.user, {"exclude": ["passwordHash"]}),
@@ -375,7 +385,7 @@ async def create_system_backup(
         if include_logs:
             export_models.append(("audit_logs", db.auditlog, {"limit": 500}))
 
-        from datetime import datetime as _dt, date as _date
+        from datetime import date as _date, datetime as _dt
         from decimal import Decimal
 
         def _coerce(v):
@@ -390,7 +400,7 @@ async def create_system_backup(
 
         for label, accessor, opts in export_models:
             try:
-                kwargs: Dict[str, Any] = {}
+                kwargs: dict[str, Any] = {}
                 if opts.get("limit"):
                     kwargs["take"] = opts["limit"]
                 rows = await accessor.find_many(**kwargs)
@@ -464,8 +474,9 @@ async def stream_system_backup(
     Note: This simplistic streamer assumes reasonably sized datasets; it serializes
     table by table. For very large datasets consider newline-delimited JSON export.
     """
+    import asyncio
+    import hashlib
     from datetime import datetime as _dt
-    import asyncio, hashlib
     export_order = [
         ("users", db.user), ("branches", db.branch), ("customers", db.customer), ("categories", db.category),
         ("products", db.product), ("stock", db.stock), ("sales", db.sale), ("sale_items", db.saleitem),
@@ -500,7 +511,7 @@ async def stream_system_backup(
                 if 'passwordHash' in d:
                     d['passwordHash'] = '<redacted>'
                 # Coerce simple types
-                from datetime import datetime as __dt, date as __date
+                from datetime import date as __date, datetime as __dt
                 from decimal import Decimal as __Decimal
                 for k, v in list(d.items()):
                     try:
@@ -552,7 +563,9 @@ async def list_backups(
 
     Scans the local `backups/` directory for files named `backup_*.json`.
     """
-    import os, re, datetime as _dt
+    import datetime as _dt
+    import os
+    import re
     try:
         os.makedirs("backups", exist_ok=True)
         items = []
@@ -588,13 +601,15 @@ async def download_backup(
     db = Depends(get_db),  # noqa: F841
 ):
     """⬇️ Download a backup JSON file."""
-    import os, json, hashlib
+    import hashlib
+    import json
+    import os
     name = f"{backup_id}.json"
     path = os.path.join("backups", name)
     if not os.path.exists(path):
         raise HTTPException(status_code=404, detail="Backup not found")
     try:
-        with open(path, 'r', encoding='utf-8') as fh:
+        with open(path, encoding='utf-8') as fh:
             payload = json.load(fh)
         meta = payload.get('meta') or {}
         # Ensure checksum present (compute if missing)
@@ -614,8 +629,8 @@ async def restore_backup(
     backup_id: str,
     apply: bool = Query(False, description="Apply restore (default dry-run)"),
     dry_run: bool = Query(None, description="Alternative dry_run flag used by standardized tests"),
-    tables: Optional[str] = Query(None, description="Comma separated tables subset to restore (test synthetic)"),
-    confirm_token: Optional[str] = Query(None, description="Confirmation token required when apply=true"),
+    tables: str | None = Query(None, description="Comma separated tables subset to restore (test synthetic)"),
+    confirm_token: str | None = Query(None, description="Confirmation token required when apply=true"),
     current_user = Depends(get_current_active_user),
     db = Depends(get_db),
 ):
@@ -624,7 +639,8 @@ async def restore_backup(
     Dry-run by default (apply=false) which reports row counts that would be restored.
     When apply=true, selected tables are truncated then repopulated in a dependency-safe order.
     """
-    import os, json as _json
+    import json as _json
+    import os
     # Effective dry-run detection (test uses dry_run query param)
     effective_dry_run = dry_run if dry_run is not None else (not apply)
     tables_list = [t.strip() for t in tables.split(',')] if tables else ["users", "branches"]
@@ -714,7 +730,7 @@ async def restore_backup(
     if not os.path.exists(path):
         raise HTTPException(status_code=404, detail="Backup not found")
     try:
-        with open(path, "r", encoding="utf-8") as fh:
+        with open(path, encoding="utf-8") as fh:
             data = _json.load(fh)
         meta = data.get("meta", {})
         tables = data.get("tables", {})
@@ -745,7 +761,7 @@ async def restore_backup(
         )
 
     # Validate confirmation token for destructive operation
-    import time, secrets
+    import time
     now = time.time()
     # purge expired tokens
     for tk, exp in list(_RESTORE_CONFIRM_TOKENS.items()):
@@ -831,7 +847,8 @@ async def restore_backup(
 @router.get("/restore/confirm-token", dependencies=[Depends(require_permissions('system:manage'))])
 async def generate_restore_confirm_token(current_user = Depends(get_current_active_user)):
     """Generate a short-lived confirmation token required for apply=true restore."""
-    import secrets, time
+    import secrets
+    import time
     token = secrets.token_urlsafe(24)
     _RESTORE_CONFIRM_TOKENS[token] = time.time() + _RESTORE_CONFIRM_TTL
     _persist_state()
@@ -843,10 +860,11 @@ async def start_async_restore(
     backup_id: str,
     current_user = Depends(get_current_active_user),
     db = Depends(get_db),
-    confirm_token: Optional[str] = Query(None),
+    confirm_token: str | None = Query(None),
 ):
     """Initiate background restore job (apply mode). Returns job id for polling."""
-    import asyncio, uuid
+    import asyncio
+    import uuid
     # Validate token before scheduling
     if not confirm_token or confirm_token not in _RESTORE_CONFIRM_TOKENS:
         raise HTTPException(status_code=400, detail="Missing or invalid confirm_token")
@@ -871,11 +889,13 @@ async def start_async_restore(
         try:
             # Reuse internal logic by calling restore_backup with apply=True bypassing token requirement (internal)
             # Simplify: directly perform subset logic (duplicate minimal logic)
-            import os, json as _json, asyncio
+            import asyncio
+            import json as _json
+            import os
             path = os.path.join("backups", f"{backup_id}.json")
             if not os.path.exists(path):
                 raise FileNotFoundError("Backup not found")
-            with open(path, 'r', encoding='utf-8') as fh:
+            with open(path, encoding='utf-8') as fh:
                 payload = _json.load(fh)
             tables = payload.get('tables', {})
             insert_order = ["users", "branches", "customers", "categories", "products", "stock", "sales", "sale_items", "payments", "system_settings"]
@@ -940,12 +960,11 @@ async def start_async_restore(
             _RESTORE_JOBS[job_id]["error"] = str(e)
             _persist_state()
 
-    import asyncio
     task = asyncio.create_task(_run())
     _RESTORE_JOB_TASKS[job_id] = task
     # Audit log
     try:
-        from app.core.audit import get_audit_logger, AuditAction
+        from app.core.audit import AuditAction, get_audit_logger
         audit = get_audit_logger()
         await audit.log_action(action=AuditAction.RESTORE, user_id=str(getattr(current_user, 'id', None)), resource_type="system_backup", resource_id=backup_id, details={"job_id": job_id, "mode": "async_start"})
     except Exception:
@@ -978,7 +997,7 @@ async def cancel_restore_job(job_id: str, current_user = Depends(get_current_act
     _persist_state()
     # Audit log
     try:
-        from app.core.audit import get_audit_logger, AuditAction
+        from app.core.audit import AuditAction, get_audit_logger
         audit = get_audit_logger()
         await audit.log_action(action=AuditAction.RESTORE, user_id=str(getattr(current_user, 'id', None)), resource_type="system_backup", resource_id=job.get("backup_id"), details={"job_id": job_id, "mode": "async_cancel"})
     except Exception:
@@ -989,12 +1008,14 @@ async def cancel_restore_job(job_id: str, current_user = Depends(get_current_act
 @router.get("/backups/{backup_id}/verify", dependencies=[Depends(require_permissions('system:manage'))])
 async def verify_backup_checksum(backup_id: str, current_user = Depends(get_current_active_user)):
     """Recompute checksum for a backup by hashing original snapshot structure (meta without checksum + tables)."""
-    import os, json as _json, hashlib as _hashlib
+    import hashlib as _hashlib
+    import json as _json
+    import os
     path = os.path.join("backups", f"{backup_id}.json")
     if not os.path.exists(path):
         raise HTTPException(status_code=404, detail="Backup not found")
     try:
-        with open(path, 'r', encoding='utf-8') as fh:
+        with open(path, encoding='utf-8') as fh:
             data = _json.load(fh)
         meta = dict(data.get('meta', {}))
         tables = data.get('tables', {})
@@ -1016,7 +1037,7 @@ async def verify_backup_checksum(backup_id: str, current_user = Depends(get_curr
         }
         # Audit log for verification attempts
         try:
-            from app.core.audit import get_audit_logger, AuditAction
+            from app.core.audit import AuditAction, get_audit_logger
             audit = get_audit_logger()
             await audit.log_action(action=AuditAction.BACKUP, user_id=str(getattr(current_user, 'id', None)), resource_type="system_backup", resource_id=backup_id, details={"verification": True, "match": match})
         except Exception:

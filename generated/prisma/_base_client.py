@@ -2,27 +2,33 @@ from __future__ import annotations
 
 import logging
 import warnings
-from types import TracebackType
-from typing import Any, Generic, TypeVar, overload
-from pathlib import Path
 from datetime import timedelta
-from typing_extensions import Self, Literal
+from pathlib import Path
+from types import TracebackType
+from typing import Any, Generic, Literal, Self, TypeVar, overload
 
 from pydantic import BaseModel
 
-from ._types import Datasource, HttpConfig, PrismaMethod, MetricsFormat, TransactionId, DatasourceOverride
+from ._builder import QueryBuilder
+from ._compat import model_parse, removeprefix
+from ._metrics import Metrics
+from ._registry import get_client
+from ._types import (
+    Datasource,
+    DatasourceOverride,
+    HttpConfig,
+    MetricsFormat,
+    PrismaMethod,
+    TransactionId,
+)
 from .engine import (
-    SyncQueryEngine,
+    AsyncAbstractEngine,
     AsyncQueryEngine,
     BaseAbstractEngine,
     SyncAbstractEngine,
-    AsyncAbstractEngine,
+    SyncQueryEngine,
 )
 from .errors import ClientNotConnectedError, ClientNotRegisteredError
-from ._compat import model_parse, removeprefix
-from ._builder import QueryBuilder
-from ._metrics import Metrics
-from ._registry import get_client
 from .generator.models import EngineType
 
 log: logging.Logger = logging.getLogger(__name__)

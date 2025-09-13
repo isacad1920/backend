@@ -1,5 +1,6 @@
-import requests
 import json
+
+import requests
 
 auth_response = requests.post('http://localhost:8000/api/v1/auth/token', json={
     'username': 'demo@sofinance.com',

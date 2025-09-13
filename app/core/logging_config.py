@@ -4,15 +4,16 @@ Provides setup_logging() to configure structured logging for production and
 human-readable logging for development. Uses Python's logging.config.dictConfig.
 """
 from __future__ import annotations
+
 import logging
 from logging.config import dictConfig
-from typing import Literal
 
 _FORMATTER_PLAIN = "%(asctime)s | %(levelname)s | %(name)s | %(message)s"
 
 class _JsonFormatter(logging.Formatter):
     def format(self, record: logging.LogRecord) -> str:  # pragma: no cover - trivial
-        import json, time
+        import json
+        import time
         base = {
             "ts": time.strftime("%Y-%m-%dT%H:%M:%S", time.gmtime(record.created)),
             "level": record.levelname,

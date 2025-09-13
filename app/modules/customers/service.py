@@ -3,20 +3,21 @@ Customer business logic service.
 """
 import logging
 from decimal import Decimal
-from typing import Optional, List, Dict, Any, Tuple
+from typing import Any
+
 from app.modules.customers.model import CustomerModel
 from app.modules.customers.schema import (
+    BulkOperationResponseSchema,
     CustomerCreateSchema,
-    CustomerUpdateSchema,
-    CustomerResponseSchema,
     CustomerDetailResponseSchema,
     CustomerListResponseSchema,
+    CustomerPurchaseHistoryListSchema,
+    CustomerPurchaseHistorySchema,
+    CustomerResponseSchema,
     CustomerStatsSchema,
     CustomerStatus,
     CustomerType,
-    BulkOperationResponseSchema,
-    CustomerPurchaseHistoryListSchema,
-    CustomerPurchaseHistorySchema
+    CustomerUpdateSchema,
 )
 
 logger = logging.getLogger(__name__)
@@ -32,7 +33,7 @@ class CustomerService:
         """
         self.customer_model = customer_model
     
-    async def create_customer(self, customer_data: CustomerCreateSchema, current_user: Dict[str, Any]) -> CustomerResponseSchema:
+    async def create_customer(self, customer_data: CustomerCreateSchema, current_user: dict[str, Any]) -> CustomerResponseSchema:
         """Create a new customer.
         
         Args:
@@ -75,7 +76,7 @@ class CustomerService:
             logger.error(f"Error creating customer: {str(e)}")
             raise Exception(f"Failed to create customer: {str(e)}")
     
-    async def get_customer(self, customer_id: int, current_user: Dict[str, Any]) -> Optional[CustomerDetailResponseSchema]:
+    async def get_customer(self, customer_id: int, current_user: dict[str, Any]) -> CustomerDetailResponseSchema | None:
         """Get customer by ID with detailed information.
         
         Args:
@@ -107,10 +108,10 @@ class CustomerService:
         self, 
         page: int = 1, 
         size: int = 10,
-        status: Optional[CustomerStatus] = None,
-        customer_type: Optional[CustomerType] = None,
-        search: Optional[str] = None,
-        current_user: Dict[str, Any] = None
+        status: CustomerStatus | None = None,
+        customer_type: CustomerType | None = None,
+        search: str | None = None,
+        current_user: dict[str, Any] = None
     ) -> CustomerListResponseSchema:
         """Get paginated list of customers with filtering.
         
@@ -169,8 +170,8 @@ class CustomerService:
         self, 
         customer_id: int, 
         customer_data: CustomerUpdateSchema, 
-        current_user: Dict[str, Any]
-    ) -> Optional[CustomerResponseSchema]:
+        current_user: dict[str, Any]
+    ) -> CustomerResponseSchema | None:
         """Update customer information.
         
         Args:
@@ -212,7 +213,7 @@ class CustomerService:
             logger.error(f"Error updating customer {customer_id}: {str(e)}")
             raise Exception(f"Failed to update customer: {str(e)}")
     
-    async def delete_customer(self, customer_id: int, current_user: Dict[str, Any]) -> bool:
+    async def delete_customer(self, customer_id: int, current_user: dict[str, Any]) -> bool:
         """Delete a customer.
         
         Args:
@@ -250,7 +251,7 @@ class CustomerService:
         customer_id: int,
         page: int = 1,
         size: int = 10,
-        current_user: Dict[str, Any] = None
+        current_user: dict[str, Any] = None
     ) -> CustomerPurchaseHistoryListSchema:
         """Get customer purchase history.
         
@@ -304,7 +305,7 @@ class CustomerService:
             logger.error(f"Error getting customer purchase history {customer_id}: {str(e)}")
             raise Exception(f"Failed to get customer purchase history: {str(e)}")
     
-    async def get_customer_statistics(self, current_user: Dict[str, Any]) -> CustomerStatsSchema:
+    async def get_customer_statistics(self, current_user: dict[str, Any]) -> CustomerStatsSchema:
         """Get customer statistics.
         
         Args:
@@ -330,9 +331,9 @@ class CustomerService:
     
     async def bulk_update_customers(
         self,
-        customer_ids: List[int],
+        customer_ids: list[int],
     update_data: CustomerUpdateSchema,
-        current_user: Dict[str, Any]
+        current_user: dict[str, Any]
     ) -> BulkOperationResponseSchema:
         """Bulk update multiple customers.
         
@@ -371,9 +372,9 @@ class CustomerService:
     
     async def bulk_update_customer_status(
         self,
-        customer_ids: List[int],
+        customer_ids: list[int],
         status: CustomerStatus,
-        current_user: Dict[str, Any]
+        current_user: dict[str, Any]
     ) -> BulkOperationResponseSchema:
         """Bulk update customer status.
         
@@ -414,7 +415,7 @@ class CustomerService:
         self,
         customer_id: int,
         amount_change: Decimal,
-        current_user: Dict[str, Any]
+        current_user: dict[str, Any]
     ) -> bool:
         """Update customer balance (for payments, credits, etc.).
         
@@ -459,7 +460,7 @@ class CustomerService:
         self,
         customer_id: int,
         purchase_amount: Decimal,
-        current_user: Dict[str, Any]
+        current_user: dict[str, Any]
     ) -> bool:
         """Process a customer purchase (update balances and totals).
         

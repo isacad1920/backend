@@ -1,7 +1,8 @@
 import pytest
 from httpx import AsyncClient
-from app.main import app
+
 from app.core.config import settings
+from app.main import app
 
 
 @pytest.mark.asyncio
@@ -11,12 +12,14 @@ async def test_login_with_email(async_client: AsyncClient = None):
         async with AsyncClient(app=app, base_url="http://test") as c:
             resp = await c.post(f"{settings.api_v1_str}/auth/login", json={"email": "demo@sofinance.com", "password": "DemoPassword123!"})
             assert resp.status_code == 200
-            data = resp.json()
+            payload = resp.json()
+            data = payload.get("data") or payload
             assert "access_token" in data and "refresh_token" in data
             return
     resp = await async_client.post(f"{settings.api_v1_str}/auth/login", json={"email": "demo@sofinance.com", "password": "DemoPassword123!"})
     assert resp.status_code == 200
-    data = resp.json()
+    payload = resp.json()
+    data = payload.get("data") or payload
     assert "access_token" in data and "refresh_token" in data
 
 

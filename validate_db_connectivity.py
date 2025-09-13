@@ -6,7 +6,7 @@ This checks that all critical business operations are properly connected to the 
 
 import os
 import re
-import sys
+
 
 def check_file_exists(file_path):
     """Check if a file exists and return status."""
@@ -20,7 +20,7 @@ def check_database_imports(file_path):
     if not os.path.exists(file_path):
         return "❌"
     
-    with open(file_path, 'r') as f:
+    with open(file_path) as f:
         content = f.read()
     
     # Check for database imports
@@ -34,7 +34,7 @@ def check_service_initialization(file_path, service_name):
     if not os.path.exists(file_path):
         return "❌"
     
-    with open(file_path, 'r') as f:
+    with open(file_path) as f:
         content = f.read()
     
     # Look for proper service initialization patterns

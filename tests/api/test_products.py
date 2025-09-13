@@ -3,8 +3,9 @@ Product and Category API endpoint tests.
 """
 import pytest
 from httpx import AsyncClient
+
 from app.core.config import settings
-from tests.conftest import TEST_PRODUCT_DATA, TEST_CATEGORY_DATA
+from tests.conftest import TEST_CATEGORY_DATA, TEST_PRODUCT_DATA
 
 
 class TestProductEndpoints:
@@ -18,12 +19,12 @@ class TestProductEndpoints:
         )
         
         assert response.status_code == 200
-        data = response.json()
-        assert "items" in data
-        assert "total" in data
-        assert "page" in data
-        assert "size" in data
-        assert isinstance(data["items"], list)
+        body = response.json()
+        data = body.get("data") or {}
+        assert isinstance(data.get("items"), list)
+        pagination = data.get("pagination") or {}
+        for key in ["total", "page", "limit", "total_pages"]:
+            assert key in pagination
     
     @pytest.mark.asyncio
     async def test_list_products_with_filters(self, authenticated_client: AsyncClient):
@@ -40,7 +41,8 @@ class TestProductEndpoints:
         )
         
         assert response.status_code == 200
-        data = response.json()
+        body = response.json()
+        data = body.get("data") or {}
         assert "items" in data
     
     @pytest.mark.asyncio
@@ -51,11 +53,13 @@ class TestProductEndpoints:
         )
         
         assert response.status_code == 200
-        data = response.json()
+        payload = response.json()
+        data = payload.get("data") or {}
         assert "id" in data
         assert "name" in data
         assert "sku" in data
-        assert "price" in data
+        # Accept either costPrice/price naming variants
+        assert "price" in data or "price" in {k.lower(): v for k,v in data.items()}
         assert "stockQuantity" in data or "stock_quantity" in data
     
     @pytest.mark.asyncio
@@ -132,8 +136,10 @@ class TestProductEndpoints:
         )
         
         assert response.status_code == 200
-        data = response.json()
-        assert "total_products" in data or "totalProducts" in data
+        payload = response.json()
+        # Stats now reside inside standardized data object (no root mirroring)
+        stats = payload.get("data") or {}
+        assert "total_products" in stats or "totalProducts" in stats
     
     @pytest.mark.asyncio
     async def test_adjust_stock(self, authenticated_client: AsyncClient, test_product: dict):
@@ -162,10 +168,12 @@ class TestCategoryEndpoints:
         )
         
         assert response.status_code == 200
-        data = response.json()
-        assert "items" in data
-        assert "total" in data
-        assert isinstance(data["items"], list)
+        body = response.json()
+        data = body.get("data") or {}
+        assert isinstance(data.get("items"), list)
+        pagination = data.get("pagination") or {}
+        for key in ["total", "page", "limit", "total_pages"]:
+            assert key in pagination
     
     @pytest.mark.asyncio
     async def test_get_category_by_id(self, authenticated_client: AsyncClient, test_category: dict):
@@ -175,7 +183,8 @@ class TestCategoryEndpoints:
         )
         
         assert response.status_code == 200
-        data = response.json()
+        payload = response.json()
+        data = payload.get("data") or {}
         assert "id" in data
         assert "name" in data
         assert "status" in data

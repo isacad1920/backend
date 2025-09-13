@@ -2,10 +2,10 @@
 """
 Test runner script for SOFinance backend tests.
 """
-import os
-import sys
-import subprocess
 import argparse
+import os
+import subprocess
+import sys
 from pathlib import Path
 
 
@@ -112,12 +112,20 @@ def main():
     
     args = parser.parse_args()
     
-    # Install test dependencies if needed
+    # Install test dependencies if needed without triggering unused import lint
     try:
-        import pytest
-        import httpx
-    except ImportError:
-        print("Installing test dependencies...")
+        import importlib.util
+        missing = []
+        for mod in ("httpx", "pytest"):
+            if importlib.util.find_spec(mod) is None:
+                missing.append(mod)
+        if missing:
+            print(f"Installing test dependencies ({', '.join(missing)})...")
+            subprocess.run([
+                sys.executable, "-m", "pip", "install", "-r", "requirements-test.txt"
+            ], check=True)
+    except Exception as e:  # pragma: no cover - defensive
+        print(f"Warning: dependency check failed ({e}); attempting install anyway")
         subprocess.run([
             sys.executable, "-m", "pip", "install", "-r", "requirements-test.txt"
         ], check=True)

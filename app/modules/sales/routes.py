@@ -1,41 +1,34 @@
 """
 Sales API routes and endpoints.
 """
-from typing import List, Optional, Dict, Any, Tuple
-from datetime import date, datetime, timezone, timedelta
-from fastapi import APIRouter, Depends, HTTPException, Query, Path, status
-from fastapi.security import HTTPBearer
 import logging
+from datetime import UTC, date, datetime, timedelta
+from typing import Any
 
-from app.core.dependencies import get_current_user, get_current_active_user, resolve_branch_id
-from app.core.security import PermissionManager, UserRole
+from fastapi import APIRouter, Depends, HTTPException, Path, Query, status
+from fastapi.security import HTTPBearer
+
 from app.core.authorization import require_permissions
-from app.core.response import ResponseBuilder, SuccessResponse, ErrorResponse, success_response
-from app.db.prisma import get_db
-from app.modules.sales.service import SalesService
+from app.core.dependencies import get_current_active_user, resolve_branch_id
 from app.core.exceptions import (
-    ValidationError,
-    NotFoundError,
-    InsufficientStockError,
     AuthorizationError,
     BusinessRuleError,
     DatabaseError,
+    InsufficientStockError,
+    NotFoundError,
+    ValidationError,
 )
+from app.core.response import SuccessResponse, success_response, paginated_response
+from app.db.prisma import get_db
 from app.modules.sales.schema import (
-    SaleCreateSchema,
-    SaleUpdateSchema,
-    SaleResponseSchema,
-    SaleDetailResponseSchema,
-    SaleListResponseSchema,
-    RefundCreateSchema,
-    RefundResponseSchema,
-    RefundListResponseSchema,
-    SalesStatsSchema,
     DailySalesSchema,
-    SalesReportSchema,
     ReceiptSchema,
-    ReceiptPrintSchema
+    SaleCreateSchema,
+    SalesStatsSchema,
+    SaleUpdateSchema,
 )
+from app.modules.sales.service import SalesService
+
 # (already imported above)
 
 security = HTTPBearer()
@@ -44,7 +37,7 @@ logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/sales", tags=["Sales"])
 
 # --- Simple in-memory cache for stats (ETag + TTL) ---
-_STATS_CACHE: Dict[str, Dict[str, Any]] = {"etag": None, "expires": 0, "payload": None}
+_STATS_CACHE: dict[str, dict[str, Any]] = {"etag": None, "expires": 0, "payload": None}
 _STATS_TTL = 30  # seconds
 
 # ---------------------------------------------------------------------------
@@ -53,7 +46,7 @@ _STATS_TTL = 30  # seconds
 @router.get('/summary')
 async def sales_summary(
     range_days: int = Query(30, ge=1, le=365),
-    include: Optional[str] = Query(None, description='Comma separated includes: ar,aging,top'),
+    include: str | None = Query(None, description='Comma separated includes: ar,aging,top'),
     db = Depends(get_db),
     current_user = Depends(lambda: None),
 ):
@@ -90,7 +83,7 @@ async def sales_summary(
             'outstanding_total': round(outstanding,2),
             'average_sale_value': round((totals / count) if count else 0.0,2),
         }
-        includes: List[str] = []
+        includes: list[str] = []
         if include:
             includes = [i.strip() for i in include.split(',') if i.strip()]
         if 'aging' in includes:
@@ -107,7 +100,7 @@ async def sales_summary(
             }
         if 'top' in includes:
             # simple frequency approximation by branch id or default grouping
-            branch_counts: Dict[Any,int] = {}
+            branch_counts: dict[Any,int] = {}
             for s in result.sales:
                 bid = getattr(s,'branch_id', getattr(s,'branchId', None))
                 branch_counts[bid] = branch_counts.get(bid,0)+1
@@ -156,12 +149,12 @@ def _list_sales_common(
     sales_service: SalesService,
     page: int,
     size: int,
-    branch_id: Optional[int],
-    customer_id: Optional[int],
-    start_date: Optional[datetime],
-    end_date: Optional[datetime],
-    payment_method: Optional[str],
-    status: Optional[str],
+    branch_id: int | None,
+    customer_id: int | None,
+    start_date: datetime | None,
+    end_date: datetime | None,
+    payment_method: str | None,
+    status: str | None,
     include_deleted: bool,
 ):
     """Internal shared list logic to keep public/protected variants DRY."""
@@ -186,7 +179,7 @@ async def create_sale(
     current_user = Depends(get_current_active_user),
     db = Depends(get_db),
     # Allow branch resolution to be optional; we'll infer or fallback
-    request_branch_id: Optional[int] = Depends(lambda request=Depends(resolve_branch_id): request if isinstance(request, int) else None),
+    request_branch_id: int | None = Depends(lambda request=Depends(resolve_branch_id): request if isinstance(request, int) else None),
 ):
     """
     🛒 Create a new sale transaction
@@ -209,8 +202,8 @@ async def create_sale(
         if request_branch_id:
             try:
                 if getattr(sale_data, "branch_id", None) is None and getattr(sale_data, "branchId", None) is None:
-                    setattr(sale_data, "branch_id", request_branch_id)
-                    setattr(sale_data, "branchId", request_branch_id)
+                    sale_data.branch_id = request_branch_id
+                    sale_data.branchId = request_branch_id
             except Exception:
                 pass
         # Permission enforcement (non-admin must have sales:write)
@@ -241,12 +234,12 @@ async def create_sale(
 async def get_sales(
     page: int = Query(1, ge=1, description="Page number"),
     size: int = Query(10, ge=1, le=100, description="Page size"),
-    branch_id: Optional[int] = Query(None, description="Filter by branch ID"),
-    customer_id: Optional[int] = Query(None, description="Filter by customer ID"),
-    start_date: Optional[datetime | date] = Query(None, description="Filter sales from this date (date or datetime)"),
-    end_date: Optional[datetime | date] = Query(None, description="Filter sales until this date (date or datetime)"),
-    payment_method: Optional[str] = Query(None, description="Filter by payment method"),
-    status: Optional[str] = Query(None, description="Filter by sale status"),
+    branch_id: int | None = Query(None, description="Filter by branch ID"),
+    customer_id: int | None = Query(None, description="Filter by customer ID"),
+    start_date: datetime | date | None = Query(None, description="Filter sales from this date (date or datetime)"),
+    end_date: datetime | date | None = Query(None, description="Filter sales until this date (date or datetime)"),
+    payment_method: str | None = Query(None, description="Filter by payment method"),
+    status: str | None = Query(None, description="Filter by sale status"),
     include_deleted: bool = Query(False, description="Include soft deleted sales"),
     db = Depends(get_db),
 ):
@@ -290,9 +283,16 @@ async def get_sales(
         rec["paid_amount"] = _round_currency(rec.get("paid_amount"))
         rec["outstanding_amount"] = _round_currency(rec.get("outstanding_amount"))
         items.append(rec)
+    # Use canonical paginated_response (data: { items, pagination })
     page_count = (result.total // result.size + (1 if result.total % result.size else 0))
-    meta = {"pagination": {"page": result.page, "size": result.size, "total": result.total, "pages": page_count}}
-    return success_response(data=items, meta=meta, message='Sales listed')
+    return paginated_response(
+        items=items,
+        total=result.total,
+        page=result.page,
+        limit=result.size,
+        message='Sales listed',
+        meta_extra=None
+    )
 
 
 # Protected variant with trailing slash requiring authentication (tests expect 401 when unauthenticated)
@@ -300,12 +300,12 @@ async def get_sales(
 async def get_sales_protected(
     page: int = Query(1, ge=1, description="Page number"),
     size: int = Query(10, ge=1, le=100, description="Page size"),
-    branch_id: Optional[int] = Query(None, description="Filter by branch ID"),
-    customer_id: Optional[int] = Query(None, description="Filter by customer ID"),
-    start_date: Optional[datetime | date] = Query(None, description="Filter sales from this date (date or datetime)"),
-    end_date: Optional[datetime | date] = Query(None, description="Filter sales until this date (date or datetime)"),
-    payment_method: Optional[str] = Query(None, description="Filter by payment method"),
-    status: Optional[str] = Query(None, description="Filter by sale status"),
+    branch_id: int | None = Query(None, description="Filter by branch ID"),
+    customer_id: int | None = Query(None, description="Filter by customer ID"),
+    start_date: datetime | date | None = Query(None, description="Filter sales from this date (date or datetime)"),
+    end_date: datetime | date | None = Query(None, description="Filter sales until this date (date or datetime)"),
+    payment_method: str | None = Query(None, description="Filter by payment method"),
+    status: str | None = Query(None, description="Filter by sale status"),
     include_deleted: bool = Query(False, description="Include soft deleted sales"),
     current_user = Depends(get_current_active_user),
     db = Depends(get_db),
@@ -342,15 +342,21 @@ async def get_sales_protected(
         rec["outstanding_amount"] = _round_currency(rec.get("outstanding_amount"))
         items.append(rec)
     page_count = (result.total // result.size + (1 if result.total % result.size else 0))
-    meta = {"pagination": {"page": result.page, "size": result.size, "total": result.total, "pages": page_count}}
-    return success_response(data=items, meta=meta, message='Sales listed (protected)')
+    return paginated_response(
+        items=items,
+        total=result.total,
+        page=result.page,
+        limit=result.size,
+        message='Sales listed (protected)',
+        meta_extra=None
+    )
 
 
 @router.get("/stats", response_model=SalesStatsSchema, dependencies=[Depends(require_permissions('sales:read'))])
 async def get_sales_statistics(
-    start_date: Optional[date] = Query(None, description="Statistics from this date"),
-    end_date: Optional[date] = Query(None, description="Statistics up to this date"),
-    branch_id: Optional[int] = Query(None, description="Filter by branch ID"),
+    start_date: date | None = Query(None, description="Statistics from this date"),
+    end_date: date | None = Query(None, description="Statistics up to this date"),
+    branch_id: int | None = Query(None, description="Filter by branch ID"),
     current_user = Depends(get_current_active_user),
     db = Depends(get_db),
 ):
@@ -361,8 +367,7 @@ async def get_sales_statistics(
     """
     try:
         cache_key = f"stats:{branch_id}:{start_date}:{end_date}"
-        now = datetime.now(timezone.utc).timestamp()
-        from fastapi import Request
+        now = datetime.now(UTC).timestamp()
         # We cannot access Request directly here without parameter; skipping conditional 304 for brevity - only ETag on response
         if _STATS_CACHE.get("payload") and _STATS_CACHE.get("key") == cache_key and _STATS_CACHE.get("expires", 0) > now:
             return success_response(data=_STATS_CACHE["payload"], message='Sales statistics retrieved (cached)')
@@ -380,7 +385,8 @@ async def get_sales_statistics(
                 except Exception:
                     pass
         # Compute simple etag
-        import hashlib, json
+        import hashlib
+        import json
         etag_src = json.dumps(stats.model_dump() if hasattr(stats, 'model_dump') else stats.__dict__, sort_keys=True).encode()
         etag = hashlib.md5(etag_src).hexdigest()  # noqa: S324
         _STATS_CACHE.update({"etag": etag, "expires": now + _STATS_TTL, "payload": stats, "key": cache_key})
@@ -392,7 +398,7 @@ async def get_sales_statistics(
 
 @router.get("/ar/summary", dependencies=[Depends(require_permissions('sales:read'))])
 async def get_accounts_receivable_summary(
-    branch_id: Optional[int] = Query(None, description="Filter by branch ID"),
+    branch_id: int | None = Query(None, description="Filter by branch ID"),
     current_user = Depends(get_current_active_user),
     db = Depends(get_db),
 ):
@@ -424,7 +430,7 @@ async def get_accounts_receivable_summary(
 
 @router.get("/ar/aging", dependencies=[Depends(require_permissions('sales:read'))])
 async def get_accounts_receivable_aging(
-    branch_id: Optional[int] = Query(None, description="Filter by branch ID"),
+    branch_id: int | None = Query(None, description="Filter by branch ID"),
     bucket_days: str = Query("30,60,90", description="Comma-separated aging bucket thresholds (days)"),
     current_user = Depends(get_current_active_user),
     db = Depends(get_db),
@@ -447,9 +453,9 @@ async def get_accounts_receivable_aging(
         service = SalesService(db)
         sales_resp = await service.list_sales(page=1, size=10000, filters={"branch_id": branch_id})
         # Build aging structure
-        now = datetime.now(timezone.utc)
+        now = datetime.now(UTC)
         # Prepare bucket labels
-        labels: List[str] = []
+        labels: list[str] = []
         prev = 0
         for t in thresholds:
             labels.append(f"{prev}-{t}")
@@ -495,11 +501,11 @@ async def get_accounts_receivable_aging(
         raise HTTPException(status_code=500, detail="Failed to compute AR aging report")
 
 
-@router.get("/reports/daily", response_model=SuccessResponse[List[DailySalesSchema]], dependencies=[Depends(require_permissions('sales:read'))])
+@router.get("/reports/daily", response_model=SuccessResponse[list[DailySalesSchema]], dependencies=[Depends(require_permissions('sales:read'))])
 async def get_daily_sales_report(
-    start_date: Optional[date] = Query(None, description="Report start date"),
-    end_date: Optional[date] = Query(None, description="Report end date"),
-    branch_id: Optional[int] = Query(None, description="Filter by branch ID"),
+    start_date: date | None = Query(None, description="Report start date"),
+    end_date: date | None = Query(None, description="Report end date"),
+    branch_id: int | None = Query(None, description="Filter by branch ID"),
     current_user = Depends(get_current_active_user),
     db = Depends(get_db),
 ):
@@ -523,8 +529,8 @@ async def get_daily_sales_report(
 
 @router.get("/refunds", dependencies=[Depends(require_permissions('sales:read'))])
 async def list_returns(
-    start_date: Optional[date] = Query(None, description="Filter returns from this date"),
-    end_date: Optional[date] = Query(None, description="Filter returns up to this date"),
+    start_date: date | None = Query(None, description="Filter returns from this date"),
+    end_date: date | None = Query(None, description="Filter returns up to this date"),
     limit: int = Query(20, description="Number of returns to return"),
     offset: int = Query(0, description="Number of returns to skip"),
     current_user = Depends(get_current_active_user),
@@ -548,8 +554,14 @@ async def list_returns(
             },
         )
         page_count = (refunds.total // refunds.size + (1 if refunds.total % refunds.size else 0)) if getattr(refunds, 'size', None) else None
-        meta = {"pagination": {"page": refunds.page, "size": refunds.size, "total": refunds.total, "pages": page_count}}
-        return success_response(data=refunds.items, meta=meta, message='Refunds listed')
+        return paginated_response(
+            items=refunds.items,
+            total=refunds.total,
+            page=refunds.page,
+            limit=refunds.size,
+            message='Refunds listed',
+            meta_extra=None
+        )
     except Exception as e:
         logger.error(f"Failed to retrieve returns: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Failed to retrieve returns: {str(e)}")
@@ -628,7 +640,7 @@ async def update_sale(
 @router.post("/{sale_id}/payments", status_code=201, dependencies=[Depends(require_permissions('payments:write'))])
 async def add_payment_to_sale(
     sale_id: int = Path(..., description="Sale ID"),
-    payload: Dict[str, Any] = None,
+    payload: dict[str, Any] = None,
     current_user = Depends(get_current_active_user),
     db = Depends(get_db),
 ):
@@ -734,7 +746,7 @@ async def add_payment_to_sale(
 async def list_sale_payments(
     sale_id: int = Path(..., description="Sale ID"),
     limit: int = Query(20, ge=1, le=100, description="Page size"),
-    cursor: Optional[int] = Query(None, description="Cursor (payment id) for pagination"),
+    cursor: int | None = Query(None, description="Cursor (payment id) for pagination"),
     current_user = Depends(get_current_active_user),
     db = Depends(get_db),
 ):
@@ -746,7 +758,7 @@ async def list_sale_payments(
     try:
         # Permission enforced by dependency
         prisma = db
-        kwargs: Dict[str, Any] = {
+        kwargs: dict[str, Any] = {
             "where": {"saleId": sale_id},
             "order_by": {"id": "desc"},
             "take": limit,
@@ -825,7 +837,7 @@ async def get_sale_receipt(
 # Quick access endpoints for POS systems
 @router.get("/today/summary")
 async def get_today_summary(
-    branch_id: Optional[int] = Query(None, description="Filter by branch ID"),
+    branch_id: int | None = Query(None, description="Filter by branch ID"),
     current_user = Depends(get_current_active_user),
     db = Depends(get_db),
 ):
@@ -862,7 +874,7 @@ async def get_today_summary(
                     }
                 },
             )
-            agg: Dict[int, Dict[str, Any]] = {}
+            agg: dict[int, dict[str, Any]] = {}
             for s in sales:
                 for it in getattr(s, "items", []) or []:
                     pid = it.stock.product.id if getattr(it, "stock", None) and getattr(it.stock, "product", None) else None

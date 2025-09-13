@@ -26,13 +26,19 @@ __version__ = "1.1.8"
 #
 #
 
-from copy import deepcopy
 from abc import ABC, abstractmethod
+from collections.abc import Callable, Collection, Iterable, Iterator, Mapping, Sequence
+from copy import deepcopy
 from types import ModuleType
 from typing import (
-    TypeVar, Generic, Type, Tuple, List, Dict, Iterator, Collection, Callable, Optional, FrozenSet, Any,
-    Union, Iterable, IO, TYPE_CHECKING, overload, Sequence,
-    Pattern as REPattern, ClassVar, Set, Mapping
+    IO,
+    Any,
+    ClassVar,
+    Generic,
+    Optional,
+    TypeVar,
+    Union,
+    overload,
 )
 
 
@@ -87,10 +93,10 @@ class UnexpectedInput(LarkError):
             return (before + after + b'\n' + b' ' * len(before.expandtabs()) + b'^\n').decode("ascii", "backslashreplace")
 
     def match_examples(self, parse_fn: 'Callable[[str], Tree]',
-                             examples: Union[Mapping[T, Iterable[str]], Iterable[Tuple[T, Iterable[str]]]],
+                             examples: Mapping[T, Iterable[str]] | Iterable[tuple[T, Iterable[str]]],
                              token_type_match_fallback: bool=False,
                              use_accepts: bool=True
-                         ) -> Optional[T]:
+                         ) -> T | None:
         #--
         assert self.state is not None, "Not supported for this exception"
 
@@ -146,7 +152,7 @@ class UnexpectedInput(LarkError):
 
 class UnexpectedEOF(ParseError, UnexpectedInput):
     #--
-    expected: 'List[Token]'
+    expected: 'list[Token]'
 
     def __init__(self, expected, state=None, terminals_by_name=None):
         super(UnexpectedEOF, self).__init__()
@@ -171,8 +177,8 @@ class UnexpectedEOF(ParseError, UnexpectedInput):
 class UnexpectedCharacters(LexError, UnexpectedInput):
     #--
 
-    allowed: Set[str]
-    considered_tokens: Set[Any]
+    allowed: set[str]
+    considered_tokens: set[Any]
 
     def __init__(self, seq, lex_pos, line, column, allowed=None, considered_tokens=None, state=None, token_history=None,
                  terminals_by_name=None, considered_rules=None):
@@ -211,8 +217,8 @@ class UnexpectedCharacters(LexError, UnexpectedInput):
 class UnexpectedToken(ParseError, UnexpectedInput):
     #--
 
-    expected: Set[str]
-    considered_rules: Set[str]
+    expected: set[str]
+    considered_rules: set[str]
 
     def __init__(self, token, expected, considered_rules=None, state=None, interactive_parser=None, terminals_by_name=None, token_history=None):
         super(UnexpectedToken, self).__init__()
@@ -235,7 +241,7 @@ class UnexpectedToken(ParseError, UnexpectedInput):
 
 
     @property
-    def accepts(self) -> Set[str]:
+    def accepts(self) -> set[str]:
         if self._accepts is NO_VALUE:
             self._accepts = self.interactive_parser and self.interactive_parser.accepts()
         return self._accepts
@@ -253,7 +259,7 @@ class UnexpectedToken(ParseError, UnexpectedInput):
 class VisitError(LarkError):
     #--
 
-    obj: 'Union[Tree, Token]'
+    obj: 'Tree | Token'
     orig_exc: Exception
 
     def __init__(self, rule, obj, orig_exc):
@@ -269,8 +275,9 @@ class MissingVariableError(LarkError):
     pass
 
 
-import sys, re
 import logging
+import re
+import sys
 
 logger: logging.Logger = logging.getLogger("lark")
 logger.addHandler(logging.StreamHandler())
@@ -286,8 +293,8 @@ NO_VALUE = object()
 T = TypeVar("T")
 
 
-def classify(seq: Iterable, key: Optional[Callable] = None, value: Optional[Callable] = None) -> Dict:
-    d: Dict[Any, Any] = {}
+def classify(seq: Iterable, key: Callable | None = None, value: Callable | None = None) -> dict:
+    d: dict[Any, Any] = {}
     for item in seq:
         k = key(item) if (key is not None) else item
         v = value(item) if (value is not None) else item
@@ -298,7 +305,7 @@ def classify(seq: Iterable, key: Optional[Callable] = None, value: Optional[Call
     return d
 
 
-def _deserialize(data: Any, namespace: Dict[str, Any], memo: Dict) -> Any:
+def _deserialize(data: Any, namespace: dict[str, Any], memo: dict) -> Any:
     if isinstance(data, dict):
         if '__type__' in data:  ##
 
@@ -317,15 +324,15 @@ _T = TypeVar("_T", bound="Serialize")
 class Serialize:
     #--
 
-    def memo_serialize(self, types_to_memoize: List) -> Any:
+    def memo_serialize(self, types_to_memoize: list) -> Any:
         memo = SerializeMemoizer(types_to_memoize)
         return self.serialize(memo), memo.serialize()
 
-    def serialize(self, memo = None) -> Dict[str, Any]:
+    def serialize(self, memo = None) -> dict[str, Any]:
         if memo and memo.in_types(self):
             return {'@': memo.memoized.get(self)}
 
-        fields = getattr(self, '__serialize_fields__')
+        fields = self.__serialize_fields__
         res = {f: _serialize(getattr(self, f), memo) for f in fields}
         res['__type__'] = type(self).__name__
         if hasattr(self, '_serialize'):
@@ -334,11 +341,11 @@ class Serialize:
         return res
 
     @classmethod
-    def deserialize(cls: Type[_T], data: Dict[str, Any], memo: Dict[int, Any]) -> _T:
+    def deserialize(cls: type[_T], data: dict[str, Any], memo: dict[int, Any]) -> _T:
         namespace = getattr(cls, '__serialize_namespace__', [])
         namespace = {c.__name__:c for c in namespace}
 
-        fields = getattr(cls, '__serialize_fields__')
+        fields = cls.__serialize_fields__
 
         if '@' in data:
             return memo[data['@']]
@@ -362,19 +369,19 @@ class SerializeMemoizer(Serialize):
 
     __serialize_fields__ = 'memoized',
 
-    def __init__(self, types_to_memoize: List) -> None:
+    def __init__(self, types_to_memoize: list) -> None:
         self.types_to_memoize = tuple(types_to_memoize)
         self.memoized = Enumerator()
 
     def in_types(self, value: Serialize) -> bool:
         return isinstance(value, self.types_to_memoize)
 
-    def serialize(self) -> Dict[int, Any]:  ##
+    def serialize(self) -> dict[int, Any]:  ##
 
         return _serialize(self.memoized.reversed(), None)
 
     @classmethod
-    def deserialize(cls, data: Dict[int, Any], namespace: Dict[str, Any], memo: Dict[Any, Any]) -> Dict[int, Any]:  ##
+    def deserialize(cls, data: dict[int, Any], namespace: dict[str, Any], memo: dict[Any, Any]) -> dict[int, Any]:  ##
 
         return _deserialize(data, namespace, memo)
 
@@ -386,15 +393,15 @@ except ImportError:
     _has_regex = False
 
 if sys.version_info >= (3, 11):
-    import re._parser as sre_parse
     import re._constants as sre_constants
+    import re._parser as sre_parse
 else:
-    import sre_parse
     import sre_constants
+    import sre_parse
 
 categ_pattern = re.compile(r'\\p{[A-Za-z_]+}')
 
-def get_regexp_width(expr: str) -> Union[Tuple[int, int], List[int]]:
+def get_regexp_width(expr: str) -> tuple[int, int] | list[int]:
     if _has_regex:
         ##
 
@@ -431,6 +438,7 @@ def get_regexp_width(expr: str) -> Union[Tuple[int, int], List[int]]:
 
 from collections import OrderedDict
 
+
 class Meta:
 
     empty: bool
@@ -440,7 +448,7 @@ class Meta:
     end_line: int
     end_column: int
     end_pos: int
-    orig_expansion: 'List[TerminalDef]'
+    orig_expansion: 'list[TerminalDef]'
     match_tree: bool
 
     def __init__(self):
@@ -455,9 +463,9 @@ class Tree(Generic[_Leaf_T]):
     #--
 
     data: str
-    children: 'List[Branch[_Leaf_T]]'
+    children: 'list[Branch[_Leaf_T]]'
 
-    def __init__(self, data: str, children: 'List[Branch[_Leaf_T]]', meta: Optional[Meta]=None) -> None:
+    def __init__(self, data: str, children: 'list[Branch[_Leaf_T]]', meta: Meta | None=None) -> None:
         self.data = data
         self.children = children
         self._meta = meta
@@ -558,7 +566,7 @@ class Tree(Generic[_Leaf_T]):
         return self.find_pred(lambda t: t.data == data)
 
 
-from functools import wraps, update_wrapper
+from functools import update_wrapper, wraps
 from inspect import getmembers, getmro
 
 _Return_T = TypeVar('_Return_T')
@@ -672,7 +680,7 @@ class Transformer(_Decoratable, ABC, Generic[_Leaf_T, _Return_T]):
 
     def __mul__(
             self: 'Transformer[_Leaf_T, Tree[_Leaf_U]]',
-            other: 'Union[Transformer[_Leaf_U, _Return_V], TransformerChain[_Leaf_U, _Return_V,]]'
+            other: 'Transformer[_Leaf_U, _Return_V] | TransformerChain[_Leaf_U, _Return_V]'
     ) -> 'TransformerChain[_Leaf_T, _Return_V]':
         #--
         return TransformerChain(self, other)
@@ -722,9 +730,9 @@ class InlineTransformer(Transformer):   ##
 
 class TransformerChain(Generic[_Leaf_T, _Return_T]):
 
-    transformers: 'Tuple[Union[Transformer, TransformerChain], ...]'
+    transformers: 'tuple[Transformer | TransformerChain, ...]'
 
-    def __init__(self, *transformers: 'Union[Transformer, TransformerChain]') -> None:
+    def __init__(self, *transformers: 'Transformer | TransformerChain') -> None:
         self.transformers = transformers
 
     def transform(self, tree: Tree[_Leaf_T]) -> _Return_T:
@@ -734,7 +742,7 @@ class TransformerChain(Generic[_Leaf_T, _Return_T]):
 
     def __mul__(
             self: 'TransformerChain[_Leaf_T, Tree[_Leaf_U]]',
-            other: 'Union[Transformer[_Leaf_U, _Return_V], TransformerChain[_Leaf_U, _Return_V]]'
+            other: 'Transformer[_Leaf_U, _Return_V] | TransformerChain[_Leaf_U, _Return_V]'
     ) -> 'TransformerChain[_Leaf_T, _Return_V]':
         return TransformerChain(*self.transformers + (other,))
 
@@ -759,7 +767,7 @@ class Transformer_NonRecursive(Transformer[_Leaf_T, _Return_T]):
         ##
 
         rev_postfix = []
-        q: List[Branch[_Leaf_T]] = [tree]
+        q: list[Branch[_Leaf_T]] = [tree]
         while q:
             t = q.pop()
             rev_postfix.append(t)
@@ -768,7 +776,7 @@ class Transformer_NonRecursive(Transformer[_Leaf_T, _Return_T]):
 
         ##
 
-        stack: List = []
+        stack: list = []
         for x in reversed(rev_postfix):
             if isinstance(x, Tree):
                 size = len(x.children)
@@ -881,7 +889,7 @@ class Interpreter(_Decoratable, ABC, Generic[_Leaf_T, _Return_T]):
         else:
             return f(tree)
 
-    def visit_children(self, tree: Tree[_Leaf_T]) -> List:
+    def visit_children(self, tree: Tree[_Leaf_T]) -> list:
         return [self._visit_tree(child) if isinstance(child, Tree) else child
                 for child in tree.children]
 
@@ -892,7 +900,7 @@ class Interpreter(_Decoratable, ABC, Generic[_Leaf_T, _Return_T]):
         return self.visit_children(tree)
 
 
-_InterMethod = Callable[[Type[Interpreter], _Return_T], _R]
+_InterMethod = Callable[[type[Interpreter], _Return_T], _R]
 
 def visit_children_decor(func: _InterMethod) -> _InterMethod:
     #--
@@ -962,7 +970,7 @@ def _vargs_tree(f, data, children, meta):
     return f(Tree(data, children, meta))
 
 
-def v_args(inline: bool = False, meta: bool = False, tree: bool = False, wrapper: Optional[Callable] = None) -> Callable[[_DECORATED], _DECORATED]:
+def v_args(inline: bool = False, meta: bool = False, tree: bool = False, wrapper: Callable | None = None) -> Callable[[_DECORATED], _DECORATED]:
     #--
     if tree and (meta or inline):
         raise ValueError("Visitor functions cannot combine 'tree' with 'meta' or 'inline'.")
@@ -1048,11 +1056,11 @@ class RuleOptions(Serialize):
 
     keep_all_tokens: bool
     expand1: bool
-    priority: Optional[int]
-    template_source: Optional[str]
-    empty_indices: Tuple[bool, ...]
+    priority: int | None
+    template_source: str | None
+    empty_indices: tuple[bool, ...]
 
-    def __init__(self, keep_all_tokens: bool=False, expand1: bool=False, priority: Optional[int]=None, template_source: Optional[str]=None, empty_indices: Tuple[bool, ...]=()) -> None:
+    def __init__(self, keep_all_tokens: bool=False, expand1: bool=False, priority: int | None=None, template_source: str | None=None, empty_indices: tuple[bool, ...]=()) -> None:
         self.keep_all_tokens = keep_all_tokens
         self.expand1 = expand1
         self.priority = priority
@@ -1078,12 +1086,12 @@ class Rule(Serialize):
     origin: NonTerminal
     expansion: Sequence[Symbol]
     order: int
-    alias: Optional[str]
+    alias: str | None
     options: RuleOptions
     _hash: int
 
     def __init__(self, origin: NonTerminal, expansion: Sequence[Symbol],
-                 order: int=0, alias: Optional[str]=None, options: Optional[RuleOptions]=None):
+                 order: int=0, alias: str | None=None, options: RuleOptions | None=None):
         self.origin = origin
         self.expansion = expansion
         self.alias = alias
@@ -1123,10 +1131,10 @@ class Pattern(Serialize, ABC):
 
     value: str
     flags: Collection[str]
-    raw: Optional[str]
+    raw: str | None
     type: ClassVar[str]
 
-    def __init__(self, value: str, flags: Collection[str] = (), raw: Optional[str] = None) -> None:
+    def __init__(self, value: str, flags: Collection[str] = (), raw: str | None = None) -> None:
         self.value = value
         self.flags = frozenset(flags)
         self.raw = raw
@@ -1236,13 +1244,13 @@ class Token(str):
     __match_args__ = ('type', 'value')
 
     type: str
-    start_pos: Optional[int]
+    start_pos: int | None
     value: Any
-    line: Optional[int]
-    column: Optional[int]
-    end_line: Optional[int]
-    end_column: Optional[int]
-    end_pos: Optional[int]
+    line: int | None
+    column: int | None
+    end_line: int | None
+    end_column: int | None
+    end_pos: int | None
 
 
     @overload
@@ -1250,12 +1258,12 @@ class Token(str):
             cls,
             type: str,
             value: Any,
-            start_pos: Optional[int] = None,
-            line: Optional[int] = None,
-            column: Optional[int] = None,
-            end_line: Optional[int] = None,
-            end_column: Optional[int] = None,
-            end_pos: Optional[int] = None
+            start_pos: int | None = None,
+            line: int | None = None,
+            column: int | None = None,
+            end_line: int | None = None,
+            end_column: int | None = None,
+            end_pos: int | None = None
     ) -> 'Token':
         ...
 
@@ -1264,12 +1272,12 @@ class Token(str):
             cls,
             type_: str,
             value: Any,
-            start_pos: Optional[int] = None,
-            line: Optional[int] = None,
-            column: Optional[int] = None,
-            end_line: Optional[int] = None,
-            end_column: Optional[int] = None,
-            end_pos: Optional[int] = None
+            start_pos: int | None = None,
+            line: int | None = None,
+            column: int | None = None,
+            end_line: int | None = None,
+            end_column: int | None = None,
+            end_pos: int | None = None
     ) -> 'Token':        ...
 
     def __new__(cls, *args, **kwargs):
@@ -1298,11 +1306,11 @@ class Token(str):
         return inst
 
     @overload
-    def update(self, type: Optional[str] = None, value: Optional[Any] = None) -> 'Token':
+    def update(self, type: str | None = None, value: Any | None = None) -> 'Token':
         ...
 
     @overload
-    def update(self, type_: Optional[str] = None, value: Optional[Any] = None) -> 'Token':
+    def update(self, type_: str | None = None, value: Any | None = None) -> 'Token':
         ...
 
     def update(self, *args, **kwargs):
@@ -1315,7 +1323,7 @@ class Token(str):
 
         return self._future_update(*args, **kwargs)
 
-    def _future_update(self, type: Optional[str] = None, value: Optional[Any] = None) -> 'Token':
+    def _future_update(self, type: str | None = None, value: Any | None = None) -> 'Token':
         return Token.new_borrow_pos(
             type if type is not None else self.type,
             value if value is not None else self.value,
@@ -1323,7 +1331,7 @@ class Token(str):
         )
 
     @classmethod
-    def new_borrow_pos(cls: Type[_T], type_: str, value: Any, borrow_t: 'Token') -> _T:
+    def new_borrow_pos(cls: type[_T], type_: str, value: Any, borrow_t: 'Token') -> _T:
         return cls(type_, value, borrow_t.start_pos, borrow_t.line, borrow_t.column, borrow_t.end_line, borrow_t.end_column, borrow_t.end_pos)
 
     def __reduce__(self):
@@ -1445,7 +1453,7 @@ class Scanner:
         postfix = '$' if self.match_whole else ''
         mres = []
         while terminals:
-            pattern = u'|'.join(u'(?P<%s>%s)' % (t.name, t.pattern.to_regexp() + postfix) for t in terminals[:max_size])
+            pattern = '|'.join('(?P<%s>%s)' % (t.name, t.pattern.to_regexp() + postfix) for t in terminals[:max_size])
             if self.use_bytes:
                 pattern = pattern.encode('latin-1')
             try:
@@ -1490,9 +1498,9 @@ class LexerState:
 
     text: str
     line_ctr: LineCounter
-    last_token: Optional[Token]
+    last_token: Token | None
 
-    def __init__(self, text: str, line_ctr: Optional[LineCounter]=None, last_token: Optional[Token]=None):
+    def __init__(self, text: str, line_ctr: LineCounter | None=None, last_token: Token | None=None):
         self.text = text
         self.line_ctr = line_ctr or LineCounter(b'\n' if isinstance(text, bytes) else '\n')
         self.last_token = last_token
@@ -1540,7 +1548,7 @@ class Lexer(ABC):
         return LexerState(text)
 
 
-def _check_regex_collisions(terminal_to_regexp: Dict[TerminalDef, str], comparator, strict_mode, max_collisions_to_show=8):
+def _check_regex_collisions(terminal_to_regexp: dict[TerminalDef, str], comparator, strict_mode, max_collisions_to_show=8):
     if not comparator:
         comparator = interegular.Comparator.from_regexes(terminal_to_regexp)
 
@@ -1579,7 +1587,7 @@ def _check_regex_collisions(terminal_to_regexp: Dict[TerminalDef, str], comparat
 
 
 class AbstractBasicLexer(Lexer):
-    terminals_by_name: Dict[str, TerminalDef]
+    terminals_by_name: dict[str, TerminalDef]
 
     @abstractmethod
     def __init__(self, conf: 'LexerConf', comparator=None) -> None:
@@ -1597,10 +1605,10 @@ class AbstractBasicLexer(Lexer):
 
 class BasicLexer(AbstractBasicLexer):
     terminals: Collection[TerminalDef]
-    ignore_types: FrozenSet[str]
-    newline_types: FrozenSet[str]
-    user_callbacks: Dict[str, _Callback]
-    callback: Dict[str, _Callback]
+    ignore_types: frozenset[str]
+    newline_types: frozenset[str]
+    user_callbacks: dict[str, _Callback]
+    callback: dict[str, _Callback]
     re: ModuleType
 
     def __init__(self, conf: 'LexerConf', comparator=None) -> None:
@@ -1707,12 +1715,12 @@ class BasicLexer(AbstractBasicLexer):
 
 
 class ContextualLexer(Lexer):
-    lexers: Dict[int, AbstractBasicLexer]
+    lexers: dict[int, AbstractBasicLexer]
     root_lexer: AbstractBasicLexer
 
-    BasicLexer: Type[AbstractBasicLexer] = BasicLexer
+    BasicLexer: type[AbstractBasicLexer] = BasicLexer
 
-    def __init__(self, conf: 'LexerConf', states: Dict[int, Collection[str]], always_accept: Collection[str]=()) -> None:
+    def __init__(self, conf: 'LexerConf', states: dict[int, Collection[str]], always_accept: Collection[str]=()) -> None:
         terminals = list(conf.terminals)
         terminals_by_name = conf.terminals_by_name
 
@@ -1723,7 +1731,7 @@ class ContextualLexer(Lexer):
             comparator = interegular.Comparator.from_regexes({t: t.pattern.to_regexp() for t in terminals})
         else:
             comparator = None
-        lexer_by_tokens: Dict[FrozenSet[str], AbstractBasicLexer] = {}
+        lexer_by_tokens: dict[frozenset[str], AbstractBasicLexer] = {}
         self.lexers = {}
         for state, accepts in states.items():
             key = frozenset(accepts)
@@ -1769,7 +1777,7 @@ class ContextualLexer(Lexer):
 _ParserArgType: 'TypeAlias' = 'Literal["earley", "lalr", "cyk", "auto"]'
 _LexerArgType: 'TypeAlias' = 'Union[Literal["auto", "basic", "contextual", "dynamic", "dynamic_complete"], Type[Lexer]]'
 _LexerCallback = Callable[[Token], Token]
-ParserCallbacks = Dict[str, Callable]
+ParserCallbacks = dict[str, Callable]
 
 class LexerConf(Serialize):
     __serialize_fields__ = 'terminals', 'ignore', 'g_regex_flags', 'use_bytes', 'lexer_type'
@@ -1778,16 +1786,16 @@ class LexerConf(Serialize):
     terminals: Collection[TerminalDef]
     re_module: ModuleType
     ignore: Collection[str]
-    postlex: 'Optional[PostLex]'
-    callbacks: Dict[str, _LexerCallback]
+    postlex: 'PostLex | None'
+    callbacks: dict[str, _LexerCallback]
     g_regex_flags: int
     skip_validation: bool
     use_bytes: bool
-    lexer_type: Optional[_LexerArgType]
+    lexer_type: _LexerArgType | None
     strict: bool
 
-    def __init__(self, terminals: Collection[TerminalDef], re_module: ModuleType, ignore: Collection[str]=(), postlex: 'Optional[PostLex]'=None,
-                 callbacks: Optional[Dict[str, _LexerCallback]]=None, g_regex_flags: int=0, skip_validation: bool=False, use_bytes: bool=False, strict: bool=False):
+    def __init__(self, terminals: Collection[TerminalDef], re_module: ModuleType, ignore: Collection[str]=(), postlex: 'PostLex | None'=None,
+                 callbacks: dict[str, _LexerCallback] | None=None, g_regex_flags: int=0, skip_validation: bool=False, use_bytes: bool=False, strict: bool=False):
         self.terminals = terminals
         self.terminals_by_name = {t.name: t for t in self.terminals}
         assert len(self.terminals) == len(self.terminals_by_name)
@@ -1819,19 +1827,19 @@ class LexerConf(Serialize):
 class ParserConf(Serialize):
     __serialize_fields__ = 'rules', 'start', 'parser_type'
 
-    rules: List['Rule']
+    rules: list['Rule']
     callbacks: ParserCallbacks
-    start: List[str]
+    start: list[str]
     parser_type: _ParserArgType
 
-    def __init__(self, rules: List['Rule'], callbacks: ParserCallbacks, start: List[str]):
+    def __init__(self, rules: list['Rule'], callbacks: ParserCallbacks, start: list[str]):
         assert isinstance(start, list)
         self.rules = rules
         self.callbacks = callbacks
         self.start = start
 
 
-from functools import partial, wraps
+from functools import partial
 from itertools import product
 
 
@@ -1988,7 +1996,7 @@ def _should_expand(sym):
     return not sym.is_term and sym.name.startswith('_')
 
 
-def maybe_create_child_filter(expansion, keep_all_tokens, ambiguous, _empty_indices: List[bool]):
+def maybe_create_child_filter(expansion, keep_all_tokens, ambiguous, _empty_indices: list[bool]):
     ##
 
     if _empty_indices:
@@ -2196,9 +2204,9 @@ Reduce = Action('Reduce')
 StateT = TypeVar("StateT")
 
 class ParseTableBase(Generic[StateT]):
-    states: Dict[StateT, Dict[str, Tuple]]
-    start_states: Dict[str, StateT]
-    end_states: Dict[str, StateT]
+    states: dict[StateT, dict[str, tuple]]
+    start_states: dict[str, StateT]
+    end_states: dict[str, StateT]
 
     def __init__(self, states, start_states, end_states):
         self.states = states
@@ -2242,7 +2250,7 @@ class IntParseTable(ParseTableBase[int]):
     @classmethod
     def from_ParseTable(cls, parse_table: ParseTable):
         enum = list(parse_table.states)
-        state_to_idx: Dict['State', int] = {s:i for i,s in enumerate(enum)}
+        state_to_idx: dict[State, int] = {s:i for i,s in enumerate(enum)}
         int_states = {}
 
         for s, la in parse_table.states.items():
@@ -2266,7 +2274,7 @@ class ParseConf(Generic[StateT]):
 
     start_state: StateT
     end_state: StateT
-    states: Dict[StateT, Dict[str, tuple]]
+    states: dict[StateT, dict[str, tuple]]
 
     def __init__(self, parse_table: ParseTableBase[StateT], callbacks: ParserCallbacks, start: str):
         self.parse_table = parse_table
@@ -2283,7 +2291,7 @@ class ParserState(Generic[StateT]):
 
     parse_conf: ParseConf[StateT]
     lexer: LexerThread
-    state_stack: List[StateT]
+    state_stack: list[StateT]
     value_stack: list
 
     def __init__(self, parse_conf: ParseConf[StateT], lexer: LexerThread, state_stack=None, value_stack=None):
@@ -2379,7 +2387,7 @@ class LALR_Parser(Serialize):
         inst.parser = _Parser(inst._parse_table, callbacks, debug)
         return inst
 
-    def serialize(self, memo: Any = None) -> Dict[str, Any]:
+    def serialize(self, memo: Any = None) -> dict[str, Any]:
         return self._parse_table.serialize(memo)
 
     def parse_interactive(self, lexer: LexerThread, start: str):
@@ -2438,7 +2446,7 @@ class _Parser:
         return self.parse_from_state(parser_state)
 
 
-    def parse_from_state(self, state: ParserState, last_token: Optional[Token]=None):
+    def parse_from_state(self, state: ParserState, last_token: Token | None=None):
         #--
         try:
             token = last_token
@@ -2454,7 +2462,7 @@ class _Parser:
             except NameError:
                 pass
             raise e
-        except Exception as e:
+        except Exception:
             if self.debug:
                 print("")
                 print("STATE STACK DUMP")
@@ -2489,7 +2497,7 @@ class InteractiveParser:
             yield token
             self.result = self.feed_token(token)
 
-    def exhaust_lexer(self) -> List[Token]:
+    def exhaust_lexer(self) -> list[Token]:
         #--
         return list(self.iter_parse())
 
@@ -2609,7 +2617,7 @@ def _deserialize_parsing_frontend(data, memo, lexer_conf, callbacks, options):
     return ParsingFrontend(lexer_conf, parser_conf, options, parser=parser)
 
 
-_parser_creators: 'Dict[str, Callable[[LexerConf, Any, Any], Any]]' = {}
+_parser_creators: 'dict[str, Callable[[LexerConf, Any, Any], Any]]' = {}
 
 
 class ParsingFrontend(Serialize):
@@ -2631,9 +2639,7 @@ class ParsingFrontend(Serialize):
             self.parser = parser
         else:
             create_parser = _parser_creators.get(parser_conf.parser_type)
-            assert create_parser is not None, "{} is not supported in standalone mode".format(
-                    parser_conf.parser_type
-                )
+            assert create_parser is not None, f"{parser_conf.parser_type} is not supported in standalone mode"
             self.parser = create_parser(lexer_conf, parser_conf, options)
 
         ##
@@ -2670,7 +2676,7 @@ class ParsingFrontend(Serialize):
             raise ConfigurationError("Unknown start rule %s. Must be one of %r" % (start, self.parser_conf.start))
         return start
 
-    def _make_lexer_thread(self, text: str) -> Union[str, LexerThread]:
+    def _make_lexer_thread(self, text: str) -> str | LexerThread:
         cls = (self.options and self.options._plugins.get('LexerThread')) or LexerThread
         return text if self.skip_lexer else cls.from_text(self.lexer, text)
 
@@ -2680,7 +2686,7 @@ class ParsingFrontend(Serialize):
         stream = self._make_lexer_thread(text)
         return self.parser.parse(stream, chosen_start, **kw)
 
-    def parse_interactive(self, text: Optional[str]=None, start=None):
+    def parse_interactive(self, text: str | None=None, start=None):
         ##
 
         ##
@@ -2731,7 +2737,7 @@ def create_basic_lexer(lexer_conf, parser, postlex, options) -> BasicLexer:
 def create_contextual_lexer(lexer_conf: LexerConf, parser, postlex, options) -> ContextualLexer:
     cls = (options and options._plugins.get('ContextualLexer')) or ContextualLexer
     parse_table: ParseTableBase[int] = parser._parse_table
-    states: Dict[int, Collection[str]] = {idx:list(t.keys()) for idx, t in parse_table.states.items()}
+    states: dict[int, Collection[str]] = {idx:list(t.keys()) for idx, t in parse_table.states.items()}
     always_accept: Collection[str] = postlex.always_accept if postlex else ()
     return cls(lexer_conf, states, always_accept=always_accept)
 
@@ -2756,28 +2762,28 @@ class PostLex(ABC):
 class LarkOptions(Serialize):
     #--
 
-    start: List[str]
+    start: list[str]
     debug: bool
     strict: bool
-    transformer: 'Optional[Transformer]'
-    propagate_positions: Union[bool, str]
+    transformer: 'Transformer | None'
+    propagate_positions: bool | str
     maybe_placeholders: bool
-    cache: Union[bool, str]
+    cache: bool | str
     regex: bool
     g_regex_flags: int
     keep_all_tokens: bool
-    tree_class: Optional[Callable[[str, List], Any]]
+    tree_class: Callable[[str, list], Any] | None
     parser: _ParserArgType
     lexer: _LexerArgType
     ambiguity: 'Literal["auto", "resolve", "explicit", "forest"]'
-    postlex: Optional[PostLex]
-    priority: 'Optional[Literal["auto", "normal", "invert"]]'
-    lexer_callbacks: Dict[str, Callable[[Token], Token]]
+    postlex: PostLex | None
+    priority: 'Literal["auto", "normal", "invert"] | None'
+    lexer_callbacks: dict[str, Callable[[Token], Token]]
     use_bytes: bool
     ordered_sets: bool
-    edit_terminals: Optional[Callable[[TerminalDef], TerminalDef]]
-    import_paths: 'List[Union[str, Callable[[Union[None, str, PackageResource], str], Tuple[str, str]]]]'
-    source_path: Optional[str]
+    edit_terminals: Callable[[TerminalDef], TerminalDef] | None
+    import_paths: 'list[str | Callable[[None | str | PackageResource, str], tuple[str, str]]]'
+    source_path: str | None
 
     OPTIONS_DOC = r"""
     **===  General Options  ===**
@@ -2872,7 +2878,7 @@ class LarkOptions(Serialize):
 
     ##
 
-    _defaults: Dict[str, Any] = {
+    _defaults: dict[str, Any] = {
         'debug': False,
         'strict': False,
         'keep_all_tokens': False,
@@ -2898,7 +2904,7 @@ class LarkOptions(Serialize):
         '_plugins': {},
     }
 
-    def __init__(self, options_dict: Dict[str, Any]) -> None:
+    def __init__(self, options_dict: dict[str, Any]) -> None:
         o = dict(options_dict)
 
         options = {}
@@ -2937,11 +2943,11 @@ class LarkOptions(Serialize):
         assert_config(name, self.options.keys(), "%r isn't a valid option. Expected one of: %s")
         self.options[name] = value
 
-    def serialize(self, memo = None) -> Dict[str, Any]:
+    def serialize(self, memo = None) -> dict[str, Any]:
         return self.options
 
     @classmethod
-    def deserialize(cls, data: Dict[str, Any], memo: Dict[int, Union[TerminalDef, Rule]]) -> "LarkOptions":
+    def deserialize(cls, data: dict[str, Any], memo: dict[int, TerminalDef | Rule]) -> "LarkOptions":
         return cls(data)
 
 
@@ -2968,7 +2974,7 @@ class Lark(Serialize):
     parser: 'ParsingFrontend'
     terminals: Collection[TerminalDef]
 
-    def __init__(self, grammar: 'Union[Grammar, str, IO[str]]', **options) -> None:
+    def __init__(self, grammar: 'Grammar | str | IO[str]', **options) -> None:
         self.options = LarkOptions(options)
         re_module: types.ModuleType
 
@@ -3173,7 +3179,7 @@ class Lark(Serialize):
                     f.write(cache_sha256.encode('utf8') + b'\n')
                     pickle.dump(used_files, f)
                     self.save(f, _LOAD_ALLOWED_OPTIONS)
-            except IOError as e:
+            except OSError as e:
                 logger.exception("Failed to save Lark to cache: %r.", cache_fn, e)
 
     if __doc__:
@@ -3226,12 +3232,12 @@ class Lark(Serialize):
         pickle.dump({'data': data, 'memo': m}, f, protocol=pickle.HIGHEST_PROTOCOL)
 
     @classmethod
-    def load(cls: Type[_T], f) -> _T:
+    def load(cls: type[_T], f) -> _T:
         #--
         inst = cls.__new__(cls)
         return inst._load(f)
 
-    def _deserialize_lexer_conf(self, data: Dict[str, Any], memo: Dict[int, Union[TerminalDef, Rule]], options: LarkOptions) -> LexerConf:
+    def _deserialize_lexer_conf(self, data: dict[str, Any], memo: dict[int, TerminalDef | Rule], options: LarkOptions) -> LexerConf:
         lexer_conf = LexerConf.deserialize(data['lexer_conf'], memo)
         lexer_conf.callbacks = options.lexer_callbacks or {}
         lexer_conf.re_module = regex if options.regex else re
@@ -3253,8 +3259,8 @@ class Lark(Serialize):
         memo = SerializeMemoizer.deserialize(memo_json, {'Rule': Rule, 'TerminalDef': TerminalDef}, {})
         options = dict(data['options'])
         if (set(kwargs) - _LOAD_ALLOWED_OPTIONS) & set(LarkOptions._defaults):
-            raise ConfigurationError("Some options are not allowed when loading a Parser: {}"
-                             .format(set(kwargs) - _LOAD_ALLOWED_OPTIONS))
+            raise ConfigurationError(f"Some options are not allowed when loading a Parser: {set(kwargs) - _LOAD_ALLOWED_OPTIONS}"
+                             )
         options.update(kwargs)
         self.options = LarkOptions.deserialize(options, memo)
         self.rules = [Rule.deserialize(r, memo) for r in data['rules']]
@@ -3280,7 +3286,7 @@ class Lark(Serialize):
         return inst._load({'data': data, 'memo': memo}, **kwargs)
 
     @classmethod
-    def open(cls: Type[_T], grammar_filename: str, rel_to: Optional[str]=None, **options) -> _T:
+    def open(cls: type[_T], grammar_filename: str, rel_to: str | None=None, **options) -> _T:
         #--
         if rel_to:
             basepath = os.path.dirname(rel_to)
@@ -3289,7 +3295,7 @@ class Lark(Serialize):
             return cls(f, **options)
 
     @classmethod
-    def open_from_package(cls: Type[_T], package: str, grammar_path: str, search_paths: 'Sequence[str]'=[""], **options) -> _T:
+    def open_from_package(cls: type[_T], package: str, grammar_path: str, search_paths: 'Sequence[str]'=[""], **options) -> _T:
         #--
         package_loader = FromPackageLoader(package, search_paths)
         full_path, text = package_loader(None, grammar_path)
@@ -3319,15 +3325,15 @@ class Lark(Serialize):
         #--
         return self._terminals_dict[name]
 
-    def parse_interactive(self, text: Optional[str]=None, start: Optional[str]=None) -> 'InteractiveParser':
+    def parse_interactive(self, text: str | None=None, start: str | None=None) -> 'InteractiveParser':
         #--
         return self.parser.parse_interactive(text, start=start)
 
-    def parse(self, text: str, start: Optional[str]=None, on_error: 'Optional[Callable[[UnexpectedInput], bool]]'=None) -> 'ParseTree':
+    def parse(self, text: str, start: str | None=None, on_error: 'Callable[[UnexpectedInput], bool] | None'=None) -> 'ParseTree':
         #--
         return self.parser.parse(text, start=start, on_error=on_error)
 
-    def scan(self, text: str, start: Optional[str]=None) -> Iterator[Tuple[Tuple[int, int], 'ParseTree']]:
+    def scan(self, text: str, start: str | None=None) -> Iterator[tuple[tuple[int, int], 'ParseTree']]:
         #--
         if self.options.parser != 'lalr' or self.options.lexer != 'contextual':
             raise ValueError("scan requires parser='lalr' and lexer='contextual'")
@@ -3373,7 +3379,7 @@ class DedentError(LarkError):
 
 class Indenter(PostLex, ABC):
     paren_level: int
-    indent_level: List[int]
+    indent_level: list[int]
 
     def __init__(self) -> None:
         self.paren_level = 0
@@ -3438,12 +3444,12 @@ class Indenter(PostLex, ABC):
 
     @property
     @abstractmethod
-    def OPEN_PAREN_types(self) -> List[str]:
+    def OPEN_PAREN_types(self) -> list[str]:
         raise NotImplementedError()
 
     @property
     @abstractmethod
-    def CLOSE_PAREN_types(self) -> List[str]:
+    def CLOSE_PAREN_types(self) -> list[str]:
         raise NotImplementedError()
 
     @property
@@ -3471,7 +3477,8 @@ class PythonIndenter(Indenter):
     tab_len = 8
 
 
-import pickle, zlib, base64
+import pickle
+
 DATA = (
 {'parser': {'lexer_conf': {'terminals': [{'@': 0}, {'@': 1}, {'@': 2}, {'@': 3}, {'@': 4}, {'@': 5}, {'@': 6}, {'@': 7}, {'@': 8}], 'ignore': ['WS'], 'g_regex_flags': 0, 'use_bytes': False, 'lexer_type': 'contextual', '__type__': 'LexerConf'}, 'parser_conf': {'rules': [{'@': 9}, {'@': 10}, {'@': 11}, {'@': 12}, {'@': 13}, {'@': 14}, {'@': 15}, {'@': 16}, {'@': 17}, {'@': 18}, {'@': 19}, {'@': 20}], 'start': ['start'], 'parser_type': 'lalr', '__type__': 'ParserConf'}, 'parser': {'tokens': {0: '__argument_list_star_0', 1: 'COMMA', 2: 'RPAR', 3: 'argument', 4: 'key', 5: 'CNAME', 6: 'COLON', 7: 'PYTHON', 8: 'ident', 9: 'AT', 10: 'start', 11: 'ESCAPED_STRING', 12: 'value', 13: 'LPAR', 14: '$END', 15: 'argument_list'}, 'states': {0: {0: (0, 4), 1: (0, 1), 2: (1, {'@': 14})}, 1: {3: (0, 18), 4: (0, 3), 5: (0, 13), 2: (1, {'@': 13})}, 2: {}, 3: {6: (0, 11)}, 4: {1: (0, 6), 2: (1, {'@': 12})}, 5: {2: (1, {'@': 20}), 1: (1, {'@': 20})}, 6: {4: (0, 3), 3: (0, 5), 5: (0, 13), 2: (1, {'@': 11})}, 7: {2: (0, 14)}, 8: {7: (0, 17), 8: (0, 12)}, 9: {9: (0, 8), 10: (0, 2)}, 10: {2: (1, {'@': 16}), 1: (1, {'@': 16})}, 11: {11: (0, 15), 12: (0, 10)}, 12: {13: (0, 16)}, 13: {6: (1, {'@': 17})}, 14: {14: (1, {'@': 9})}, 15: {2: (1, {'@': 18}), 1: (1, {'@': 18})}, 16: {3: (0, 0), 4: (0, 3), 5: (0, 13), 15: (0, 7), 2: (1, {'@': 15})}, 17: {13: (1, {'@': 10})}, 18: {2: (1, {'@': 19}), 1: (1, {'@': 19})}}, 'start_states': {'start': 9}, 'end_states': {'start': 2}}, '__type__': 'ParsingFrontend'}, 'rules': [{'@': 9}, {'@': 10}, {'@': 11}, {'@': 12}, {'@': 13}, {'@': 14}, {'@': 15}, {'@': 16}, {'@': 17}, {'@': 18}, {'@': 19}, {'@': 20}], 'options': {'debug': False, 'strict': False, 'keep_all_tokens': False, 'tree_class': None, 'cache': False, 'postlex': None, 'parser': 'lalr', 'lexer': 'contextual', 'transformer': None, 'start': ['start'], 'priority': 'normal', 'ambiguity': 'auto', 'regex': False, 'propagate_positions': False, 'lexer_callbacks': {}, 'maybe_placeholders': False, 'edit_terminals': None, 'g_regex_flags': 0, 'use_bytes': False, 'ordered_sets': True, 'import_paths': [], 'source_path': None, '_plugins': {}}, '__type__': 'Lark'}
 )

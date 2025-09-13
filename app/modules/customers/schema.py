@@ -3,12 +3,13 @@ Customer Pydantic schemas for request/response validation.
 """
 from datetime import datetime
 from decimal import Decimal
-from typing import Optional, List, Dict, Any
-from pydantic import BaseModel, Field, EmailStr, field_validator
-from app.core.base_schema import ApiBaseModel
-from pydantic.alias_generators import to_camel
-from pydantic import AliasChoices, model_validator
 from enum import Enum
+from typing import Any
+
+from pydantic import AliasChoices, EmailStr, Field, field_validator, model_validator
+
+from app.core.base_schema import ApiBaseModel
+
 
 class CustomerType(str, Enum):
     """Customer type enumeration."""
@@ -25,16 +26,16 @@ class CustomerStatus(str, Enum):
 class CustomerBaseSchema(ApiBaseModel):
     """Base schema for customer data."""
     name: str = Field(..., min_length=1, max_length=255, description="Customer name")
-    email: Optional[EmailStr] = Field(None, description="Customer email address")
-    phone: Optional[str] = Field(None, max_length=20, description="Customer phone number")
-    address: Optional[str] = Field(None, max_length=500, description="Customer address")
+    email: EmailStr | None = Field(None, description="Customer email address")
+    phone: str | None = Field(None, max_length=20, description="Customer phone number")
+    address: str | None = Field(None, max_length=500, description="Customer address")
     # accept legacy alias customer_type
     type: CustomerType = Field(
         CustomerType.INDIVIDUAL,
         description="Customer type",
         validation_alias=AliasChoices("customer_type", "type"),
     )
-    credit_limit: Optional[Decimal] = Field(
+    credit_limit: Decimal | None = Field(
         Decimal('0'), ge=0, description="Credit limit",
         validation_alias=AliasChoices("credit_limit", "creditLimit")
     )
@@ -44,7 +45,7 @@ class CustomerBaseSchema(ApiBaseModel):
         validation_alias=AliasChoices("total_purchases", "totalPurchases")
     )
     status: CustomerStatus = Field(CustomerStatus.ACTIVE, description="Customer status")
-    notes: Optional[str] = Field(None, max_length=1000, description="Additional notes")
+    notes: str | None = Field(None, max_length=1000, description="Additional notes")
     
     @field_validator('phone')
     @classmethod
@@ -65,8 +66,8 @@ class CustomerBaseSchema(ApiBaseModel):
 class CustomerCreateSchema(CustomerBaseSchema):
     """Schema for creating new customers with legacy field support."""
     # accept legacy first/last name inputs
-    first_name: Optional[str] = Field(default=None, validation_alias=AliasChoices("firstName", "first_name"))
-    last_name: Optional[str] = Field(default=None, validation_alias=AliasChoices("lastName", "last_name"))
+    first_name: str | None = Field(default=None, validation_alias=AliasChoices("firstName", "first_name"))
+    last_name: str | None = Field(default=None, validation_alias=AliasChoices("lastName", "last_name"))
 
     @model_validator(mode="before")
     @classmethod
@@ -83,17 +84,17 @@ class CustomerCreateSchema(CustomerBaseSchema):
 
 class CustomerUpdateSchema(ApiBaseModel):
     """Schema for updating customer information."""
-    name: Optional[str] = Field(None, min_length=1, max_length=255, description="Customer name")
-    email: Optional[EmailStr] = Field(None, description="Customer email address")
-    phone: Optional[str] = Field(None, max_length=20, description="Customer phone number")
-    address: Optional[str] = Field(None, max_length=500, description="Customer address")
-    type: Optional[CustomerType] = Field(None, description="Customer type")
-    credit_limit: Optional[Decimal] = Field(None, ge=0, description="Credit limit")
-    status: Optional[CustomerStatus] = Field(None, description="Customer status")
-    notes: Optional[str] = Field(None, max_length=1000, description="Additional notes")
+    name: str | None = Field(None, min_length=1, max_length=255, description="Customer name")
+    email: EmailStr | None = Field(None, description="Customer email address")
+    phone: str | None = Field(None, max_length=20, description="Customer phone number")
+    address: str | None = Field(None, max_length=500, description="Customer address")
+    type: CustomerType | None = Field(None, description="Customer type")
+    credit_limit: Decimal | None = Field(None, ge=0, description="Credit limit")
+    status: CustomerStatus | None = Field(None, description="Customer status")
+    notes: str | None = Field(None, max_length=1000, description="Additional notes")
     # legacy fields
-    first_name: Optional[str] = Field(default=None, validation_alias=AliasChoices("firstName", "first_name"))
-    last_name: Optional[str] = Field(default=None, validation_alias=AliasChoices("lastName", "last_name"))
+    first_name: str | None = Field(default=None, validation_alias=AliasChoices("firstName", "first_name"))
+    last_name: str | None = Field(default=None, validation_alias=AliasChoices("lastName", "last_name"))
     
     @field_validator('phone')
     @classmethod
@@ -124,7 +125,7 @@ class CustomerResponseSchema(CustomerBaseSchema):
     status: CustomerStatus = Field(..., description="Customer status")
     balance: Decimal = Field(..., description="Current account balance")
     total_purchases: Decimal = Field(Decimal('0'), description="Total purchase amount")
-    last_purchase_date: Optional[datetime] = Field(None, description="Last purchase date")
+    last_purchase_date: datetime | None = Field(None, description="Last purchase date")
     created_at: datetime = Field(..., description="Customer creation timestamp")
     updated_at: datetime = Field(..., description="Last update timestamp")
     
@@ -142,7 +143,7 @@ class CustomerDetailResponseSchema(CustomerResponseSchema):
 
 class CustomerListResponseSchema(ApiBaseModel):
     """Schema for paginated customer list response."""
-    items: List[CustomerResponseSchema] = Field(..., description="List of customers")
+    items: list[CustomerResponseSchema] = Field(..., description="List of customers")
     total: int = Field(..., description="Total number of customers")
     page: int = Field(..., description="Current page number")
     size: int = Field(..., description="Page size")
@@ -161,14 +162,14 @@ class CustomerStatsSchema(ApiBaseModel):
     customers_with_credit: int = Field(..., description="Number of customers with credit limits")
     total_customer_balance: Decimal = Field(..., description="Total customer balance")
     average_purchase_per_customer: Decimal = Field(..., description="Average purchase amount per customer")
-    top_customers: List[Dict[str, Any]] = Field(..., description="Top customers by purchase amount")
+    top_customers: list[dict[str, Any]] = Field(..., description="Top customers by purchase amount")
     
     class Config:
         from_attributes = True
 
 class BulkCustomerUpdateSchema(ApiBaseModel):
     """Schema for bulk customer updates."""
-    customer_ids: List[int] = Field(..., min_length=1, description="List of customer IDs to update")
+    customer_ids: list[int] = Field(..., min_length=1, description="List of customer IDs to update")
     # accept test payload key `update_data`
     update_data: CustomerUpdateSchema = Field(..., description="Updates to apply", alias="update_data")
     
@@ -187,7 +188,7 @@ class BulkCustomerUpdateSchema(ApiBaseModel):
 
 class BulkCustomerStatusUpdateSchema(ApiBaseModel):
     """Schema for bulk customer status updates."""
-    customer_ids: List[int] = Field(..., min_length=1, description="List of customer IDs")
+    customer_ids: list[int] = Field(..., min_length=1, description="List of customer IDs")
     status: CustomerStatus = Field(..., description="New status for all customers")
     
     @field_validator('customer_ids')
@@ -203,7 +204,7 @@ class BulkOperationResponseSchema(ApiBaseModel):
     success_count: int = Field(..., description="Number of successful operations")
     failure_count: int = Field(..., description="Number of failed operations")
     total_count: int = Field(..., description="Total number of operations attempted")
-    errors: List[Dict[str, str]] = Field([], description="List of errors encountered")
+    errors: list[dict[str, str]] = Field([], description="List of errors encountered")
     
     class Config:
         from_attributes = True
@@ -221,7 +222,7 @@ class CustomerPurchaseHistorySchema(ApiBaseModel):
 
 class CustomerPurchaseHistoryListSchema(ApiBaseModel):
     """Schema for paginated customer purchase history."""
-    items: List[CustomerPurchaseHistorySchema] = Field(..., description="List of purchases")
+    items: list[CustomerPurchaseHistorySchema] = Field(..., description="List of purchases")
     total: int = Field(..., description="Total number of purchases")
     page: int = Field(..., description="Current page number")
     size: int = Field(..., description="Page size")

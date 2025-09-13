@@ -1,29 +1,30 @@
 from __future__ import annotations
 
-import os
-import sys
-import json
-import time
-import atexit
-import signal
 import asyncio
+import atexit
+import json
 import logging
+import os
+import signal
 import subprocess
-from typing import TYPE_CHECKING, Any, overload
-from pathlib import Path
+import sys
+import time
 from datetime import timedelta
-from typing_extensions import Literal, override
+from pathlib import Path
+from typing import TYPE_CHECKING, Any, Literal, overload
 
-from . import utils, errors
-from ._http import SyncHTTPEngine, AsyncHTTPEngine
-from ..utils import DEBUG, _env_bool, time_since
-from .._types import HttpConfig, TransactionId
+from typing_extensions import override
+
 from .._builder import dumps
-from ..binaries import platform
 from .._constants import DEFAULT_CONNECT_TIMEOUT
+from .._types import HttpConfig, TransactionId
+from ..binaries import platform
+from ..utils import DEBUG, _env_bool, time_since
+from . import errors, utils
+from ._http import AsyncHTTPEngine, SyncHTTPEngine
 
 if TYPE_CHECKING:
-    from ..types import MetricsFormat, DatasourceOverride  # noqa: TID251
+    from ..types import DatasourceOverride, MetricsFormat  # noqa: TID251
 
 
 __all__ = (

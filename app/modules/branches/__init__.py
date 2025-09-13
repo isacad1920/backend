@@ -1,13 +1,17 @@
 """
 Branch module initialization.
 """
-from .routes import router
-from .service import create_branch_service
 from .model import BranchModel
+from .routes import router
 from .schema import (
-    BranchCreateSchema, BranchUpdateSchema, BranchResponseSchema,
-    BranchDetailResponseSchema, BranchListResponseSchema, BranchStatsSchema
+    BranchCreateSchema,
+    BranchDetailResponseSchema,
+    BranchListResponseSchema,
+    BranchResponseSchema,
+    BranchStatsSchema,
+    BranchUpdateSchema,
 )
+from .service import create_branch_service
 
 __all__ = [
     "router",

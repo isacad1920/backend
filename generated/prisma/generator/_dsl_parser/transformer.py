@@ -1,16 +1,17 @@
 from __future__ import annotations
 
-from typing import Dict, cast
+from typing import cast
+
 from typing_extensions import TypedDict
 
-from ..._vendor.lark_schema_parser import Tree, Token, Transformer as LarkTransformer
+from ..._vendor.lark_schema_parser import Token, Transformer as LarkTransformer, Tree
 
 
 class TransformResult(TypedDict):
     arguments: Arguments
 
 
-Arguments = Dict[str, str]
+Arguments = dict[str, str]
 
 ParseTree = Tree[Token]
 

@@ -1,15 +1,14 @@
 from __future__ import annotations
 
 import json
+from collections.abc import Callable
 from typing import (
     Any,
-    Callable,
     overload,
 )
 
-from ._types import BaseModelT
 from ._compat import model_parse
-
+from ._types import BaseModelT
 
 # From: https://github.com/prisma/prisma/blob/main/packages/client/src/runtime/utils/deserializeRawResults.ts
 # Last checked: 2022-12-04
@@ -141,11 +140,11 @@ def _deserialize_array(value: list[Any], for_model: bool) -> list[Any]:
         prisma_type = entry['prisma__type']
         prisma_value = entry['prisma__value']
         arr.append(
-            (
+            
                 _deserializers[prisma_type](prisma_value, for_model)
                 if prisma_type in _deserializers
                 else prisma_value
-            )
+            
         )
 
     return arr

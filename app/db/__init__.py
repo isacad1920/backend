@@ -4,8 +4,8 @@ Database package for SOFinance backend.
 Provides Prisma client access and database operations.
 """
 
-from .client import init_db, close_db
-from .prisma import prisma, get_db, connect_db, disconnect_db
+from .client import close_db, init_db
+from .prisma import connect_db, disconnect_db, get_db, prisma
 
 __all__ = [
     "init_db",

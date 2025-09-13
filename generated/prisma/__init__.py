@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 
 __title__ = 'prisma'
 __author__ = 'RobertCraigie'
@@ -8,27 +7,26 @@ __version__ = '0.11.0'
 
 from typing import TYPE_CHECKING
 
-from ._config import config as config
-from .utils import setup_logging
 from . import errors as errors
-from .validator import *
-from ._types import PrismaMethod as PrismaMethod
+from ._config import config as config
 from ._metrics import (
     Metric as Metric,
-    Metrics as Metrics,
     MetricHistogram as MetricHistogram,
+    Metrics as Metrics,
 )
-
+from ._types import PrismaMethod as PrismaMethod
+from .utils import setup_logging
+from .validator import *
 
 try:
-    from .client import *
-    from .fields import *
     from . import (
+        bases as bases,
         models as models,
         partials as partials,
         types as types,
-        bases as bases,
     )
+    from .client import *
+    from .fields import *
 except ModuleNotFoundError:
     # code has not been generated yet
     # TODO: this could swallow unexpected errors

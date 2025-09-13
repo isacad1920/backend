@@ -3,6 +3,7 @@ User API endpoint tests.
 """
 import pytest
 from httpx import AsyncClient
+
 from app.core.config import settings
 from tests.conftest import TEST_USER_DATA
 
@@ -18,12 +19,14 @@ class TestUserEndpoints:
         )
         
         assert response.status_code == 200
-        data = response.json()
-        assert "items" in data
-        assert "total" in data
-        assert "page" in data
-        assert "size" in data
-        assert isinstance(data["items"], list)
+        payload = response.json()
+        assert payload.get("success") is True
+        assert "data" in payload
+        data = payload["data"]
+        assert "items" in data and isinstance(data["items"], list)
+        assert "pagination" in data
+        pg = data["pagination"]
+        assert all(k in pg for k in ["total", "page", "limit", "total_pages"]) or all(k in pg for k in ["total", "page", "limit"])  # transitional
     
     @pytest.mark.asyncio
     async def test_list_users_with_filters(self, authenticated_client: AsyncClient):
@@ -38,12 +41,14 @@ class TestUserEndpoints:
                 "is_active": True
             }
         )
-        
         assert response.status_code == 200
-        data = response.json()
+        payload = response.json()
+        assert payload.get("success") is True
+        data = payload["data"]
         assert "items" in data
-        assert data["page"] == 1
-        assert data["size"] == 10
+        pg = data["pagination"]
+        assert pg["page"] == 1
+        assert pg.get("limit") == 10
     
     @pytest.mark.asyncio
     async def test_get_user_by_id(self, authenticated_client: AsyncClient):
@@ -53,12 +58,10 @@ class TestUserEndpoints:
         )
         
         assert response.status_code == 200
-        data = response.json()
-        assert "id" in data
-        assert "email" in data
-        assert "first_name" in data
-        assert "last_name" in data
-        assert "role" in data
+        payload = response.json()
+        data = payload.get("data") or payload
+        for k in ["id", "email", "first_name", "last_name", "role"]:
+            assert k in data
     
     @pytest.mark.asyncio
     async def test_get_user_not_found(self, authenticated_client: AsyncClient):
@@ -78,7 +81,8 @@ class TestUserEndpoints:
         )
         
         if response.status_code == 201:
-            data = response.json()
+            payload = response.json()
+            data = payload.get("data") or payload
             assert "id" in data
             assert data["email"] == TEST_USER_DATA["email"]
             assert data["first_name"] == TEST_USER_DATA["first_name"]
@@ -110,10 +114,11 @@ class TestUserEndpoints:
             f"{settings.api_v1_str}/users/"
         )
         assert users_response.status_code == 200
-        users_data = users_response.json()
-        
-        if users_data["items"]:
-            user_id = users_data["items"][0]["id"]
+        users_payload = users_response.json()
+        up = users_payload.get("data") or users_payload
+        items = up.get("items") or []
+        if items:
+            user_id = items[0]["id"]
             
             response = await authenticated_client.put(
                 f"{settings.api_v1_str}/users/{user_id}",
@@ -144,9 +149,9 @@ class TestUserEndpoints:
         )
         
         assert response.status_code == 200
-        data = response.json()
-        assert "id" in data
-        assert "email" in data
+        payload = response.json()
+        data = payload.get("data") or payload
+        assert "id" in data and "email" in data
     
     @pytest.mark.asyncio
     async def test_update_user_profile(self, authenticated_client: AsyncClient):
@@ -184,8 +189,9 @@ class TestUserEndpoints:
         )
         
         assert response.status_code == 200
-        data = response.json()
-        assert "total_users" in data or "totalUsers" in data
+        payload = response.json()
+        data = payload.get("data") or payload
+        assert any(k in data for k in ["total_users", "totalUsers"]) or any(k in payload for k in ["total_users", "totalUsers"])
     
     @pytest.mark.asyncio
     async def test_unauthorized_access(self, async_client: AsyncClient):

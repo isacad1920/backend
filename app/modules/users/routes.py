@@ -1,31 +1,34 @@
 """
 User API routes and endpoints.
 """
-from typing import Optional, List
-from fastapi import APIRouter, Depends, status, Query, Request, Body
-from fastapi.security import HTTPBearer, OAuth2PasswordRequestForm
 import logging
 
-from app.core.dependencies import (
-    get_current_user, get_current_active_user, require_role, verify_access_token
-)
-from app.core.config import UserRole
-from app.core.exceptions import (
-    AuthenticationError, ValidationError, NotFoundError,
-    AlreadyExistsError, AuthorizationError, DatabaseError, ErrorMessages
-)
-from app.core.response import ResponseBuilder, SuccessResponse, ErrorResponse, success_response
-from app.core.audit_decorator import audit_log
+from fastapi import APIRouter, Body, Depends, Query, Request, status
+from fastapi.security import HTTPBearer, OAuth2PasswordRequestForm
+
 from app.core.audit import AuditAction, AuditSeverity
-from app.db.prisma import get_db
-from app.modules.users.service import create_user_service, ensure_demo_user_credentials
-from app.modules.users.schema import (
-    UserCreateSchema, UserUpdateSchema, UserResponseSchema,
-    UserPasswordChangeSchema, UserPasswordResetRequestSchema,
-    UserPasswordResetSchema, LoginRequestSchema, LoginResponseSchema,
-    RefreshTokenRequestSchema, UserListResponseSchema, UserDetailResponseSchema,
-    UserStatus
+from app.core.audit_decorator import audit_log
+from app.core.config import UserRole
+from app.core.dependencies import get_current_active_user, require_role, verify_access_token
+from app.core.exceptions import (
+    AlreadyExistsError,
+    AuthenticationError,
+    DatabaseError,
+    NotFoundError,
+    ValidationError,
 )
+from app.core.response import ResponseBuilder, success_response, paginated_response
+from app.db.prisma import get_db
+from app.modules.users.schema import (
+    LoginRequestSchema,
+    RefreshTokenRequestSchema,
+    UserCreateSchema,
+    UserPasswordChangeSchema,
+    UserPasswordResetRequestSchema,
+    UserStatus,
+    UserUpdateSchema,
+)
+from app.modules.users.service import create_user_service, ensure_demo_user_credentials
 
 logger = logging.getLogger(__name__)
 
@@ -249,10 +252,10 @@ async def create_user(
 async def list_users(
     page: int = Query(1, ge=1, description="Page number"),
     size: int = Query(20, ge=1, le=100, description="Page size"),
-    search: Optional[str] = Query(None, description="Search term"),
-    role_filter: Optional[UserRole] = Query(None, alias="role", description="Filter by role"),
-    status_filter: Optional[UserStatus] = Query(None, alias="status", description="Filter by status"),
-    is_active: Optional[bool] = Query(None, description="Filter by active status"),
+    search: str | None = Query(None, description="Search term"),
+    role_filter: UserRole | None = Query(None, alias="role", description="Filter by role"),
+    status_filter: UserStatus | None = Query(None, alias="status", description="Filter by status"),
+    is_active: bool | None = Query(None, description="Filter by active status"),
     current_user = Depends(get_current_active_user),
     db = Depends(get_db)
 ):
@@ -281,23 +284,15 @@ async def list_users(
         # the final page has fewer results. By wrapping in a dict that includes
         # the requested size we allow the middleware to mirror that value.
         items = [_serialize_user_plain(u) for u in result.users]
-        meta = {
-            "pagination": {
-                "page": result.page,
-                "size": size,  # preserve requested size, not actual item count
-                "limit": size,  # include limit alias for any consumers using 'limit'
-                "total": result.total,
-                "pages": result.total_pages,
-            }
-        }
-        payload = {
-            "items": items,
-            "page": result.page,
-            "size": size,          # requested size (compat expectation)
-            "total": result.total,
-            "pages": result.total_pages,
-        }
-        return success_response(data=payload, meta=meta, message="Users listed")
+        # Return canonical paginated response (data: { items, pagination })
+        return paginated_response(
+            items=items,
+            total=result.total,
+            page=result.page,
+            limit=size,
+            message="Users listed",
+            meta_extra=None
+        )
         
     except Exception as e:
         logger.error(f"List users error: {str(e)}")
@@ -443,8 +438,8 @@ async def change_password(
     current_user = Depends(get_current_active_user),
     db = Depends(get_db)
 ):
+    from app.core.response import error_response, success_response
     from app.core.security import PasswordManager
-    from app.core.response import success_response, error_response
     try:
         user = await db.user.find_unique(where={"id": int(current_user.id)})
         if not user:

@@ -2,12 +2,12 @@
 """
 Simple test runner that starts server and runs tests
 """
-import subprocess
-import time
-import sys
-import signal
 import os
+import subprocess
+import sys
+import time
 from pathlib import Path
+
 
 def run_server():
     """Start the server without hot reload"""

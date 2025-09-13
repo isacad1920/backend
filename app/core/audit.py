@@ -1,12 +1,10 @@
 """
 Simple and performance-optimized audit logging system for SOFinance.
 """
-from typing import Optional, Dict, Any
-from enum import Enum
-from datetime import datetime
-import json
 import logging
 from dataclasses import dataclass
+from enum import Enum
+from typing import Any
 
 from app.db.prisma import get_db
 from generated.prisma import fields  # Import fields for proper JSON handling
@@ -38,11 +36,11 @@ class AuditSeverity(Enum):
 class AuditEntry:
     """Simple audit log entry."""
     action: AuditAction
-    user_id: Optional[str]
+    user_id: str | None
     resource_type: str
-    resource_id: Optional[str] = None
-    details: Optional[Dict[str, Any]] = None
-    ip_address: Optional[str] = None
+    resource_id: str | None = None
+    details: dict[str, Any] | None = None
+    ip_address: str | None = None
     severity: AuditSeverity = AuditSeverity.INFO
 
 class SimpleAuditLogger:
@@ -51,11 +49,11 @@ class SimpleAuditLogger:
     async def log_action(
         self,
         action: AuditAction,
-        user_id: Optional[str],
+        user_id: str | None,
         resource_type: str,
-        resource_id: Optional[str] = None,
-        details: Optional[Dict[str, Any]] = None,
-        ip_address: Optional[str] = None,
+        resource_id: str | None = None,
+        details: dict[str, Any] | None = None,
+        ip_address: str | None = None,
         severity: AuditSeverity = AuditSeverity.INFO
     ):
         """Log an audit action to the database."""

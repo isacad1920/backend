@@ -2,55 +2,57 @@
 
 integrated structured logging configuration for production readiness.
 """
+import logging
+import uuid
 from contextlib import asynccontextmanager
+from contextvars import ContextVar
+from datetime import datetime
+
+import uvicorn
 from fastapi import FastAPI, Request, Response
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.trustedhost import TrustedHostMiddleware
-from fastapi.responses import JSONResponse, HTMLResponse
-import logging
-import uuid
-from contextvars import ContextVar
-from datetime import datetime
-import uvicorn
+from fastapi.responses import HTMLResponse, JSONResponse
 
 # Import configurations and dependencies
 from app.core.config import settings
-from app.db import init_db, close_db
-from app.db.prisma import prisma
-from app.core.security import PasswordManager
+from app.core.error_handler import register_error_middleware
 
 # Import global error handler
 from app.core.exceptions import APIError, AuthenticationError
-from app.core.response import success_response, set_json_body
-from app.core.error_handler import register_error_middleware
-from app.core.legacy_mirroring import mirror_and_wrap_response
-from fastapi import HTTPException
+from app.core.response import set_json_body, success_response
+from app.core.security import PasswordManager
+from app.db import close_db, init_db
+from app.db.prisma import prisma
 
 # Correlation ID context var used by response enrichment (defined here to avoid circular imports)
 _correlation_id_var: ContextVar[str] = ContextVar('_correlation_id', default=None)  # type: ignore
 
 # Import middlewares
 from app.middlewares.auth import (
+    AuditLogMiddleware,
     AuthenticationMiddleware,
-    SecurityHeadersMiddleware,
     RateLimitMiddleware,
-    AuditLogMiddleware
+    SecurityHeadersMiddleware,
 )
-
-# Import routers
-from app.modules.users import router as users_router, auth_router
+from app.modules.audit import router as audit_router
 from app.modules.branches import router as branches_router
-from app.modules.products import product_router, category_router  
-from app.modules.sales import router as sales_router
 from app.modules.customers import router as customers_router
 from app.modules.financial import router as financial_router
-from app.modules.permissions import router as permissions_router, legacy_router as permissions_legacy_router
-from app.modules.notifications import router as notifications_router
-from app.modules.stock_requests import router as stock_requests_router
 from app.modules.inventory import router as inventory_router
-from app.modules.system import router as system_router, backup_router as system_backup_router
 from app.modules.journal import router as journal_router
-from app.modules.audit import router as audit_router
+from app.modules.notifications import router as notifications_router
+from app.modules.permissions import (
+    legacy_router as permissions_legacy_router,
+    router as permissions_router,
+)
+from app.modules.products import category_router, product_router
+from app.modules.sales import router as sales_router
+from app.modules.stock_requests import router as stock_requests_router
+from app.modules.system import backup_router as system_backup_router, router as system_router
+
+# Import routers
+from app.modules.users import auth_router, router as users_router
 
 # Configure logging (uses dictConfig for production JSON/logfmt output)
 try:  # pragma: no cover - defensive
@@ -368,8 +370,9 @@ async def correlation_id_middleware(request: Request, call_next):
 # the deprecated `app` parameter to an ASGITransport when the runtime httpx
 # version no longer supports it. This is a no-op if httpx still accepts `app`.
 try:  # pragma: no cover - defensive
-    import httpx  # type: ignore
     from inspect import signature
+
+    import httpx  # type: ignore
     if 'app' not in signature(httpx.AsyncClient.__init__).parameters:
         from httpx import ASGITransport
         _orig_async_client_init = httpx.AsyncClient.__init__
@@ -388,8 +391,8 @@ except Exception:
     pass
 
 # Add security schemes for Swagger UI to show authorization button
-from fastapi.security import HTTPBearer
 from fastapi.openapi.utils import get_openapi
+from fastapi.security import HTTPBearer
 
 security = HTTPBearer()
 
@@ -531,8 +534,9 @@ app.add_middleware(
 # Wrap any plain dict/list response into standardized success envelope.
 # Skips: already standardized (has success & data), problem+json, non-JSON, 204/304 responses.
 # ---------------------------------------------------------------------------
+
 from starlette.middleware.base import BaseHTTPMiddleware
-from typing import Any
+
 
 class ResponseNormalizationMiddleware(BaseHTTPMiddleware):
     """Compatibility response wrapper / shim.
@@ -691,39 +695,7 @@ class ResponseNormalizationMiddleware(BaseHTTPMiddleware):
 
                 # Pagination mirroring removed (items/page/size/total) per new standard
 
-                # Mirror primitive/statistic keys (total_*, *_count, *_total)
-                if isinstance(data_part, dict):
-                    # Promote statistical / counting style keys commonly asserted in legacy tests
-                    for k, v in data_part.items():
-                        if k not in data_obj and (
-                            k.startswith('total_') or k.endswith('_count') or k.endswith('_total')
-                        ):
-                            data_obj[k] = v
-                            mutated = True
-                    # Expanded common key mirroring catalogue (backward compatibility layer)
-                    common_keys = {
-                        'id','status','version','revenue','expenses','assets','liabilities','equity','alerts','notifications','routes','summary',
-                        'report_date','email','username','first_name','last_name','role','total','name','features','contact','api_version',
-                        # Inventory / dashboard
-                        'low_stock_alerts','recent_adjustments','key_metrics','period_start','period_end','productsByCategory','categoriesCount','stock_levels','recommendations',
-                        # Financial metrics
-                        'profit_margin','gross_profit','current_ratio','quick_ratio','revenue_growth','operating_activities','total_tax','budget','actual','total_revenue','total_expenses','total_value',
-                        # Permission / audit
-                        'permissions','grouped_permissions','logs',
-                        # Product/category stats
-                        'totalProducts','categories','products','items','sku','address','average_purchase','reorder_level','price','stockQuantity','stock_quantity',
-                        'max_stock_level','lead_time_days','safety_stock','auto_reorder_enabled',
-                        # Customer camelCase variants required by tests
-                        'firstName','lastName'
-                    }
-                    for common in common_keys:
-                        if common in data_part and common not in data_obj:
-                            data_obj[common] = data_part[common]
-                            mutated = True
-                    # Mirror nested detail field
-                    if 'detail' in data_part and 'detail' not in data_obj:
-                        data_obj['detail'] = data_part['detail']
-                        mutated = True
+                # With mirroring disabled (or restricted), only optionally mirror tokens & detail (handled above) – no statistical or domain key promotion.
 
                 if mutated:
                     return JSONResponse(status_code=response.status_code, content=data_obj)
@@ -957,8 +929,9 @@ async def root():
     return resp
 
 # API version info
+
 from app.modules.system.service import get_system_info
-from fastapi import Depends
+
 
 @app.get(f"{settings.api_v1_str}/info", tags=["ℹ️ System Information"]) 
 async def api_info():
@@ -1150,36 +1123,36 @@ app.include_router(
 @app.get("/docs", response_class=HTMLResponse, include_in_schema=False)
 async def custom_swagger_ui_html():
     """Custom Swagger UI with authentication instructions."""
-    return HTMLResponse(f"""
+    return HTMLResponse("""
     <!DOCTYPE html>
     <html>
     <head>
         <title>SOFinance API Documentation</title>
         <link rel="stylesheet" type="text/css" href="https://unpkg.com/swagger-ui-dist@5.7.2/swagger-ui.css" />
         <style>
-            .auth-info {{
+            .auth-info {
                 background: #f8f9fa;
                 border: 1px solid #dee2e6;
                 border-radius: 5px;
                 padding: 15px;
                 margin: 20px 0;
                 font-family: Arial, sans-serif;
-            }}
-            .auth-info h3 {{
+            }
+            .auth-info h3 {
                 color: #28a745;
                 margin-top: 0;
-            }}
-            .auth-info ul {{
+            }
+            .auth-info ul {
                 margin: 10px 0;
-            }}
-            .demo-creds {{
+            }
+            .demo-creds {
                 background: #e3f2fd;
                 border: 1px solid #90caf9;
                 border-radius: 5px;
                 padding: 10px;
                 margin: 10px 0;
                 font-family: monospace;
-            }}
+            }
         </style>
     </head>
     <body>
@@ -1212,7 +1185,7 @@ async def custom_swagger_ui_html():
         
         <script src="https://unpkg.com/swagger-ui-dist@5.7.2/swagger-ui-bundle.js"></script>
         <script>
-            SwaggerUIBundle({{
+            SwaggerUIBundle({
                 url: '/openapi.json',
                 dom_id: '#swagger-ui',
                 presets: [
@@ -1227,7 +1200,7 @@ async def custom_swagger_ui_html():
                 showExtensions: true,
                 showCommonExtensions: true,
                 persistAuthorization: true
-            }});
+            });
         </script>
     </body>
     </html>

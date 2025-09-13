@@ -1,3 +1,3 @@
-from typing_extensions import NewType
+from typing import NewType
 
 TransactionId = NewType('TransactionId', str)

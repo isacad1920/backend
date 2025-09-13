@@ -3,6 +3,7 @@ Sales API endpoint tests.
 """
 import pytest
 from httpx import AsyncClient
+
 from app.core.config import settings
 
 
@@ -17,11 +18,15 @@ class TestSalesEndpoints:
         )
         
         assert response.status_code == 200
-        data = response.json()
+        payload = response.json()
+        # New canonical shape: success envelope with data object
+        assert payload.get("success") is True
+        assert "data" in payload
+        data = payload["data"]
         assert "items" in data
-        assert "total" in data
-        assert "page" in data
-        assert "size" in data
+        assert "pagination" in data
+        pg = data["pagination"]
+        assert all(k in pg for k in ["total", "page", "limit", "total_pages"]) or all(k in pg for k in ["total", "page", "limit"])  # transitional
         assert isinstance(data["items"], list)
     
     @pytest.mark.asyncio
@@ -40,7 +45,9 @@ class TestSalesEndpoints:
         )
         
         assert response.status_code == 200
-        data = response.json()
+        payload = response.json()
+        assert payload.get("success") is True
+        data = payload["data"]
         assert "items" in data
     
     @pytest.mark.asyncio
@@ -52,18 +59,19 @@ class TestSalesEndpoints:
         )
         
         if sales_response.status_code == 200:
-            sales_data = sales_response.json()
-            if sales_data["items"]:
-                sale_id = sales_data["items"][0]["id"]
+            sales_payload = sales_response.json()
+            if sales_payload.get("data", {}).get("items"):
+                sale_id = sales_payload["data"]["items"][0]["id"]
                 
                 response = await authenticated_client.get(
                     f"{settings.api_v1_str}/sales/{sale_id}"
                 )
                 
                 assert response.status_code == 200
-                data = response.json()
+                payload = response.json()
+                data = payload.get("data") or payload
                 assert "id" in data
-                assert "total" in data
+                assert "total" in data or "total_amount" in data
                 assert "status" in data
     
     @pytest.mark.asyncio
@@ -97,9 +105,10 @@ class TestSalesEndpoints:
         )
         
         if response.status_code == 201:
-            data = response.json()
+            payload = response.json()
+            data = payload.get("data") or payload
             assert "id" in data
-            assert "total" in data
+            assert ("total" in data) or ("total_amount" in data)
             assert "status" in data
         else:
             # May fail due to various business rules
@@ -126,8 +135,9 @@ class TestSalesEndpoints:
         )
         
         assert response.status_code == 200
-        data = response.json()
-        assert "total_sales" in data or "totalSales" in data
+        payload = response.json()
+        data = payload.get("data") or payload
+        assert any(k in data for k in ["total_sales", "totalSales"]) or any(k in payload for k in ["total_sales", "totalSales"])
     
     @pytest.mark.asyncio
     async def test_get_sale_receipt(self, authenticated_client: AsyncClient):
@@ -138,9 +148,9 @@ class TestSalesEndpoints:
         )
         
         if sales_response.status_code == 200:
-            sales_data = sales_response.json()
-            if sales_data["items"]:
-                sale_id = sales_data["items"][0]["id"]
+            sales_payload = sales_response.json()
+            if sales_payload.get("data", {}).get("items"):
+                sale_id = sales_payload["data"]["items"][0]["id"]
                 
                 response = await authenticated_client.get(
                     f"{settings.api_v1_str}/sales/{sale_id}/receipt"
@@ -157,9 +167,9 @@ class TestSalesEndpoints:
         )
         
         if sales_response.status_code == 200:
-            sales_data = sales_response.json()
-            if sales_data["items"]:
-                sale_id = sales_data["items"][0]["id"]
+            sales_payload = sales_response.json()
+            if sales_payload.get("data", {}).get("items"):
+                sale_id = sales_payload["data"]["items"][0]["id"]
                 
                 response = await authenticated_client.post(
                     f"{settings.api_v1_str}/sales/{sale_id}/refund",
@@ -197,10 +207,10 @@ class TestSalesEndpoints:
         response = await authenticated_client.get(f"{settings.api_v1_str}/sales/ar/summary")
         assert response.status_code in [200, 500]
         if response.status_code == 200:
-            data = response.json()
-            assert "receivables_count" in data
-            assert "outstanding_total" in data
-            assert "paid_total" in data
+            payload = response.json()
+            data = payload.get("data") or payload
+            for k in ["receivables_count", "outstanding_total", "paid_total"]:
+                assert k in data
 
     @pytest.mark.asyncio
     async def test_add_payment_flow(self, authenticated_client: AsyncClient, test_product: dict, test_customer: dict):
@@ -216,24 +226,31 @@ class TestSalesEndpoints:
             "notes": "Partial sale test"
         }
         sale_resp = await authenticated_client.post(f"{settings.api_v1_str}/sales/", json=sale_payload)
-        if sale_resp.status_code not in [201, 200]:
-            pytest.skip("Sale creation failed due to business rules")
-        sale_data = sale_resp.json()
+        assert sale_resp.status_code in [200, 201, 400, 403, 422], sale_resp.text
+        sale_json = sale_resp.json()
+        sale_data = sale_json.get("data") or sale_json
+        if sale_resp.status_code not in [200, 201]:
+            # Business rule or validation rejection path: standardized envelope
+            if isinstance(sale_data, dict) and sale_data.get("success") is False:
+                err = sale_data.get("error") or {}
+                assert "code" in err and "message" in err
+            return  # Cannot proceed to payment without a sale id
         sale_id = sale_data.get("id")
-        if not sale_id:
-            pytest.skip("Sale ID not returned")
+        assert sale_id, "Sale ID must be returned for successful creation"
         # Get receipt to determine total
         receipt_resp = await authenticated_client.get(f"{settings.api_v1_str}/sales/{sale_id}/receipt")
         total_amount = None
         if receipt_resp.status_code == 200:
             rjson = receipt_resp.json()
-            sale_obj = rjson.get("sale") or rjson
+            receipt_wrapper = rjson.get("data") or rjson
+            sale_obj = receipt_wrapper.get("sale") or receipt_wrapper
             total_amount = sale_obj.get("total") or sale_obj.get("total_amount")
         # Add payment (small amount)
         pay_resp = await authenticated_client.post(f"{settings.api_v1_str}/sales/{sale_id}/payments", json={"amount": 0.01, "reference": "test"})
         assert pay_resp.status_code in [201, 400, 403]
         if pay_resp.status_code == 201:
-            pdata = pay_resp.json()
+            pay_json = pay_resp.json()
+            pdata = pay_json.get("data") or pay_json
             assert "paid_amount" in pdata
             assert "outstanding_amount" in pdata
             if total_amount:

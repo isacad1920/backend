@@ -1,9 +1,10 @@
 """
 Notifications module schemas.
 """
-from typing import Optional, List, Dict, Any
 from datetime import datetime
+
 from pydantic import Field
+
 from app.core.base_schema import ApiBaseModel
 
 

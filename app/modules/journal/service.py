@@ -2,21 +2,21 @@
 Journal Entry service layer for business logic.
 """
 import logging
-from typing import Optional, List, Dict, Any
-from datetime import datetime, date
+from datetime import date, datetime
 from decimal import Decimal
+from typing import Any
 
-from generated.prisma import Prisma
-from app.core.exceptions import ValidationError, NotFoundError, DatabaseError
+from app.core.exceptions import DatabaseError, NotFoundError, ValidationError
 from app.modules.journal.schema import (
     JournalEntryCreateSchema,
-    JournalEntryUpdateSchema,
-    JournalEntrySchema,
-    JournalEntryListSchema,
     JournalEntryLineSchema,
+    JournalEntryListSchema,
+    JournalEntrySchema,
+    JournalEntryUpdateSchema,
+    TrialBalanceLineSchema,
     TrialBalanceSchema,
-    TrialBalanceLineSchema
 )
+from generated.prisma import Prisma
 
 logger = logging.getLogger(__name__)
 
@@ -125,10 +125,10 @@ class JournalService:
         self,
         page: int = 1,
         size: int = 20,
-        reference_type: Optional[str] = None,
-        reference_id: Optional[int] = None,
-        start_date: Optional[date] = None,
-        end_date: Optional[date] = None
+        reference_type: str | None = None,
+        reference_id: int | None = None,
+        start_date: date | None = None,
+        end_date: date | None = None
     ) -> JournalEntryListSchema:
         """Get paginated list of journal entries."""
         try:
@@ -185,7 +185,7 @@ class JournalService:
             logger.error(f"Error getting journal entries: {str(e)}")
             raise DatabaseError(f"Unable to retrieve journal entries: {str(e)}")
 
-    async def get_trial_balance(self, as_of_date: Optional[date] = None) -> TrialBalanceSchema:
+    async def get_trial_balance(self, as_of_date: date | None = None) -> TrialBalanceSchema:
         """Generate trial balance as of specified date."""
         try:
             if not as_of_date:
@@ -274,7 +274,7 @@ class JournalService:
                 raise NotFoundError(f"Journal entry with ID {entry_id} not found")
 
             # Update entry fields
-            update_data: Dict[str, Any] = {}
+            update_data: dict[str, Any] = {}
             if data.reference_type is not None:
                 update_data["referenceType"] = data.reference_type
             if data.reference_id is not None:

@@ -1,5 +1,6 @@
-from app.core.response import success_response, ResponseBuilder
 from fastapi.responses import JSONResponse
+
+from app.core.response import ResponseBuilder, success_response
 
 
 def extract(json_response: JSONResponse):

@@ -2,17 +2,15 @@
 User model interface and database operations.
 This module provides a clean interface to interact with the Prisma User model.
 """
-from typing import Optional, List, Dict, Any, Tuple
-from datetime import datetime
 import logging
+from datetime import datetime
+from typing import Any
 from uuid import uuid4
-
-from generated.prisma import Prisma
-from generated.prisma.models import User
-from app.db.prisma import prisma
 
 from app.core.config import UserRole
 from app.core.exceptions import DatabaseError
+from generated.prisma import Prisma
+from generated.prisma.models import User
 
 logger = logging.getLogger(__name__)
 
@@ -30,9 +28,9 @@ class UserModel:
         last_name: str,
         role: UserRole,
         branch_id: str,
-        phone_number: Optional[str] = None,
+        phone_number: str | None = None,
         is_active: bool = True,
-        created_by_id: Optional[str] = None
+        created_by_id: str | None = None
     ) -> User:
         """Create a new user."""
         try:
@@ -64,7 +62,7 @@ class UserModel:
                 error_code="USER_CREATION_ERROR"
             )
     
-    async def get_by_id(self, user_id: str, include_relations: bool = False) -> Optional[User]:
+    async def get_by_id(self, user_id: str, include_relations: bool = False) -> User | None:
         """Get user by ID."""
         try:
             include_clause = None
@@ -86,7 +84,7 @@ class UserModel:
             logger.error(f"Failed to get user by ID {user_id}: {e}")
             return None
     
-    async def get_by_email(self, email: str) -> Optional[User]:
+    async def get_by_email(self, email: str) -> User | None:
         """Get user by email."""
         try:
             user = await self.db.user.find_unique(
@@ -102,8 +100,8 @@ class UserModel:
     async def update(
         self,
         user_id: str,
-        data: Dict[str, Any]
-    ) -> Optional[User]:
+        data: dict[str, Any]
+    ) -> User | None:
         """Update user."""
         try:
             # Add updated timestamp (Prisma camelCase)
@@ -142,10 +140,10 @@ class UserModel:
         self,
         skip: int = 0,
         take: int = 20,
-        where: Optional[Dict[str, Any]] = None,
-        order_by: Optional[Dict[str, str]] = None,
+        where: dict[str, Any] | None = None,
+        order_by: dict[str, str] | None = None,
         include_relations: bool = False
-    ) -> List[User]:
+    ) -> list[User]:
         """Find multiple users with filters."""
         try:
             include_clause = None
@@ -169,7 +167,7 @@ class UserModel:
             logger.error(f"Failed to find users: {e}")
             return []
     
-    async def count(self, where: Optional[Dict[str, Any]] = None) -> int:
+    async def count(self, where: dict[str, Any] | None = None) -> int:
         """Count users with filters."""
         try:
             count = await self.db.user.count(
@@ -182,7 +180,7 @@ class UserModel:
             logger.error(f"Failed to count users: {e}")
             return 0
     
-    async def exists_by_email(self, email: str, exclude_user_id: Optional[str] = None) -> bool:
+    async def exists_by_email(self, email: str, exclude_user_id: str | None = None) -> bool:
         """Check if user exists by email."""
         try:
             where_clause = {"email": email}
@@ -200,7 +198,7 @@ class UserModel:
             logger.error(f"Failed to check email existence: {e}")
             return False
     
-    async def get_users_by_branch(self, branch_id: str) -> List[User]:
+    async def get_users_by_branch(self, branch_id: str) -> list[User]:
         """Get all users in a branch."""
         try:
             users = await self.db.user.find_many(
@@ -213,7 +211,7 @@ class UserModel:
             logger.error(f"Failed to get users by branch {branch_id}: {e}")
             return []
     
-    async def get_users_by_role(self, role: UserRole) -> List[User]:
+    async def get_users_by_role(self, role: UserRole) -> list[User]:
         """Get all users with specific role."""
         try:
             users = await self.db.user.find_many(
@@ -325,7 +323,7 @@ class UserModel:
             logger.error(f"Failed to update password for user {user_id}: {e}")
             return False
     
-    async def get_user_statistics(self) -> Dict[str, Any]:
+    async def get_user_statistics(self) -> dict[str, Any]:
         """Get user statistics."""
         try:
             # Total users
@@ -371,7 +369,7 @@ class UserModel:
         search_query: str,
         skip: int = 0,
         take: int = 20
-    ) -> List[User]:
+    ) -> list[User]:
         """Search users by name or email."""
         try:
             users = await self.db.user.find_many(
@@ -395,9 +393,9 @@ class UserModel:
     
     async def bulk_update(
         self,
-        user_ids: List[str],
-        data: Dict[str, Any]
-    ) -> Tuple[int, int]:
+        user_ids: list[str],
+        data: dict[str, Any]
+    ) -> tuple[int, int]:
         """Bulk update users. Returns (success_count, error_count)."""
         success_count = 0
         error_count = 0
@@ -423,7 +421,7 @@ class UserModel:
 
         return success_count, error_count
     
-    async def get_active_users_count_by_branch(self) -> Dict[str, int]:
+    async def get_active_users_count_by_branch(self) -> dict[str, int]:
         """Get count of active users by branch."""
         try:
             # This is a complex query that might need raw SQL
@@ -475,7 +473,7 @@ class UserModel:
     async def validate_user_permissions(
         self,
         user_id: str,
-        required_permissions: List[str]
+        required_permissions: list[str]
     ) -> bool:
         """Validate if user has required permissions based on role."""
         try:

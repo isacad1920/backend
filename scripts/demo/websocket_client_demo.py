@@ -4,8 +4,9 @@ This shows how frontend clients can connect to receive real-time notifications.
 """
 import asyncio
 import json
-import websockets
 import logging
+
+import websockets
 
 # Set up logging
 logging.basicConfig(level=logging.INFO)
@@ -64,7 +65,7 @@ class NotificationClient:
                     except json.JSONDecodeError:
                         logger.warning(f"Invalid JSON received: {message}")
                 
-                except asyncio.TimeoutError:
+                except TimeoutError:
                     # Send ping to keep connection alive
                     await self.websocket.send("ping")
                 
@@ -122,7 +123,7 @@ class NotificationClient:
         
         # If this is an inventory clerk, show action options
         if self.role == "INVENTORY_CLERK":
-            print(f"   🔧 Actions: Review → Approve/Reject → Ship")
+            print("   🔧 Actions: Review → Approve/Reject → Ship")
     
     async def handle_stock_approved_notification(self, notification: dict):
         """Handle stock approved notification."""
@@ -132,7 +133,7 @@ class NotificationClient:
         
         print(f"   ✅ Approved by: {approver}")
         print(f"   📦 Items: {approved_items}")
-        print(f"   📅 ETA: 1-2 business days")
+        print("   📅 ETA: 1-2 business days")
     
     async def handle_stock_shipped_notification(self, notification: dict):
         """Handle stock shipped notification."""
@@ -149,7 +150,7 @@ class NotificationClient:
         data = notification.get("data", {})
         products = data.get("products", [])
         
-        print(f"   ⚠️  Low stock items:")
+        print("   ⚠️  Low stock items:")
         for product in products[:3]:  # Show first 3
             name = product.get("name", "Unknown")
             current = product.get("current", 0)
@@ -230,10 +231,10 @@ async def simulate_multiple_clients():
         return
     
     print(f"✅ {len(connected_clients)} clients connected successfully!")
-    print(f"\n📱 Clients are now listening for real-time notifications...")
-    print(f"📝 To test: Use the API endpoints to create stock requests")
-    print(f"🌐 Server API: http://localhost:8000/docs")
-    print(f"\n⏹️  Press Ctrl+C to stop all clients")
+    print("\n📱 Clients are now listening for real-time notifications...")
+    print("📝 To test: Use the API endpoints to create stock requests")
+    print("🌐 Server API: http://localhost:8000/docs")
+    print("\n⏹️  Press Ctrl+C to stop all clients")
     
     # Start listening tasks
     tasks = []
@@ -245,7 +246,7 @@ async def simulate_multiple_clients():
         # Keep clients running
         await asyncio.gather(*tasks)
     except KeyboardInterrupt:
-        print(f"\n🛑 Shutting down all clients...")
+        print("\n🛑 Shutting down all clients...")
         
         # Disconnect all clients
         for client in connected_clients:
@@ -256,7 +257,7 @@ async def simulate_multiple_clients():
             if not task.done():
                 task.cancel()
         
-        print(f"✅ All clients disconnected")
+        print("✅ All clients disconnected")
 
 
 if __name__ == "__main__":

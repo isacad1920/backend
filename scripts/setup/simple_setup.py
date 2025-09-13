@@ -2,10 +2,12 @@
 Simple setup script for essential testing data.
 """
 import asyncio
-from app.db import connect_db, close_db
-from app.db.prisma import prisma
+
 from app.core.config import UserRole
 from app.core.security import pwd_context
+from app.db import close_db, connect_db
+from app.db.prisma import prisma
+
 
 async def simple_setup():
     """Create minimal data for testing."""

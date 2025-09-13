@@ -6,8 +6,9 @@ across routes.
 """
 from __future__ import annotations
 
+from collections.abc import Callable
 from functools import wraps
-from typing import Callable
+
 from fastapi import Depends, HTTPException
 
 from app.core.dependencies import get_current_active_user, get_db

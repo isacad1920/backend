@@ -1,13 +1,14 @@
 """
 Real-time notification system for inventory management.
 """
-from typing import Dict, List, Set, Any
-from datetime import datetime
-from fastapi import WebSocket
-from enum import Enum
-import json
 import asyncio
+import json
 import logging
+from datetime import datetime
+from enum import Enum
+from typing import Any
+
+from fastapi import WebSocket
 
 logger = logging.getLogger(__name__)
 
@@ -40,10 +41,10 @@ class Notification:
         type: NotificationType,
         title: str,
         message: str,
-        data: Dict[str, Any],
+        data: dict[str, Any],
         priority: NotificationPriority = NotificationPriority.MEDIUM,
-        recipient_roles: List[str] = None,
-        recipient_users: List[int] = None,
+        recipient_roles: list[str] = None,
+        recipient_users: list[int] = None,
         branch_id: str = None
     ):
         self.id = id
@@ -56,9 +57,9 @@ class Notification:
         self.recipient_users = recipient_users or []
         self.branch_id = branch_id
         self.timestamp = datetime.utcnow().isoformat()
-        self.read_by: Set[int] = set()
+        self.read_by: set[int] = set()
     
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """Convert notification to dictionary."""
         return {
             "id": self.id,
@@ -77,13 +78,13 @@ class ConnectionManager:
     
     def __init__(self):
         # Active connections: {user_id: {connection_id: websocket}}
-        self.active_connections: Dict[int, Dict[str, WebSocket]] = {}
+        self.active_connections: dict[int, dict[str, WebSocket]] = {}
         
         # User metadata: {user_id: {role, branch_id, username}}
-        self.user_metadata: Dict[int, Dict[str, str]] = {}
+        self.user_metadata: dict[int, dict[str, str]] = {}
         
         # Notification history
-        self.notifications: Dict[str, Notification] = {}
+        self.notifications: dict[str, Notification] = {}
 
         # Per-connection send locks to avoid concurrent writes
         # Structure: {user_id: {connection_id: asyncio.Lock}}
@@ -159,12 +160,12 @@ class ConnectionManager:
             except Exception:
                 pass
     
-    async def _safe_send(self, websocket: WebSocket, lock: asyncio.Lock, payload: Dict[str, Any]):
+    async def _safe_send(self, websocket: WebSocket, lock: asyncio.Lock, payload: dict[str, Any]):
         """Safely send a message over a websocket using a per-connection lock."""
         async with lock:
             await websocket.send_text(json.dumps(payload))
 
-    async def try_send_to_connection(self, user_id: int, connection_id: str, message: Dict[str, Any]):
+    async def try_send_to_connection(self, user_id: int, connection_id: str, message: dict[str, Any]):
         """Send a message to a specific connection for a user, guarding with a lock."""
         try:
             websocket = self.active_connections[user_id][connection_id]
@@ -178,7 +179,7 @@ class ConnectionManager:
             # Treat as disconnected connection
             self.disconnect(user_id, connection_id)
 
-    async def send_personal_message(self, user_id: int, message: Dict[str, Any]):
+    async def send_personal_message(self, user_id: int, message: dict[str, Any]):
         """Send message to specific user's all connections."""
         if user_id in self.active_connections:
             disconnected_connections = []
@@ -199,7 +200,7 @@ class ConnectionManager:
             for conn_id in disconnected_connections:
                 self.disconnect(user_id, conn_id)
     
-    async def broadcast_to_role(self, role: str, message: Dict[str, Any], 
+    async def broadcast_to_role(self, role: str, message: dict[str, Any], 
                                branch_id: str = None):
         """Broadcast message to all users with specific role."""
         for user_id, metadata in self.user_metadata.items():
@@ -209,7 +210,7 @@ class ConnectionManager:
                     continue
                 await self.send_personal_message(user_id, message)
     
-    async def broadcast_to_users(self, user_ids: List[int], message: Dict[str, Any]):
+    async def broadcast_to_users(self, user_ids: list[int], message: dict[str, Any]):
         """Broadcast message to specific users."""
         for user_id in user_ids:
             await self.send_personal_message(user_id, message)
@@ -232,11 +233,11 @@ class ConnectionManager:
         
         logger.info(f"Notification sent: {notification.title} (ID: {notification.id})")
     
-    def get_connected_users(self) -> Dict[int, Dict[str, str]]:
+    def get_connected_users(self) -> dict[int, dict[str, str]]:
         """Get list of currently connected users."""
         return self.user_metadata.copy()
     
-    def get_user_notifications(self, user_id: int, unread_only: bool = False) -> List[Dict[str, Any]]:
+    def get_user_notifications(self, user_id: int, unread_only: bool = False) -> list[dict[str, Any]]:
         """Get notifications for a specific user."""
         user_meta = self.user_metadata.get(user_id, {})
         user_role = user_meta.get("role")

@@ -2,12 +2,11 @@
 """
 Comprehensive endpoint testing script to verify all fixes and field mappings
 """
-import requests
-import json
-import sys
-from datetime import datetime
 import os
+import sys
+
 import pytest
+import requests
 
 # Skip this script-style test unless a live server is running locally
 pytestmark = pytest.mark.skipif(
@@ -42,7 +41,7 @@ def test_endpoint(name, method, endpoint, headers=None, json_data=None, form_dat
                 try:
                     error_detail = response.json().get('detail', 'Unknown error')
                     print(f"   Error: {error_detail}")
-                except:
+                except Exception:
                     print(f"   Raw error: {response.text[:100]}")
             return False
             

@@ -1,7 +1,9 @@
 #!/usr/bin/env python3
 
-import requests
 import json
+
+import requests
+
 
 def test_sales_endpoint():
     """Test sales endpoint with detailed error reporting."""
@@ -31,7 +33,7 @@ def test_sales_endpoint():
             print(f"❌ No token in response: {json.dumps(auth_data, indent=2)}")
             return
             
-        print(f"✅ Authentication successful")
+        print("✅ Authentication successful")
         
         # Step 2: Test sales endpoint
         print("\n🔍 Testing sales endpoint...")
@@ -48,7 +50,7 @@ def test_sales_endpoint():
         if sales_response.status_code == 500:
             try:
                 error_data = sales_response.json()
-                print(f"\n🔍 Error Details:")
+                print("\n🔍 Error Details:")
                 print(json.dumps(error_data, indent=2))
             except:
                 print("Could not parse error JSON")

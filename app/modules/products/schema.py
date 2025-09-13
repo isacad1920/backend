@@ -3,10 +3,13 @@ Product and Category Pydantic schemas for request/response validation.
 """
 from datetime import datetime
 from decimal import Decimal
-from typing import Optional, List, Dict, Any
-from pydantic import BaseModel, Field, field_validator
-from app.core.base_schema import ApiBaseModel
 from enum import Enum
+from typing import Any
+
+from pydantic import Field, field_validator
+
+from app.core.base_schema import ApiBaseModel
+
 
 class ProductStatus(str, Enum):
     """Product status enumeration."""
@@ -24,7 +27,7 @@ class StockStatus(str, Enum):
 class CategoryBaseSchema(ApiBaseModel):
     """Base schema for category data."""
     name: str = Field(..., min_length=1, max_length=100, description="Category name")
-    description: Optional[str] = Field(None, max_length=255, description="Category description")
+    description: str | None = Field(None, max_length=255, description="Category description")
 
 class CategoryCreateSchema(CategoryBaseSchema):
     """Schema for creating a new category."""
@@ -32,13 +35,13 @@ class CategoryCreateSchema(CategoryBaseSchema):
 
 class CategoryUpdateSchema(ApiBaseModel):
     """Schema for updating category data."""
-    name: Optional[str] = Field(None, min_length=1, max_length=100)
-    description: Optional[str] = Field(None, max_length=255)
+    name: str | None = Field(None, min_length=1, max_length=100)
+    description: str | None = Field(None, max_length=255)
 
 class CategoryResponseSchema(CategoryBaseSchema):
     """Schema for category response data."""
     id: int = Field(..., description="Category ID")
-    status: Optional[str] = Field(None, description="Category status")
+    status: str | None = Field(None, description="Category status")
     createdAt: datetime = Field(..., description="Created timestamp")
     updatedAt: datetime = Field(..., description="Updated timestamp")
     product_count: int = Field(0, description="Number of products in category")
@@ -52,10 +55,10 @@ class CategoryResponseSchema(CategoryBaseSchema):
 class ProductBaseSchema(ApiBaseModel):
     """Base schema for product data."""
     name: str = Field(..., min_length=1, max_length=100, description="Product name")
-    description: Optional[str] = Field(None, max_length=500, description="Product description")
+    description: str | None = Field(None, max_length=500, description="Product description")
     sku: str = Field(..., min_length=1, max_length=50, description="Stock Keeping Unit")
-    barcode: Optional[str] = Field(None, max_length=50, description="Product barcode")
-    categoryId: Optional[int] = Field(None, description="Category ID")
+    barcode: str | None = Field(None, max_length=50, description="Product barcode")
+    categoryId: int | None = Field(None, description="Category ID")
     # Accept legacy input keys via validation_alias for compatibility with tests
     costPrice: Decimal = Field(..., description="Cost price", validation_alias='cost')
     sellingPrice: Decimal = Field(..., description="Selling price", validation_alias='price')
@@ -79,15 +82,15 @@ class ProductCreateSchema(ProductBaseSchema):
 
 class ProductUpdateSchema(ApiBaseModel):
     """Schema for updating product data."""
-    name: Optional[str] = Field(None, min_length=1, max_length=100)
-    description: Optional[str] = Field(None, max_length=500)
-    sku: Optional[str] = Field(None, min_length=1, max_length=50)
-    barcode: Optional[str] = Field(None, max_length=50)
-    categoryId: Optional[int] = Field(None)
+    name: str | None = Field(None, min_length=1, max_length=100)
+    description: str | None = Field(None, max_length=500)
+    sku: str | None = Field(None, min_length=1, max_length=50)
+    barcode: str | None = Field(None, max_length=50)
+    categoryId: int | None = Field(None)
     # Accept legacy input keys via validation_alias
-    costPrice: Optional[Decimal] = Field(None, ge=0, validation_alias='cost')
-    sellingPrice: Optional[Decimal] = Field(None, ge=0, validation_alias='price')
-    status: Optional[ProductStatus] = Field(None)
+    costPrice: Decimal | None = Field(None, ge=0, validation_alias='cost')
+    sellingPrice: Decimal | None = Field(None, ge=0, validation_alias='price')
+    status: ProductStatus | None = Field(None)
     
     @field_validator('sellingPrice')
     @classmethod
@@ -107,7 +110,7 @@ class ProductResponseSchema(ProductBaseSchema):
     profitMargin: Decimal = Field(..., description="Profit margin percentage")
     createdAt: datetime = Field(..., description="Creation timestamp")
     updatedAt: datetime = Field(..., description="Last update timestamp")
-    categoryName: Optional[str] = Field(None, description="Category name")
+    categoryName: str | None = Field(None, description="Category name")
     
     class Config:
         from_attributes = True
@@ -116,13 +119,13 @@ class ProductDetailResponseSchema(ProductResponseSchema):
     """Schema for detailed product response with additional info."""
     totalSales: Decimal = Field(Decimal('0'), description="Total sales amount")
     totalSold: int = Field(0, description="Total quantity sold")
-    lastSaleDate: Optional[datetime] = Field(None, description="Last sale date")
-    lastStockUpdate: Optional[datetime] = Field(None, description="Last stock update date")
-    createdByName: Optional[str] = Field(None, description="Creator name")
+    lastSaleDate: datetime | None = Field(None, description="Last sale date")
+    lastStockUpdate: datetime | None = Field(None, description="Last stock update date")
+    createdByName: str | None = Field(None, description="Creator name")
 
 class ProductListResponseSchema(ApiBaseModel):
     """Schema for paginated product list response."""
-    items: List[ProductResponseSchema] = Field(..., description="List of products")
+    items: list[ProductResponseSchema] = Field(..., description="List of products")
     total: int = Field(..., description="Total number of products")
     page: int = Field(..., description="Current page")
     size: int = Field(..., description="Page size")
@@ -133,11 +136,11 @@ class StockAdjustmentSchema(ApiBaseModel):
     product_id: int = Field(..., description="Product ID")
     quantity_change: int = Field(..., description="Quantity change (positive for increase, negative for decrease)")
     reason: str = Field(..., min_length=1, max_length=255, description="Reason for adjustment")
-    notes: Optional[str] = Field(None, max_length=500, description="Additional notes")
+    notes: str | None = Field(None, max_length=500, description="Additional notes")
 
 class BulkStockAdjustmentSchema(ApiBaseModel):
     """Schema for bulk stock adjustments."""
-    adjustments: List[StockAdjustmentSchema] = Field(..., min_length=1, description="List of stock adjustments")
+    adjustments: list[StockAdjustmentSchema] = Field(..., min_length=1, description="List of stock adjustments")
 
 class StockResponseSchema(ApiBaseModel):
     """Schema for stock movement response."""
@@ -147,32 +150,32 @@ class StockResponseSchema(ApiBaseModel):
     movement_type: str = Field(..., description="Movement type")
     quantity: int = Field(..., description="Quantity moved")
     reason: str = Field(..., description="Movement reason")
-    notes: Optional[str] = Field(None, description="Movement notes")
+    notes: str | None = Field(None, description="Movement notes")
     created_at: datetime = Field(..., description="Movement timestamp")
-    created_by_id: Optional[int] = Field(None, description="User who made the movement")
-    created_by_name: Optional[str] = Field(None, description="User name")
+    created_by_id: int | None = Field(None, description="User who made the movement")
+    created_by_name: str | None = Field(None, description="User name")
 
 # Statistics schemas
 class ProductStatsSchema(ApiBaseModel):
     """Schema for product statistics."""
     totalProducts: int = Field(..., description="Total number of products")
     categoriesCount: int = Field(..., description="Number of categories")
-    productsByCategory: Dict[str, int] = Field(..., description="Products count by category")
+    productsByCategory: dict[str, int] = Field(..., description="Products count by category")
 
 class CategoryStatsSchema(ApiBaseModel):
     """Schema for category statistics."""
     total_categories: int = Field(..., description="Total number of categories")
     categories_with_products: int = Field(..., description="Categories with products")
-    top_categories: List[Dict[str, Any]] = Field(..., description="Top categories by product count")
+    top_categories: list[dict[str, Any]] = Field(..., description="Top categories by product count")
 
 # Bulk operations schemas
 class BulkProductUpdateSchema(ApiBaseModel):
     """Schema for bulk product updates."""
-    product_ids: List[int] = Field(..., min_length=1, description="List of product IDs")
+    product_ids: list[int] = Field(..., min_length=1, description="List of product IDs")
     updates: ProductUpdateSchema = Field(..., description="Updates to apply")
 
 class BulkOperationResponseSchema(ApiBaseModel):
     """Schema for bulk operation response."""
     success_count: int = Field(..., description="Number of successful operations")
     error_count: int = Field(..., description="Number of failed operations")
-    errors: List[str] = Field(default_factory=list, description="Error messages")
+    errors: list[str] = Field(default_factory=list, description="Error messages")

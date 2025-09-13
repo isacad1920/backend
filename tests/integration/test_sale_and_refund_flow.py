@@ -1,6 +1,7 @@
 """End-to-end test for creating a sale then issuing a refund."""
 import pytest
 from httpx import AsyncClient
+
 from app.core.config import settings
 
 

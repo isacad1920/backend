@@ -4,11 +4,11 @@ Wraps HTTPException and unexpected exceptions into the standardized envelope
 using failure_response helper. Attach as a middleware or via exception handlers
 inside FastAPI app factory.
 """
-from typing import Callable
-from fastapi import Request, HTTPException
-from starlette.middleware.base import BaseHTTPMiddleware
-from starlette.responses import Response
 import logging
+from collections.abc import Callable
+
+from fastapi import HTTPException, Request
+from starlette.middleware.base import BaseHTTPMiddleware
 
 from app.core.response import failure_response
 

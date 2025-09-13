@@ -1,18 +1,16 @@
 from __future__ import annotations
 
 import base64
+from collections.abc import Iterator
 from typing import (
     TYPE_CHECKING,
     Any,
-    Dict,
-    List,
     Union,
-    Iterator,
     overload,
 )
-from typing_extensions import override
 
 from pydantic import Json as _PydanticJson
+from typing_extensions import override
 
 from ._compat import PYDANTIC_V2, CoreSchema, core_schema
 
@@ -79,13 +77,13 @@ class Json(BaseJson):
         # cast(Dict[str, Any], user.json_obj)
         # prisma.validate(ExpectedType, user.json_obj)  # NOTE: not implemented yet
         @overload  # type: ignore
-        def __getitem__(self, i: slice) -> List[Serializable]: ...
+        def __getitem__(self, i: slice) -> list[Serializable]: ...
 
         @overload
         def __getitem__(self, i: _JsonKeys) -> Serializable: ...
 
         @override
-        def __getitem__(self, i: Union[_JsonKeys, slice]) -> Serializable:  # pyright: ignore[reportIncompatibleMethodOverride]
+        def __getitem__(self, i: _JsonKeys | slice) -> Serializable:  # pyright: ignore[reportIncompatibleMethodOverride]
             ...
 
 
@@ -101,7 +99,7 @@ class Base64:
         return cls(base64.b64encode(value))
 
     @classmethod
-    def fromb64(cls, value: Union[str, bytes]) -> Base64:
+    def fromb64(cls, value: str | bytes) -> Base64:
         """
         Create an instance of the `Base64` class from data that has already
         been encoded into a valid base 64 structure.
@@ -143,7 +141,7 @@ class Base64:
     else:
 
         @classmethod
-        def __modify_schema__(cls, field_schema: Dict[str, object]) -> None:
+        def __modify_schema__(cls, field_schema: dict[str, object]) -> None:
             field_schema['type'] = 'string'
             field_schema['format'] = 'byte'
 

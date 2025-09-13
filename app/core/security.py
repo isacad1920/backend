@@ -1,21 +1,22 @@
 """
 Security utilities for authentication, authorization, and password management.
 """
-from typing import Optional, Dict, Any, List, Union, Set
-from datetime import datetime, timedelta
-from jose import JWTError, jwt
-from passlib.context import CryptContext
-from fastapi import HTTPException, status, Depends, Request
-from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
-from pydantic import ValidationError
-import secrets
-import string
-import re
-from enum import Enum
 import hashlib
 import hmac
-from app.core.config import settings, UserRole
 import logging
+import re
+import secrets
+import string
+from datetime import datetime, timedelta
+from enum import Enum
+from typing import Any
+
+from fastapi import Depends, HTTPException, status
+from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
+from jose import JWTError, jwt
+from passlib.context import CryptContext
+
+from app.core.config import UserRole, settings
 from generated.prisma import Prisma
 
 logger = logging.getLogger(__name__)
@@ -41,7 +42,7 @@ class PasswordValidator:
     """Password validation utility."""
     
     @staticmethod
-    def validate_password(password: str) -> Dict[str, Any]:
+    def validate_password(password: str) -> dict[str, Any]:
         """
         Validate password strength.
         
@@ -162,9 +163,9 @@ class JWTManager:
     
     @staticmethod
     def create_access_token(
-        subject: Union[str, Any],
-        expires_delta: Optional[timedelta] = None,
-        additional_claims: Optional[Dict[str, Any]] = None
+        subject: str | Any,
+        expires_delta: timedelta | None = None,
+        additional_claims: dict[str, Any] | None = None
     ) -> str:
         """Create an access token."""
         # Determine expiration time
@@ -191,7 +192,7 @@ class JWTManager:
         return encoded_jwt
     
     @staticmethod
-    def create_refresh_token(subject: Union[str, Any]) -> str:
+    def create_refresh_token(subject: str | Any) -> str:
         """Create a refresh token."""
         expire = datetime.utcnow() + timedelta(days=settings.refresh_token_expire_days)
         
@@ -227,8 +228,8 @@ class JWTManager:
     @staticmethod
     def verify_token(
         token: str,
-        expected_type: Optional[TokenType] = None
-    ) -> Optional[Dict[str, Any]]:
+        expected_type: TokenType | None = None
+    ) -> dict[str, Any] | None:
         """Verify and decode a JWT token."""
         try:
             payload = jwt.decode(
@@ -246,7 +247,7 @@ class JWTManager:
             return None
     
     @staticmethod
-    def _extract_jti(token: str) -> Optional[str]:
+    def _extract_jti(token: str) -> str | None:
         try:
             payload = jwt.decode(token, settings.secret_key, algorithms=[settings.algorithm])
             return payload.get("jti") or hashlib.sha256(token.encode()).hexdigest()
@@ -254,7 +255,7 @@ class JWTManager:
             return hashlib.sha256(token.encode()).hexdigest()
 
     @classmethod
-    async def blacklist_token(cls, token: str, reason: str = "revoked", user_id: Optional[int] = None):
+    async def blacklist_token(cls, token: str, reason: str = "revoked", user_id: int | None = None):
         if not token:
             return
         jti = cls._extract_jti(token)
@@ -310,7 +311,7 @@ class JWTManager:
         _TOKEN_BLACKLIST.add(token)
 
 # Module-level in-memory token blacklist (non-persistent; suitable for tests/dev only)
-_TOKEN_BLACKLIST: Set[str] = set()
+_TOKEN_BLACKLIST: set[str] = set()
 
 class PermissionManager:
     """Manage user permissions and role-based access control."""
@@ -384,8 +385,8 @@ class PermissionManager:
     }
     
     @classmethod
-    def has_permission(cls, user_role: UserRole, permission: str, user_id: Optional[int] = None, 
-                      custom_permissions: Optional[List[str]] = None) -> bool:
+    def has_permission(cls, user_role: UserRole, permission: str, user_id: int | None = None, 
+                      custom_permissions: list[str] | None = None) -> bool:
         """Check if a role has a specific permission with direct role-based checking."""
         
         # ADMIN can do EVERYTHING - no exceptions
@@ -400,7 +401,7 @@ class PermissionManager:
         return permission in cls.ROLE_PERMISSIONS.get(user_role, [])
     
     @classmethod
-    def get_user_permissions(cls, user_role: UserRole, custom_permissions: Optional[List[str]] = None) -> List[str]:
+    def get_user_permissions(cls, user_role: UserRole, custom_permissions: list[str] | None = None) -> list[str]:
         """Get all permissions for a user role including custom permissions."""
         base_permissions = set(cls.ROLE_PERMISSIONS.get(user_role, []))
         
@@ -412,7 +413,7 @@ class PermissionManager:
     
     @classmethod
     def can_access_resource(cls, user_role: UserRole, resource: str, action: str, 
-                           custom_permissions: Optional[List[str]] = None) -> bool:
+                           custom_permissions: list[str] | None = None) -> bool:
         """Check if user can perform action on resource with direct checking."""
         
         # ADMIN can access ALL resources and perform ALL actions
@@ -450,7 +451,7 @@ class PermissionManager:
         return False
     
     @classmethod
-    async def get_custom_permissions(cls, user_id: int, db=None) -> List[str]:
+    async def get_custom_permissions(cls, user_id: int, db=None) -> list[str]:
         """Get custom permissions for a user from database."""
         try:
             if not db:
@@ -555,7 +556,7 @@ class PermissionManager:
             return False
     
     @classmethod
-    def get_all_available_permissions(cls) -> List[str]:
+    def get_all_available_permissions(cls) -> list[str]:
         """Get all available permissions in the system."""
         all_permissions = set()
         for permissions in cls.ROLE_PERMISSIONS.values():
@@ -622,16 +623,16 @@ class SecurityUtils:
 
 # Authentication dependencies
 async def get_current_user_token(
-    credentials: Optional[HTTPAuthorizationCredentials] = Depends(security)
-) -> Optional[str]:
+    credentials: HTTPAuthorizationCredentials | None = Depends(security)
+) -> str | None:
     """Extract JWT token from request."""
     if not credentials:
         return None
     return credentials.credentials
 
 async def verify_token_dependency(
-    token: Optional[str] = Depends(get_current_user_token)
-) -> Dict[str, Any]:
+    token: str | None = Depends(get_current_user_token)
+) -> dict[str, Any]:
     """Verify JWT token dependency."""
     if not token:
         raise HTTPException(

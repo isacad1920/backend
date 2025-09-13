@@ -2,26 +2,33 @@
 Product service layer for business logic.
 """
 import logging
-from typing import Optional, List, Dict, Any
-from decimal import Decimal
 from datetime import datetime
+from decimal import Decimal
+from typing import Any
 
-from generated.prisma import Prisma
-
-from app.core.config import UserRole
 from app.core.exceptions import (
+    AlreadyExistsError,
     APIError,
-    ValidationError, NotFoundError, AlreadyExistsError, InsufficientStockError,
-    DatabaseError, BusinessRuleError
+    DatabaseError,
+    InsufficientStockError,
+    NotFoundError,
+    ValidationError,
 )
-from app.modules.products.model import ProductModel, CategoryModel
+from app.modules.products.model import CategoryModel, ProductModel
 from app.modules.products.schema import (
-    ProductCreateSchema, ProductUpdateSchema, ProductResponseSchema,
-    ProductDetailResponseSchema, ProductListResponseSchema, ProductStatsSchema,
-    CategoryCreateSchema, CategoryUpdateSchema, CategoryResponseSchema,
-    StockAdjustmentSchema, BulkStockAdjustmentSchema, StockResponseSchema,
-    BulkProductUpdateSchema, BulkOperationResponseSchema, StockStatus
+    CategoryCreateSchema,
+    CategoryResponseSchema,
+    CategoryUpdateSchema,
+    ProductCreateSchema,
+    ProductDetailResponseSchema,
+    ProductListResponseSchema,
+    ProductResponseSchema,
+    ProductStatsSchema,
+    ProductUpdateSchema,
+    StockAdjustmentSchema,
+    StockStatus,
 )
+from generated.prisma import Prisma
 
 logger = logging.getLogger(__name__)
 
@@ -51,7 +58,7 @@ class ProductService:
     async def create_product(
         self,
         product_data: ProductCreateSchema,
-        created_by_id: Optional[int] = None
+        created_by_id: int | None = None
     ) -> ProductResponseSchema:
         """Create a new product."""
         try:
@@ -102,7 +109,7 @@ class ProductService:
                 detail="Failed to create product"
             )
     
-    async def get_product(self, product_id: int) -> Optional[ProductDetailResponseSchema]:
+    async def get_product(self, product_id: int) -> ProductDetailResponseSchema | None:
         """Get product by ID with details."""
         try:
             product = await self.product_model.get_product(product_id)
@@ -156,7 +163,7 @@ class ProductService:
         self,
         page: int = 1,
         size: int = 20,
-        filters: Optional[Dict[str, Any]] = None
+        filters: dict[str, Any] | None = None
     ) -> ProductListResponseSchema:
         """Get paginated list of products."""
         try:
@@ -167,7 +174,7 @@ class ProductService:
             
             pages = (total + size - 1) // size
             
-            items: List[ProductResponseSchema] = []
+            items: list[ProductResponseSchema] = []
             for product in products:
                 # sum stock quantities if preloaded
                 current_qty = 0
@@ -298,7 +305,7 @@ class ProductService:
     async def adjust_stock(
         self,
         adjustment: StockAdjustmentSchema,
-        created_by_id: Optional[int] = None
+        created_by_id: int | None = None
     ) -> bool:
         """Adjust product stock."""
         try:
@@ -346,7 +353,7 @@ class CategoryService:
     async def create_category(
         self,
         category_data: CategoryCreateSchema,
-        created_by_id: Optional[int] = None
+        created_by_id: int | None = None
     ) -> CategoryResponseSchema:
         """Create a new category."""
         try:
@@ -373,7 +380,7 @@ class CategoryService:
                 detail="Failed to create category"
             )
     
-    async def get_category(self, category_id: int) -> Optional[CategoryResponseSchema]:
+    async def get_category(self, category_id: int) -> CategoryResponseSchema | None:
         """Get category by ID."""
         try:
             category = await self.category_model.get_category(category_id)
@@ -397,8 +404,8 @@ class CategoryService:
         self,
         page: int = 1,
         size: int = 50,
-        search: Optional[str] = None
-    ) -> List[CategoryResponseSchema]:
+        search: str | None = None
+    ) -> list[CategoryResponseSchema]:
         """Get list of categories."""
         try:
             skip = (page - 1) * size

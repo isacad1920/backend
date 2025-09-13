@@ -1,13 +1,13 @@
 """
 User module Pydantic schemas for request/response validation.
 """
-from typing import Optional, List, Dict, Any
-from pydantic import BaseModel, EmailStr, field_validator, Field
 from datetime import datetime
 from enum import Enum
-import re
+
+from pydantic import BaseModel, EmailStr, Field, field_validator
 
 from app.core.config import UserRole
+
 
 class UserStatus(str, Enum):
     """User account status."""
@@ -20,12 +20,12 @@ class UserStatus(str, Enum):
 class UserBase(BaseModel):
     """Base user schema with common fields."""
     username: str = Field(..., min_length=1, max_length=50, description="Username")
-    email: Optional[EmailStr] = Field(None, description="User email address")
+    email: EmailStr | None = Field(None, description="User email address")
     firstName: str = Field(..., min_length=1, max_length=50, description="First name")
     lastName: str = Field(..., min_length=1, max_length=50, description="Last name")
     role: UserRole = Field(..., description="User role")
     isActive: bool = Field(True, description="User active status")
-    branchId: Optional[int] = Field(None, description="Branch ID")
+    branchId: int | None = Field(None, description="Branch ID")
     
     @field_validator('email')
     @classmethod
@@ -61,7 +61,7 @@ class UserCreateSchema(BaseModel):
     lastName: str = Field(..., min_length=1, max_length=50, description="Last name", alias="last_name")
     role: UserRole = Field(..., description="User role")
     isActive: bool = Field(True, description="User active status", alias="is_active")
-    branchId: Optional[int] = Field(None, description="Branch ID", alias="branch_id")
+    branchId: int | None = Field(None, description="Branch ID", alias="branch_id")
     
     @field_validator('password')
     @classmethod
@@ -91,13 +91,13 @@ class UserCreateSchema(BaseModel):
 
 class UserUpdateSchema(BaseModel):
     """Schema for updating user information."""
-    username: Optional[str] = Field(None, min_length=1, max_length=50)
-    email: Optional[EmailStr] = None
-    firstName: Optional[str] = Field(None, alias="first_name")
-    lastName: Optional[str] = Field(None, alias="last_name")
-    role: Optional[UserRole] = None
-    isActive: Optional[bool] = Field(None, alias="is_active")
-    branchId: Optional[int] = Field(None, alias="branch_id")
+    username: str | None = Field(None, min_length=1, max_length=50)
+    email: EmailStr | None = None
+    firstName: str | None = Field(None, alias="first_name")
+    lastName: str | None = Field(None, alias="last_name")
+    role: UserRole | None = None
+    isActive: bool | None = Field(None, alias="is_active")
+    branchId: int | None = Field(None, alias="branch_id")
     
     model_config = {
         "populate_by_name": True
@@ -108,12 +108,12 @@ class UserResponseSchema(BaseModel):
     """Schema for user response data."""
     id: int = Field(..., description="User ID")
     username: str = Field(..., description="Username")
-    email: Optional[str] = Field(None, description="Email")
+    email: str | None = Field(None, description="Email")
     firstName: str = Field(..., description="First name")
     lastName: str = Field(..., description="Last name")
     role: str = Field(..., description="User role")
     isActive: bool = Field(..., description="Active status")
-    branchId: Optional[int] = Field(None, description="Branch ID")
+    branchId: int | None = Field(None, description="Branch ID")
     createdAt: datetime = Field(..., description="Created timestamp")
     updatedAt: datetime = Field(..., description="Updated timestamp")
     
@@ -187,8 +187,8 @@ class UserPasswordResetSchema(BaseModel):
 # Authentication schemas
 class LoginRequestSchema(BaseModel):
     """Schema for login request."""
-    username: Optional[str] = Field(None, description="Username")
-    email: Optional[EmailStr] = Field(None, description="Email address")
+    username: str | None = Field(None, description="Username")
+    email: EmailStr | None = Field(None, description="Email address")
     password: str = Field(..., description="Password")
     remember_me: bool = Field(False, description="Remember me option")
     
@@ -215,7 +215,7 @@ class RefreshTokenRequestSchema(BaseModel):
 # List response schemas
 class UserListResponseSchema(BaseModel):
     """Schema for user list response."""
-    users: List[UserResponseSchema] = Field(..., description="List of users")
+    users: list[UserResponseSchema] = Field(..., description="List of users")
     total: int = Field(..., description="Total number of users")
     page: int = Field(1, description="Current page number")
     limit: int = Field(10, description="Number of items per page")
@@ -225,16 +225,16 @@ class UserDetailResponseSchema(BaseModel):
     """Schema for detailed user response with additional information."""
     id: int
     username: str
-    email: Optional[str]
+    email: str | None
     firstName: str
     lastName: str
     role: UserRole
     isActive: bool
-    branchId: Optional[int]
+    branchId: int | None
     createdAt: datetime
     updatedAt: datetime
-    lastLogin: Optional[datetime] = None
-    permissions: List[str] = Field(default_factory=list)
+    lastLogin: datetime | None = None
+    permissions: list[str] = Field(default_factory=list)
     
     model_config = {
         "from_attributes": True

@@ -1,17 +1,16 @@
 from __future__ import annotations
 
-import sys
 import json
 import logging
+import sys
 from pathlib import Path
-from typing import Dict, List, Optional, Union, Type, Any
-from typing_extensions import TypedDict, Literal
+from typing import Any, Literal, Union
 
 from pydantic import Field
+from typing_extensions import TypedDict
 
-from .models import BaseModel
 from .._compat import model_json
-
+from .models import BaseModel
 
 log: logging.Logger = logging.getLogger(__name__)
 
@@ -30,13 +29,13 @@ class Request(BaseModel):
     method: str
 
     # request payload
-    params: Optional[Dict[str, Any]] = None
+    params: dict[str, Any] | None = None
 
 
 class SuccessResponse(BaseModel):
     id: int
     jsonrpc: str = '2.0'
-    result: Optional[Dict[str, Any]] = None
+    result: dict[str, Any] | None = None
 
 
 class ErrorData(TypedDict):
@@ -66,24 +65,24 @@ class Manifest(BaseModel):
     """Generator metadata"""
 
     prettyName: str = Field(alias='name')
-    defaultOutput: Union[str, Path] = Field(alias='default_output')
-    denylist: Optional[List[str]] = None
-    requiresEngines: Optional[List[EngineType]] = Field(
+    defaultOutput: str | Path = Field(alias='default_output')
+    denylist: list[str] | None = None
+    requiresEngines: list[EngineType] | None = Field(
         alias='requires_engines', default=None
     )
-    requiresGenerators: Optional[List[str]] = Field(
+    requiresGenerators: list[str] | None = Field(
         alias='requires_generators', default=None
     )
 
 
 # TODO: proper types
-method_mapping: Dict[str, Type[Request]] = {
+method_mapping: dict[str, type[Request]] = {
     'getManifest': Request,
     'generate': Request,
 }
 
 
-def readline() -> Optional[str]:
+def readline() -> str | None:
     try:
         line = input()
     except EOFError:

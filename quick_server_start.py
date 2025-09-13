@@ -2,8 +2,9 @@
 Quick fix script to restore functionality for testing.
 """
 
-import sys
 import subprocess
+import sys
+
 
 def start_server():
     """Start the development server."""

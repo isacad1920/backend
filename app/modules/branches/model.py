@@ -2,13 +2,11 @@
 Branch database operations and models.
 """
 import logging
-from typing import Optional, List, Dict, Any
-from datetime import datetime
-from decimal import Decimal
+from typing import Any
 
+from app.modules.branches.schema import BranchCreateSchema, BranchUpdateSchema
 from generated.prisma import Prisma
 from generated.prisma.models import Branch
-from app.modules.branches.schema import BranchCreateSchema, BranchUpdateSchema
 
 logger = logging.getLogger(__name__)
 
@@ -21,7 +19,7 @@ class BranchModel:
     async def create_branch(
         self, 
         branch_data: BranchCreateSchema, 
-        created_by_id: Optional[int] = None
+        created_by_id: int | None = None
     ) -> Branch:
         """Create a new branch."""
         try:
@@ -43,7 +41,7 @@ class BranchModel:
             logger.error(f"Error creating branch: {str(e)}")
             raise
     
-    async def get_branch(self, branch_id: int) -> Optional[Branch]:
+    async def get_branch(self, branch_id: int) -> Branch | None:
         """Get branch by ID."""
         try:
             branch = await self.db.branch.find_unique(
@@ -59,8 +57,8 @@ class BranchModel:
         self, 
         skip: int = 0, 
         limit: int = 20,
-        filters: Optional[Dict[str, Any]] = None
-    ) -> tuple[List[Branch], int]:
+        filters: dict[str, Any] | None = None
+    ) -> tuple[list[Branch], int]:
         """Get paginated list of branches."""
         try:
             where_conditions = {}
@@ -100,7 +98,7 @@ class BranchModel:
         self, 
         branch_id: int, 
         branch_data: BranchUpdateSchema
-    ) -> Optional[Branch]:
+    ) -> Branch | None:
         """Update branch."""
         try:
             data = branch_data.model_dump(exclude_unset=True)
@@ -146,7 +144,7 @@ class BranchModel:
             logger.error(f"Error deleting branch {branch_id}: {str(e)}")
             raise
     
-    async def get_branch_stats(self) -> Dict[str, Any]:
+    async def get_branch_stats(self) -> dict[str, Any]:
         """Get branch statistics."""
         try:
             total_branches = await self.db.branch.count()
@@ -188,9 +186,9 @@ class BranchModel:
     
     async def bulk_update_branches(
         self,
-        branch_ids: List[int],
+        branch_ids: list[int],
         updates: BranchUpdateSchema
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Bulk update branches."""
         try:
             data = updates.model_dump(exclude_unset=True)

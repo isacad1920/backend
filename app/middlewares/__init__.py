@@ -2,16 +2,16 @@
 Middleware package initialization.
 """
 from .auth import (
+    AuditLogMiddleware,
     AuthenticationMiddleware,
     AuthorizationMiddleware,
-    RateLimitMiddleware,
-    AuditLogMiddleware,
-    SecurityHeadersMiddleware,
     CORSMiddleware,
+    RateLimitMiddleware,
+    SecurityHeadersMiddleware,
+    create_audit_middleware,
     create_auth_middleware,
     create_authz_middleware,
     create_rate_limit_middleware,
-    create_audit_middleware
 )
 
 __all__ = [

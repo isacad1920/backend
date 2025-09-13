@@ -1,14 +1,14 @@
 """
 Financial report export service.
 """
-import logging
-import io
-import os
-import json
 import csv
-from datetime import datetime, date
-from typing import Optional, Dict, Any, Union
+import json
+import logging
+import os
+from datetime import date, datetime
 from decimal import Decimal
+from typing import Any
+
 from generated.prisma import Prisma
 
 logger = logging.getLogger(__name__)
@@ -28,11 +28,11 @@ class ExportService:
         self,
         report_type: str,
         format: str,
-        start_date: Optional[date] = None,
-        end_date: Optional[date] = None,
-        branch_id: Optional[int] = None,
-        current_user: Dict[str, Any] = None
-    ) -> Dict[str, Any]:
+        start_date: date | None = None,
+        end_date: date | None = None,
+        branch_id: int | None = None,
+        current_user: dict[str, Any] = None
+    ) -> dict[str, Any]:
         """Export financial report in specified format.
         
         Args:
@@ -97,7 +97,7 @@ class ExportService:
             logger.error(f"Error exporting financial report: {e}")
             raise
     
-    def _export_as_json(self, report_data: Any, report_type: str) -> Dict[str, Any]:
+    def _export_as_json(self, report_data: Any, report_type: str) -> dict[str, Any]:
         """Export report data as JSON.
         
         Args:
@@ -148,7 +148,7 @@ class ExportService:
             logger.error(f"Error exporting as JSON: {e}")
             raise
     
-    async def _export_as_csv(self, report_data: Any, report_type: str) -> Dict[str, Any]:
+    async def _export_as_csv(self, report_data: Any, report_type: str) -> dict[str, Any]:
         """Export report data as CSV.
         
         Args:
@@ -203,7 +203,7 @@ class ExportService:
             logger.error(f"Error exporting as CSV: {e}")
             raise
     
-    async def _export_as_pdf(self, report_data: Any, report_type: str) -> Dict[str, Any]:
+    async def _export_as_pdf(self, report_data: Any, report_type: str) -> dict[str, Any]:
         """Export report data as PDF.
         
         Args:
@@ -215,11 +215,11 @@ class ExportService:
         """
         try:
             # Import reportlab when needed
-            from reportlab.lib.pagesizes import letter, A4
             from reportlab.lib import colors
+            from reportlab.lib.pagesizes import A4, letter
             from reportlab.lib.styles import getSampleStyleSheet
-            from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer
             from reportlab.lib.units import inch
+            from reportlab.platypus import Paragraph, SimpleDocTemplate, Spacer, Table, TableStyle
             
             # Generate filename
             timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
@@ -277,7 +277,7 @@ class ExportService:
             logger.error(f"Error exporting as PDF: {e}")
             raise
     
-    async def _export_as_excel(self, report_data: Any, report_type: str) -> Dict[str, Any]:
+    async def _export_as_excel(self, report_data: Any, report_type: str) -> dict[str, Any]:
         """Export report data as Excel file.
         
         Args:
@@ -290,7 +290,7 @@ class ExportService:
         try:
             # Import openpyxl when needed
             from openpyxl import Workbook
-            from openpyxl.styles import Font, PatternFill, Alignment
+            from openpyxl.styles import Alignment, Font, PatternFill
             
             # Generate filename
             timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
@@ -462,8 +462,8 @@ class ExportService:
     # PDF content helper methods
     def _add_income_statement_pdf_content(self, story, data_dict, styles):
         """Add income statement content to PDF."""
-        from reportlab.platypus import Table, TableStyle, Paragraph, Spacer
         from reportlab.lib import colors
+        from reportlab.platypus import Paragraph, Spacer, Table, TableStyle
         
         # Add period info
         period_text = f"Period: {data_dict.get('period_start')} to {data_dict.get('period_end')}"
@@ -582,7 +582,7 @@ class ExportService:
                 ws[f'B{row}'] = value
                 row += 1
     
-    def _check_export_permission(self, user: Dict[str, Any]) -> bool:
+    def _check_export_permission(self, user: dict[str, Any]) -> bool:
         """Check if user has permission to export financial reports.
         
         Args:

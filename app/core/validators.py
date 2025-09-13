@@ -1,15 +1,21 @@
 """
 Simple utility functions for common error handling patterns across all modules.
 """
-from typing import Any, Dict, Optional
+from typing import Any
+
 from app.core.exceptions import (
-    ValidationError, NotFoundError, AlreadyExistsError, 
-    AuthorizationError, InsufficientStockError, PaymentError,
-    DatabaseError, BusinessRuleError, ErrorMessages
+    AlreadyExistsError,
+    BusinessRuleError,
+    DatabaseError,
+    ErrorMessages,
+    InsufficientStockError,
+    NotFoundError,
+    PaymentError,
+    ValidationError,
 )
 
 
-def validate_required_fields(data: Dict[str, Any], required_fields: list) -> None:
+def validate_required_fields(data: dict[str, Any], required_fields: list) -> None:
     """
     Validate that all required fields are present and not empty.
     

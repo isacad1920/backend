@@ -1,7 +1,9 @@
 """Tests for lightweight branches summary endpoint."""
 import pytest
 from httpx import AsyncClient
+
 from app.core.config import settings
+
 
 @pytest.mark.asyncio
 async def test_branches_light_basic(async_client: AsyncClient):

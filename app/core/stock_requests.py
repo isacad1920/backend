@@ -1,14 +1,17 @@
 """
 Stock request management with real-time notifications.
 """
-from typing import List, Dict, Any, Optional
+import logging
+import uuid
 from datetime import datetime
 from enum import Enum
-import uuid
-import logging
+from typing import Any
 
 from app.core.notifications import (
-    connection_manager, Notification, NotificationType, NotificationPriority
+    Notification,
+    NotificationPriority,
+    NotificationType,
+    connection_manager,
 )
 
 logger = logging.getLogger(__name__)
@@ -42,7 +45,7 @@ class StockRequestItem:
         self.requested_quantity = requested_quantity
         self.current_stock = current_stock
         self.reason = reason
-        self.approved_quantity: Optional[int] = None
+        self.approved_quantity: int | None = None
 
 
 class StockRequest:
@@ -57,15 +60,15 @@ class StockRequest:
         self.branch_name = branch_name
         self.priority = priority
         self.status = StockRequestStatus.PENDING
-        self.items: List[StockRequestItem] = []
+        self.items: list[StockRequestItem] = []
         self.notes = ""
         self.created_at = datetime.utcnow()
         self.updated_at = datetime.utcnow()
-        self.approved_by: Optional[int] = None
-        self.approved_at: Optional[datetime] = None
-        self.shipped_at: Optional[datetime] = None
-        self.received_at: Optional[datetime] = None
-        self.tracking_number: Optional[str] = None
+        self.approved_by: int | None = None
+        self.approved_at: datetime | None = None
+        self.shipped_at: datetime | None = None
+        self.received_at: datetime | None = None
+        self.tracking_number: str | None = None
     
     def add_item(self, product_id: str, product_name: str, quantity: int,
                 current_stock: int, reason: str = ""):
@@ -73,7 +76,7 @@ class StockRequest:
         item = StockRequestItem(product_id, product_name, quantity, current_stock, reason)
         self.items.append(item)
     
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """Convert to dictionary."""
         return {
             "id": self.id,
@@ -111,11 +114,11 @@ class StockRequestService:
     """Service for managing stock requests with real-time notifications."""
     
     def __init__(self):
-        self.requests: Dict[str, StockRequest] = {}
+        self.requests: dict[str, StockRequest] = {}
     
     async def create_request(self, requester_id: int, requester_name: str,
                            branch_id: str, branch_name: str,
-                           items: List[Dict[str, Any]], 
+                           items: list[dict[str, Any]], 
                            priority: StockRequestPriority = StockRequestPriority.NORMAL,
                            notes: str = "") -> str:
         """Create new stock request and notify inventory clerks."""
@@ -162,7 +165,7 @@ class StockRequestService:
         return request.id
     
     async def approve_request(self, request_id: str, approver_id: int, approver_name: str,
-                            approved_items: Dict[str, int]) -> bool:
+                            approved_items: dict[str, int]) -> bool:
         """Approve stock request and notify requester."""
         
         if request_id not in self.requests:
@@ -236,7 +239,7 @@ class StockRequestService:
         return True
     
     async def receive_request(self, request_id: str, receiver_id: int, receiver_name: str,
-                            received_items: Dict[str, int]) -> bool:
+                            received_items: dict[str, int]) -> bool:
         """Mark request as received and update inventory."""
         
         if request_id not in self.requests:
@@ -301,19 +304,19 @@ class StockRequestService:
         logger.info(f"Stock request rejected: {request_id} by {rejector_name}")
         return True
     
-    def get_request(self, request_id: str) -> Optional[StockRequest]:
+    def get_request(self, request_id: str) -> StockRequest | None:
         """Get stock request by ID."""
         return self.requests.get(request_id)
     
-    def get_requests_by_status(self, status: StockRequestStatus) -> List[StockRequest]:
+    def get_requests_by_status(self, status: StockRequestStatus) -> list[StockRequest]:
         """Get all requests with specific status."""
         return [req for req in self.requests.values() if req.status == status]
     
-    def get_requests_by_branch(self, branch_id: str) -> List[StockRequest]:
+    def get_requests_by_branch(self, branch_id: str) -> list[StockRequest]:
         """Get all requests from specific branch."""
         return [req for req in self.requests.values() if req.branch_id == branch_id]
     
-    def get_requests_by_user(self, user_id: int) -> List[StockRequest]:
+    def get_requests_by_user(self, user_id: int) -> list[StockRequest]:
         """Get all requests from specific user."""
         return [req for req in self.requests.values() if req.requester_id == user_id]
 

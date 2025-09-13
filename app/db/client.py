@@ -1,7 +1,8 @@
 """
 Database client configuration and connection management.
 """
-from ..db.prisma import prisma, connect_db, disconnect_db, get_db_session, get_db
+from ..db.prisma import connect_db, disconnect_db
+
 
 # Database lifecycle management
 async def init_db() -> None:

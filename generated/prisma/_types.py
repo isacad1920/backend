@@ -1,11 +1,10 @@
-from typing import Callable, Coroutine, TypeVar, Type, Tuple, Any
+from collections.abc import Callable, Coroutine
+from typing import Any, Literal as Literal, TypeGuard as TypeGuard, TypeVar, get_args as get_args
+
 from pydantic import BaseModel
 from typing_extensions import (
-    TypeGuard as TypeGuard,
-    TypedDict as TypedDict,
     Protocol as Protocol,
-    Literal as Literal,
-    get_args as get_args,
+    TypedDict as TypedDict,
     runtime_checkable as runtime_checkable,
 )
 
@@ -21,11 +20,11 @@ CoroType = Callable[..., Coroutine[Any, Any, object]]
 
 @runtime_checkable
 class InheritsGeneric(Protocol):
-    __orig_bases__: Tuple['_GenericAlias']
+    __orig_bases__: tuple['_GenericAlias']
 
 
 class _GenericAlias(Protocol):
-    __origin__: Type[object]
+    __origin__: type[object]
 
 
 PrismaMethod = Literal[

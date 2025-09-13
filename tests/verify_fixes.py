@@ -2,9 +2,9 @@
 """
 Verification script to test all the authentication and authorization fixes
 """
-import requests
-import json
 import sys
+
+import requests
 
 BASE_URL = "http://localhost:8000"
 
@@ -39,7 +39,7 @@ def test_protected_endpoint(token, endpoint_name, endpoint_path):
             try:
                 error_detail = response.json().get('detail', 'Unknown error')
                 print(f"   Error: {error_detail}")
-            except:
+            except Exception:
                 print(f"   Error: {response.text[:100]}")
         return False
 

@@ -1,15 +1,15 @@
 """
 FastAPI dependency injection functions for common operations.
 """
-from typing import Optional, Dict, Any, AsyncGenerator, Annotated, Callable
-from fastapi import Depends, HTTPException, status, Query, Request
-from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 import logging
 from datetime import datetime
-import functools
+from typing import Annotated, Any
 
-from app.core.security import JWTManager, TokenType, PermissionManager, rate_limiter
-from app.core.config import settings, UserRole
+from fastapi import Depends, HTTPException, Query, Request, status
+from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
+
+from app.core.config import UserRole, settings
+from app.core.security import JWTManager, PermissionManager, TokenType, rate_limiter
 from app.db.prisma import get_db
 
 logger = logging.getLogger(__name__)
@@ -19,14 +19,14 @@ security = HTTPBearer(auto_error=False)
 
 # Authentication dependencies
 async def get_optional_token(
-    credentials: Optional[HTTPAuthorizationCredentials] = Depends(security),
+    credentials: HTTPAuthorizationCredentials | None = Depends(security),
     request: Request = None,
-) -> Optional[str]:
+) -> str | None:
     """Extract optional JWT token from request.
     Accepts both 'Authorization: Bearer <token>' and 'Authorization: <token>'.
     Ignores empty or placeholder values like 'undefined'/'null'.
     """
-    token: Optional[str] = None
+    token: str | None = None
     if credentials and credentials.scheme.lower() == "bearer":
         token = credentials.credentials
     elif request is not None:
@@ -41,7 +41,7 @@ async def get_optional_token(
     return token
 
 async def get_required_token(
-    credentials: Optional[HTTPAuthorizationCredentials] = Depends(security),
+    credentials: HTTPAuthorizationCredentials | None = Depends(security),
     request: Request = None,
 ) -> str:
     """Extract required JWT token from request with robust parsing."""
@@ -56,7 +56,7 @@ async def get_required_token(
 
 async def verify_access_token(
     token: str = Depends(get_required_token)
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """Verify access token and return payload."""
     payload = JWTManager.verify_token(token, TokenType.ACCESS)
     if not payload:
@@ -80,7 +80,7 @@ async def verify_access_token(
 
 async def verify_refresh_token(
     token: str = Depends(get_required_token)
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """Verify refresh token and return payload."""
     payload = JWTManager.verify_token(token, TokenType.REFRESH)
     if not payload:
@@ -93,7 +93,7 @@ async def verify_refresh_token(
     return payload
 
 async def get_current_user_id(
-    token_payload: Dict[str, Any] = Depends(verify_access_token)
+    token_payload: dict[str, Any] = Depends(verify_access_token)
 ) -> str:
     """Get current user ID from token."""
     user_id = token_payload.get("sub")
@@ -225,7 +225,7 @@ async def get_user_branch_id(
     # return current_user.branch_id
     return "default-branch-id"  # Placeholder
 
-def require_branch_access(branch_id: Optional[str] = None):
+def require_branch_access(branch_id: str | None = None):
     """Create a dependency that requires access to a specific branch."""
     async def branch_checker(
         current_user = Depends(get_current_active_user),
@@ -254,7 +254,7 @@ async def resolve_branch_id(
     current_user = Depends(get_current_active_user),
     db = Depends(get_db),
     required: bool = True,
-) -> Optional[int]:
+) -> int | None:
     """Resolve effective branch_id for a request.
     Order:
     1) X-Branch-Id header
@@ -343,11 +343,11 @@ class SearchParams:
     """Search parameters."""
     def __init__(
         self,
-        q: Optional[str] = Query(None, description="Search query"),
-        sort_by: Optional[str] = Query("createdAt", description="Sort field"),
+        q: str | None = Query(None, description="Search query"),
+        sort_by: str | None = Query("createdAt", description="Sort field"),
         sort_order: str = Query("desc", regex="^(asc|desc)$", description="Sort order"),
-        date_from: Optional[datetime] = Query(None, description="Filter from date"),
-        date_to: Optional[datetime] = Query(None, description="Filter to date"),
+        date_from: datetime | None = Query(None, description="Filter from date"),
+        date_to: datetime | None = Query(None, description="Filter to date"),
     ):
         self.q = q
         self.sort_by = sort_by
@@ -356,11 +356,11 @@ class SearchParams:
         self.date_to = date_to
 
 async def get_search_params(
-    q: Optional[str] = Query(None, description="Search query"),
-    sort_by: Optional[str] = Query("createdAt", description="Sort field"),
+    q: str | None = Query(None, description="Search query"),
+    sort_by: str | None = Query("createdAt", description="Sort field"),
     sort_order: str = Query("desc", regex="^(asc|desc)$", description="Sort order"),
-    date_from: Optional[datetime] = Query(None, description="Filter from date"),
-    date_to: Optional[datetime] = Query(None, description="Filter to date"),
+    date_from: datetime | None = Query(None, description="Filter from date"),
+    date_to: datetime | None = Query(None, description="Filter to date"),
 ) -> SearchParams:
     """Get search and filter parameters."""
     return SearchParams(
@@ -396,7 +396,7 @@ def rate_limit(requests_per_minute: int = 60):
 
 # API Key dependency (for external integrations)
 async def verify_api_key(
-    api_key: Optional[str] = Query(None, alias="api_key"),
+    api_key: str | None = Query(None, alias="api_key"),
     db = Depends(get_db)
 ) -> bool:
     """Verify API key for external integrations.
@@ -475,14 +475,14 @@ class FileUploadLimits:
     def __init__(
         self,
         max_size_mb: int = settings.max_file_size_mb,
-        allowed_types: Optional[list] = None
+        allowed_types: list | None = None
     ):
         self.max_size_mb = max_size_mb
         self.allowed_types = allowed_types or []
 
 def get_file_upload_limits(
     max_size_mb: int = settings.max_file_size_mb,
-    allowed_types: Optional[list] = None
+    allowed_types: list | None = None
 ) -> FileUploadLimits:
     """Get file upload limits."""
     return FileUploadLimits(max_size_mb, allowed_types)
@@ -505,18 +505,18 @@ class CommonFilters:
     """Common query filters."""
     def __init__(
         self,
-        is_active: Optional[bool] = Query(None, description="Filter by active status"),
-        created_by: Optional[str] = Query(None, description="Filter by creator"),
-        branch_id: Optional[str] = Query(None, description="Filter by branch"),
+        is_active: bool | None = Query(None, description="Filter by active status"),
+        created_by: str | None = Query(None, description="Filter by creator"),
+        branch_id: str | None = Query(None, description="Filter by branch"),
     ):
         self.is_active = is_active
         self.created_by = created_by
         self.branch_id = branch_id
 
 async def get_common_filters(
-    is_active: Optional[bool] = Query(None, description="Filter by active status"),
-    created_by: Optional[str] = Query(None, description="Filter by creator"),
-    branch_id: Optional[str] = Query(None, description="Filter by branch"),
+    is_active: bool | None = Query(None, description="Filter by active status"),
+    created_by: str | None = Query(None, description="Filter by creator"),
+    branch_id: str | None = Query(None, description="Filter by branch"),
 ) -> CommonFilters:
     """Get common filters for queries."""
     return CommonFilters(is_active, created_by, branch_id)
@@ -569,8 +569,8 @@ async def get_financial_service():
     return create_financial_service(db)
 
 # Common type annotations for dependencies
-CurrentUser = Annotated[Dict, Depends(get_current_user)]
-CurrentActiveUser = Annotated[Dict, Depends(get_current_active_user)]
+CurrentUser = Annotated[dict, Depends(get_current_user)]
+CurrentActiveUser = Annotated[dict, Depends(get_current_active_user)]
 DatabaseSession = Annotated[Any, Depends(get_db)]
 PaginationDep = Annotated[PaginationParams, Depends(get_pagination_params)]
 SearchDep = Annotated[SearchParams, Depends(get_search_params)]

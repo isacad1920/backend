@@ -1,16 +1,19 @@
 """
 Permission management service for handling custom permission overrides.
 """
-from typing import List, Dict, Any, Optional
-from datetime import datetime
-from app.core.security import PermissionManager
-from app.core.config import UserRole
-from app.modules.permissions.schema import (
-    PermissionGrantRequest, PermissionRevokeRequest, 
-    UserPermissionResponse, AvailablePermissionsResponse,
-    PermissionAuditLog
-)
 import logging
+from datetime import datetime
+from typing import Any
+
+from app.core.config import UserRole
+from app.core.security import PermissionManager
+from app.modules.permissions.schema import (
+    AvailablePermissionsResponse,
+    PermissionAuditLog,
+    PermissionGrantRequest,
+    PermissionRevokeRequest,
+    UserPermissionResponse,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -19,9 +22,9 @@ class PermissionService:
     """Service for managing custom user permissions."""
     
     def __init__(self):
-        self.audit_logs: List[PermissionAuditLog] = []
+        self.audit_logs: list[PermissionAuditLog] = []
     
-    async def grant_permissions(self, request: PermissionGrantRequest, admin_id: int) -> Dict[str, Any]:
+    async def grant_permissions(self, request: PermissionGrantRequest, admin_id: int) -> dict[str, Any]:
         """Grant custom permissions to a user."""
         try:
             granted_permissions = []
@@ -72,7 +75,7 @@ class PermissionService:
                 "data": None
             }
     
-    async def revoke_permissions(self, request: PermissionRevokeRequest, admin_id: int) -> Dict[str, Any]:
+    async def revoke_permissions(self, request: PermissionRevokeRequest, admin_id: int) -> dict[str, Any]:
         """Revoke custom permissions from a user."""
         try:
             revoked_permissions = []
@@ -144,14 +147,14 @@ class PermissionService:
             grouped_permissions=grouped_permissions
         )
     
-    async def get_audit_logs(self, user_id: Optional[int] = None) -> List[PermissionAuditLog]:
+    async def get_audit_logs(self, user_id: int | None = None) -> list[PermissionAuditLog]:
         """Get permission audit logs."""
         if user_id:
             return [log for log in self.audit_logs if log.user_id == user_id]
         return self.audit_logs
     
-    async def bulk_grant_permissions(self, user_ids: List[int], permissions: List[str], 
-                                   admin_id: int, reason: Optional[str] = None) -> Dict[str, Any]:
+    async def bulk_grant_permissions(self, user_ids: list[int], permissions: list[str], 
+                                   admin_id: int, reason: str | None = None) -> dict[str, Any]:
         """Grant permissions to multiple users at once."""
         results = []
         

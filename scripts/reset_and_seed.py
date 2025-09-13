@@ -26,31 +26,32 @@ This uses delete_many() on each model in a dependency-safe order instead of raw 
 to avoid quoting/casing pitfalls with model names.
 """
 from __future__ import annotations
+
 import argparse
 import asyncio
-import sys
 import logging
-from decimal import Decimal
-from typing import List
+import sys
 import uuid
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
+from decimal import Decimal
 
 # Ensure project root on path when executing directly
 from pathlib import Path
+
 ROOT = Path(__file__).resolve().parents[1]
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
-from app.db.prisma import prisma  # type: ignore
-from app.core.security import PasswordManager  # type: ignore
 from app.core.config import settings  # type: ignore
+from app.core.security import PasswordManager  # type: ignore
+from app.db.prisma import prisma  # type: ignore
 from generated.prisma import fields  # type: ignore
 
 logger = logging.getLogger("reset_and_seed")
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
 
 # Deletion order (children before parents to satisfy FK constraints)
-DELETE_ORDER: List[str] = [
+DELETE_ORDER: list[str] = [
     "notification",
     "revokedtoken",
     "userpermission",
@@ -206,7 +207,6 @@ async def seed_database(mode: str = "full", sales_count: int = 1) -> None:
     })
 
     # Permissions for admin (broad allow)
-    from generated.prisma import fields  # type: ignore
     await prisma.userpermission.create(data={  # type: ignore
         "userId": admin.id,
         "resource": "*",
@@ -346,7 +346,7 @@ async def seed_database(mode: str = "full", sales_count: int = 1) -> None:
             "jti": str(uuid.uuid4()),
             "token": "dummy.revoked.token",
             "reason": "Seed example",
-            "expiresAt": datetime.now(timezone.utc) + timedelta(hours=1),
+            "expiresAt": datetime.now(UTC) + timedelta(hours=1),
             "revokedBy": admin.id,
         })
         # Notification sample

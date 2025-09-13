@@ -2,10 +2,12 @@
 Simple audit decorators for endpoint logging.
 """
 import functools
-from typing import Callable, Optional
+from collections.abc import Callable
+
 from fastapi import Request
 
-from app.core.audit import get_audit_logger, AuditAction, AuditSeverity
+from app.core.audit import AuditAction, AuditSeverity, get_audit_logger
+
 
 def audit_log(
     action: AuditAction,
@@ -24,7 +26,7 @@ def audit_log(
         @functools.wraps(func)
         async def wrapper(*args, **kwargs):
             # Extract request and user from parameters
-            request: Optional[Request] = None
+            request: Request | None = None
             current_user = None
             
             # Look for request and user in args and kwargs

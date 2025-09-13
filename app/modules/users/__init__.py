@@ -1,14 +1,19 @@
 """
 User module package initialization.
 """
-from .routes import router, auth_router
-from .service import UserService, create_user_service
-from .schema import (
-    UserCreateSchema, UserUpdateSchema, UserResponseSchema,
-    LoginRequestSchema, LoginResponseSchema, UserListResponseSchema,
-    UserDetailResponseSchema, UserStatsSchema
-)
 from .model import UserModel, create_user_model
+from .routes import auth_router, router
+from .schema import (
+    LoginRequestSchema,
+    LoginResponseSchema,
+    UserCreateSchema,
+    UserDetailResponseSchema,
+    UserListResponseSchema,
+    UserResponseSchema,
+    UserStatsSchema,
+    UserUpdateSchema,
+)
+from .service import UserService, create_user_service
 
 __all__ = [
     "router",

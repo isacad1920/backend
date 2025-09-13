@@ -2,14 +2,11 @@
 Utility functions for financial services.
 """
 import logging
-from datetime import datetime, date, timedelta
+from datetime import date, timedelta
 from decimal import Decimal, InvalidOperation
-from typing import Optional, List, Dict, Any, Union, Tuple
-from app.core.exceptions import (
-    ValidationError, 
-    AuthorizationError,
-    DatabaseError
-)
+from typing import Any
+
+from app.core.exceptions import AuthorizationError, DatabaseError, ValidationError
 
 logger = logging.getLogger(__name__)
 
@@ -18,7 +15,7 @@ class DateUtils:
     """Utility class for date operations."""
     
     @staticmethod
-    def validate_date_range(start_date: Optional[date], end_date: Optional[date]) -> Tuple[date, date]:
+    def validate_date_range(start_date: date | None, end_date: date | None) -> tuple[date, date]:
         """
         Validate and normalize date range.
         
@@ -58,7 +55,7 @@ class DateUtils:
         return start_date, end_date
     
     @staticmethod
-    def get_period_dates(period: str) -> Tuple[date, date]:
+    def get_period_dates(period: str) -> tuple[date, date]:
         """
         Get start and end dates for predefined periods.
         
@@ -93,7 +90,7 @@ class DateUtils:
             )
     
     @staticmethod
-    def get_previous_period(start_date: date, end_date: date) -> Tuple[date, date]:
+    def get_previous_period(start_date: date, end_date: date) -> tuple[date, date]:
         """
         Get the previous period of the same duration.
         
@@ -114,7 +111,7 @@ class NumberUtils:
     """Utility class for number operations."""
     
     @staticmethod
-    def safe_decimal(value: Union[str, int, float, Decimal]) -> Decimal:
+    def safe_decimal(value: str | int | float | Decimal) -> Decimal:
         """
         Safely convert value to Decimal.
         
@@ -131,7 +128,7 @@ class NumberUtils:
             if value is None:
                 return Decimal('0')
             return Decimal(str(value))
-        except (InvalidOperation, ValueError, TypeError) as e:
+        except (InvalidOperation, ValueError, TypeError):
             raise ValidationError(
                 message="Invalid numeric value",
                 field="amount",
@@ -139,7 +136,7 @@ class NumberUtils:
             )
     
     @staticmethod
-    def safe_divide(numerator: Union[Decimal, float], denominator: Union[Decimal, float]) -> Decimal:
+    def safe_divide(numerator: Decimal | float, denominator: Decimal | float) -> Decimal:
         """
         Safely divide two numbers, handling division by zero.
         
@@ -162,7 +159,7 @@ class NumberUtils:
             return Decimal('0')
     
     @staticmethod
-    def calculate_percentage(part: Union[Decimal, float], total: Union[Decimal, float]) -> Decimal:
+    def calculate_percentage(part: Decimal | float, total: Decimal | float) -> Decimal:
         """
         Calculate percentage safely.
         
@@ -182,7 +179,7 @@ class NumberUtils:
         return (part_decimal / total_decimal) * 100
     
     @staticmethod
-    def format_currency(amount: Union[Decimal, float], currency: str = "USD") -> str:
+    def format_currency(amount: Decimal | float, currency: str = "USD") -> str:
         """
         Format amount as currency string.
         
@@ -207,7 +204,7 @@ class ValidationUtils:
     """Utility class for data validation."""
     
     @staticmethod
-    def validate_user_permissions(user: Dict[str, Any], required_action: str, resource: str = "financial") -> None:
+    def validate_user_permissions(user: dict[str, Any], required_action: str, resource: str = "financial") -> None:
         """
         Validate user has required permissions.
         
@@ -243,7 +240,7 @@ class ValidationUtils:
             )
     
     @staticmethod
-    def validate_branch_access(user: Dict[str, Any], branch_id: Optional[int]) -> None:
+    def validate_branch_access(user: dict[str, Any], branch_id: int | None) -> None:
         """
         Validate user has access to specified branch.
         
@@ -272,7 +269,7 @@ class ValidationUtils:
             )
     
     @staticmethod
-    def validate_required_data(data: List[Any], data_type: str, minimum_required: int = 1) -> None:
+    def validate_required_data(data: list[Any], data_type: str, minimum_required: int = 1) -> None:
         """
         Validate that sufficient data exists for analysis.
         
@@ -296,7 +293,7 @@ class DataAggregationUtils:
     """Utility class for data aggregation operations."""
     
     @staticmethod
-    def group_by_date(data: List[Dict], date_field: str = 'date') -> Dict[str, List[Dict]]:
+    def group_by_date(data: list[dict], date_field: str = 'date') -> dict[str, list[dict]]:
         """
         Group data by date.
         
@@ -318,7 +315,7 @@ class DataAggregationUtils:
         return grouped
     
     @staticmethod
-    def calculate_totals(data: List[Dict], amount_field: str = 'amount') -> Dict[str, Decimal]:
+    def calculate_totals(data: list[dict], amount_field: str = 'amount') -> dict[str, Decimal]:
         """
         Calculate various totals from data.
         
@@ -350,7 +347,7 @@ class DataAggregationUtils:
         }
     
     @staticmethod
-    def calculate_growth_rate(current: Union[Decimal, float], previous: Union[Decimal, float]) -> Decimal:
+    def calculate_growth_rate(current: Decimal | float, previous: Decimal | float) -> Decimal:
         """
         Calculate growth rate between two periods.
         
@@ -423,16 +420,16 @@ class ErrorHandler:
 
 
 # Convenience functions for common operations
-def validate_financial_permission(user: Dict[str, Any], action: str = 'read') -> None:
+def validate_financial_permission(user: dict[str, Any], action: str = 'read') -> None:
     """Validate user has financial permissions."""
     ValidationUtils.validate_user_permissions(user, action, 'financial')
 
 
-def safe_decimal_sum(values: List[Union[str, int, float, Decimal]]) -> Decimal:
+def safe_decimal_sum(values: list[str | int | float | Decimal]) -> Decimal:
     """Safely sum a list of values as Decimal."""
     return sum(NumberUtils.safe_decimal(v) for v in values if v is not None)
 
 
-def format_financial_amount(amount: Union[Decimal, float]) -> str:
+def format_financial_amount(amount: Decimal | float) -> str:
     """Format amount for financial display."""
     return NumberUtils.format_currency(amount)

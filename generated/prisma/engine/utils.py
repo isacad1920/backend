@@ -1,26 +1,23 @@
 from __future__ import annotations
 
+import logging
 import os
+import socket
+import subprocess
 import sys
 import time
-import socket
-import logging
-import subprocess
 from pathlib import Path
-from typing import NoReturn, Dict, Type, Any
+from typing import Any, NoReturn
 
-from . import errors
-from .. import errors as prisma_errors
-
-from .. import config
+from .. import config, errors as prisma_errors
+from ..binaries import platform
 from ..http_abstract import AbstractResponse
 from ..utils import DEBUG_GENERATOR, time_since
-from ..binaries import platform
-
+from . import errors
 
 log: logging.Logger = logging.getLogger(__name__)
 
-ERROR_MAPPING: Dict[str, Type[Exception]] = {
+ERROR_MAPPING: dict[str, type[Exception]] = {
     'P2002': prisma_errors.UniqueViolationError,
     'P2003': prisma_errors.ForeignKeyViolationError,
     'P2009': prisma_errors.FieldNotFoundError,

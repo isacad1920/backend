@@ -1,25 +1,21 @@
 """
 Inventory API routes and endpoints.
 """
-from typing import List, Optional, Dict, Any
-from datetime import datetime, timedelta
-from fastapi import APIRouter, Depends, HTTPException, Query, Path, status, BackgroundTasks
-from fastapi.security import HTTPBearer
 import logging
+from datetime import datetime, timedelta
+from typing import Any
 
-from app.core.dependencies import get_current_user, get_current_active_user, require_role
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Path, Query
+from fastapi.security import HTTPBearer
+
 from app.core.config import UserRole, settings
-from app.core.response import ResponseBuilder, success_response
+from app.core.dependencies import get_current_active_user, require_role
+from app.core.response import success_response, paginated_response
 from app.db.prisma import get_db
-from app.modules.inventory.service import InventoryService
 from app.modules.inventory.schema import (
     StockAdjustmentCreateSchema,
-    StockLevelSchema,
-    LowStockAlertSchema,
-    InventoryValuationSchema,
-    DeadStockAnalysisSchema,
-    InventoryDashboardSchema
 )
+from app.modules.inventory.service import InventoryService
 
 security = HTTPBearer()
 logger = logging.getLogger(__name__)
@@ -32,13 +28,13 @@ router = APIRouter(prefix="/inventory", tags=["Inventory"])
 DEFAULT_PAGE_SIZE = 25
 MAX_PAGE_SIZE = 200
 
-async def _collect_base_items(db, *, search: Optional[str], category_id: Optional[int], status: str, skip: int, take: int, low_stock_threshold: Optional[int]):
+async def _collect_base_items(db, *, search: str | None, category_id: int | None, status: str, skip: int, take: int, low_stock_threshold: int | None):
     """Lightweight aggregation over existing stock levels service output.
     Reuses InventoryService.get_stock_levels for now (could be optimized with direct queries).
     """
     service = InventoryService(db)
     stock_levels = await service.get_stock_levels()
-    items: List[Dict[str, Any]] = []
+    items: list[dict[str, Any]] = []
     for s in stock_levels:
         name = getattr(s, 'product_name', None)
         sku = getattr(s, 'product_sku', None)
@@ -84,7 +80,7 @@ async def _collect_base_items(db, *, search: Optional[str], category_id: Optiona
         'items': items[skip:skip+take]
     }
 
-async def _apply_expansions(expands: List[str], rows: List[Dict[str, Any]], db):
+async def _apply_expansions(expands: list[str], rows: list[dict[str, Any]], db):
     if not rows:
         return
     if 'valuation' in expands:
@@ -104,13 +100,13 @@ async def _apply_expansions(expands: List[str], rows: List[Dict[str, Any]], db):
 @router.get('/items')
 async def unified_inventory_items(
     status: str = Query('all', pattern='^(all|low_stock|dead_stock)$'),
-    search: Optional[str] = None,
-    category_id: Optional[int] = None,
-    branch_id: Optional[int] = None,  # reserved for future use
+    search: str | None = None,
+    category_id: int | None = None,
+    branch_id: int | None = None,  # reserved for future use
     page: int = Query(1, ge=1),
     size: int = Query(DEFAULT_PAGE_SIZE, ge=1, le=MAX_PAGE_SIZE),
-    low_stock_threshold: Optional[int] = Query(None, ge=0),
-    expand: Optional[str] = Query(None, description='Comma separated expansions: valuation,sales_timeseries'),
+    low_stock_threshold: int | None = Query(None, ge=0),
+    expand: str | None = Query(None, description='Comma separated expansions: valuation,sales_timeseries'),
     current_user = Depends(get_current_active_user),
     db = Depends(get_db),
 ):
@@ -118,7 +114,7 @@ async def unified_inventory_items(
         skip = (page - 1) * size
         base = await _collect_base_items(db, search=search, category_id=category_id, status=status, skip=skip, take=size, low_stock_threshold=low_stock_threshold)
         rows = base['items']
-        expands: List[str] = []
+        expands: list[str] = []
         if expand:
             expands = [e.strip() for e in expand.split(',') if e.strip()]
         await _apply_expansions(expands, rows, db)
@@ -172,7 +168,7 @@ async def unified_inventory_summary(
         raise HTTPException(status_code=500, detail='Failed to compute inventory summary')
 
 # In-memory cache/state for dead stock background scans
-_DEAD_STOCK_SCAN_STATE: Dict[str, Any] = {
+_DEAD_STOCK_SCAN_STATE: dict[str, Any] = {
     "scanning": False,
     "last_scan": None,
     "items": [],
@@ -192,7 +188,7 @@ def _start_dead_stock_scan_task(inventory_service: InventoryService, days_thresh
                 "items": [i.model_dump(mode="json") if hasattr(i, "model_dump") else i for i in items],
                 "params": {"days_threshold": days_threshold},
             })
-        except Exception as e:  # pragma: no cover - defensive
+        except Exception:  # pragma: no cover - defensive
             _DEAD_STOCK_SCAN_STATE["scanning"] = False
     try:
         loop = asyncio.get_event_loop()
@@ -205,9 +201,9 @@ def _start_dead_stock_scan_task(inventory_service: InventoryService, days_thresh
 async def get_low_stock_batch(
     page: int = Query(1, ge=1),
     page_size: int = Query(25, ge=1, le=200),
-    threshold: Optional[int] = Query(None, ge=0, description="Override default low stock threshold"),
-    search: Optional[str] = Query(None, description="Search by product name or SKU"),
-    category_id: Optional[int] = Query(None, description="Filter by category id"),
+    threshold: int | None = Query(None, ge=0, description="Override default low stock threshold"),
+    search: str | None = Query(None, description="Search by product name or SKU"),
+    category_id: int | None = Query(None, description="Filter by category id"),
     current_user = Depends(get_current_active_user),
     db = Depends(get_db),
 ):
@@ -227,31 +223,25 @@ async def get_low_stock_batch(
         start = (page - 1) * page_size
         end = start + page_size
         paged = alerts[start:end]
-        data = {
-            "items": [i.model_dump(mode="json") if hasattr(i, "model_dump") else i for i in paged],
-            "page": page,
-            "page_size": page_size,
-            "total_items": total_items,
-            "page_count": (total_items + page_size - 1) // page_size if total_items else 1,
-            "threshold": threshold,  # Provided override (None means using default_threshold)
-            "default_threshold": settings.default_low_stock_threshold,
-        }
-        meta = {
-            "pagination": {
-                "page": page,
-                "size": page_size,
-                "total": total_items,
-                "pages": (total_items + page_size - 1) // page_size if total_items else 1,
+        items_list = [i.model_dump(mode="json") if hasattr(i, "model_dump") else i for i in paged]
+        return paginated_response(
+            items=items_list,
+            total=total_items,
+            page=page,
+            limit=page_size,
+            message="Low stock batch retrieved",
+            meta_extra={
+                "threshold": threshold,
+                "default_threshold": settings.default_low_stock_threshold,
             }
-        }
-        return success_response(data=data, meta=meta, message="Low stock batch retrieved")
+        )
     except Exception as e:
         logger.error(f"Failed to retrieve low stock batch: {e}")
         raise HTTPException(status_code=500, detail="Failed to retrieve low stock batch")
 
 @router.post("/dead-stock/scan", status_code=202)
 async def trigger_dead_stock_scan(
-    days_threshold: Optional[int] = Query(None, ge=1, le=365),
+    days_threshold: int | None = Query(None, ge=1, le=365),
     background_tasks: BackgroundTasks = None,
     current_user = Depends(get_current_active_user),
     db = Depends(get_db),
@@ -290,10 +280,10 @@ async def get_dead_stock_latest(
 
 @router.get("/stock-levels")
 async def list_inventory(
-    branch_id: Optional[int] = Query(None, description="Filter by branch ID"),
+    branch_id: int | None = Query(None, description="Filter by branch ID"),
     low_stock_only: bool = Query(False, description="Show only low stock items"),
-    status_filter: Optional[str] = Query(None, description="Filter by stock status"),
-    category_id: Optional[int] = Query(None, description="Filter by category"),
+    status_filter: str | None = Query(None, description="Filter by stock status"),
+    category_id: int | None = Query(None, description="Filter by category"),
     current_user = Depends(get_current_active_user),
     db = Depends(get_db),
 ):
@@ -327,8 +317,7 @@ async def list_inventory(
                 "category_id": category_id,
             }
         }
-        # Return plain list for backward compatibility tests expecting a raw list
-        return items
+        return success_response(data=items, meta=meta, message="Stock levels retrieved")
     except Exception as e:
         logger.error(f"Failed to retrieve inventory: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Failed to retrieve inventory: {str(e)}")
@@ -349,7 +338,7 @@ async def get_low_stock_alerts(
         alerts = await inventory_service.get_low_stock_alerts(threshold=settings.default_low_stock_threshold)
         items = [a.model_dump(mode="json", by_alias=True) if hasattr(a, "model_dump") else a for a in alerts]
         meta = {"count": len(items), "threshold": settings.default_low_stock_threshold}
-        return items
+        return success_response(data=items, meta=meta, message="Low stock alerts retrieved")
     except Exception as e:
         logger.error(f"Failed to retrieve low stock alerts: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Failed to retrieve low stock alerts: {str(e)}")
@@ -366,7 +355,7 @@ async def get_low_stock_alias(
         alerts = await inventory_service.get_low_stock_alerts(threshold=settings.default_low_stock_threshold)
         items = [a.model_dump(mode="json", by_alias=True) if hasattr(a, "model_dump") else a for a in alerts]
         meta = {"count": len(items), "threshold": settings.default_low_stock_threshold, "alias": True}
-        return items
+        return success_response(data=items, meta=meta, message="Low stock alerts retrieved (alias)")
     except Exception as e:
         logger.error(f"Failed to retrieve low stock alerts (alias): {str(e)}")
         raise HTTPException(status_code=500, detail=f"Failed to retrieve low stock alerts: {str(e)}")
@@ -416,7 +405,7 @@ async def adjust_stock(
 async def list_stock_adjustments(
     page: int = Query(1, ge=1),
     page_size: int = Query(25, ge=1, le=200),
-    product_id: Optional[int] = Query(None, description="Filter by product id"),
+    product_id: int | None = Query(None, description="Filter by product id"),
     current_user = Depends(get_current_active_user),
     _role_check = Depends(require_role(UserRole.ADMIN, UserRole.INVENTORY_CLERK)),
     db = Depends(get_db),
@@ -424,7 +413,7 @@ async def list_stock_adjustments(
     """List stock adjustments with pagination."""
     try:
         skip = (page - 1) * page_size
-        where: Dict[str, Any] = {}
+        where: dict[str, Any] = {}
         if product_id is not None:
             where['productId'] = product_id
         service = InventoryService(db)
@@ -496,8 +485,8 @@ async def get_sales_timeseries(
 
 @router.get("/reports/movement")
 async def get_stock_movements(
-    product_id: Optional[int] = Query(None, description="Filter by product ID"),
-    branch_id: Optional[int] = Query(None, description="Filter by branch ID"),
+    product_id: int | None = Query(None, description="Filter by product ID"),
+    branch_id: int | None = Query(None, description="Filter by branch ID"),
     limit: int = Query(50, description="Number of movements to return"),
     offset: int = Query(0, description="Number of movements to skip"),
     current_user = Depends(get_current_active_user),
@@ -548,7 +537,7 @@ async def get_stock_movements(
 
 @router.get("/valuation")
 async def get_inventory_valuation(
-    category_id: Optional[str] = Query(None, description="Filter by category ID (accepts string or id)"),
+    category_id: str | None = Query(None, description="Filter by category ID (accepts string or id)"),
     current_user = Depends(get_current_active_user),
     db = Depends(get_db),
 ):
@@ -572,7 +561,7 @@ async def get_inventory_valuation(
                         pass
             out.append(item)
         meta = {"count": len(out), "category_id": category_id}
-        return out
+        return success_response(data=out, meta=meta, message="Inventory valuation retrieved")
     except Exception as e:
         logger.error(f"Failed to generate inventory valuation: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Failed to generate inventory valuation: {str(e)}")
@@ -594,7 +583,7 @@ async def get_dead_stock_analysis(
         analysis = await inventory_service.get_dead_stock_analysis(days_threshold=days_threshold)
         items = [a.model_dump(mode="json", by_alias=True) if hasattr(a, "model_dump") else a for a in analysis]
         meta = {"count": len(items), "days_threshold": days_threshold}
-        return items
+        return success_response(data=items, meta=meta, message="Dead stock analysis retrieved")
     except Exception as e:
         logger.error(f"Failed to analyze dead stock: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Failed to analyze dead stock: {str(e)}")
@@ -650,7 +639,7 @@ async def get_inventory_stats(
                 "minimum_level": min_level,
                 "turnover_ratio": turnover_ratio,
             })
-        return report
+        return success_response(data=report, meta={"count": len(report)}, message="Inventory turnover report retrieved")
     except Exception as e:
         logger.error(f"Failed to compute inventory turnover: {e}")
         raise HTTPException(status_code=500, detail="Failed to compute inventory turnover")
@@ -683,7 +672,7 @@ async def get_comprehensive_inventory_report(
             "stock_levels": [s.model_dump(mode="json", by_alias=True) if hasattr(s, "model_dump") else s for s in stock_levels],
             "recommendations": [],
         }
-        return data
+        return success_response(data=data, message="Comprehensive inventory report retrieved")
     except Exception as e:
         logger.error(f"Failed to generate comprehensive report: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Failed to generate comprehensive report: {str(e)}")
@@ -692,7 +681,7 @@ async def get_comprehensive_inventory_report(
 @router.get("/{product_id}")
 async def get_product_stock(
     product_id: int = Path(..., description="Product ID"),
-    branch_id: Optional[int] = Query(None, description="Specific branch inventory"),
+    branch_id: int | None = Query(None, description="Specific branch inventory"),
     current_user = Depends(get_current_active_user),
     db = Depends(get_db),
 ):
@@ -714,7 +703,7 @@ async def get_product_stock(
 @router.put("/reorder-points/{product_id}")
 async def update_reorder_point(
     product_id: int,
-    body: Dict[str, Any],
+    body: dict[str, Any],
     current_user = Depends(get_current_active_user),
     db = Depends(get_db),
 ):

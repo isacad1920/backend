@@ -1,13 +1,12 @@
 import json
-from typing import List
-from pathlib import Path
 from importlib import import_module
+from pathlib import Path
 
 import click
 
-from ..utils import pretty_info
 from ... import __version__, config
 from ...binaries.platform import binary_platform
+from ..utils import pretty_info
 
 
 @click.command(
@@ -25,7 +24,7 @@ def cli(output_json: bool) -> None:
         'dev': 'nox',
         'docs': 'mkdocs',
     }
-    installed: List[str] = []
+    installed: list[str] = []
     for extra, module in extras.items():
         try:
             import_module(module)

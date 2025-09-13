@@ -2,16 +2,16 @@ from __future__ import annotations
 
 import logging
 import warnings
+from datetime import timedelta
 from types import TracebackType
 from typing import TYPE_CHECKING, Generic, TypeVar
-from datetime import timedelta
 
+from ._builder import dumps
 from ._types import TransactionId
 from .errors import TransactionNotStartedError
-from ._builder import dumps
 
 if TYPE_CHECKING:
-    from ._base_client import SyncBasePrisma, AsyncBasePrisma
+    from ._base_client import AsyncBasePrisma, SyncBasePrisma
 
 log: logging.Logger = logging.getLogger(__name__)
 

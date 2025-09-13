@@ -5,13 +5,10 @@ Tests all 116 endpoints across 12 modules with proper authentication.
 """
 
 import asyncio
-import json
 import logging
-from datetime import datetime, date, timedelta
-from decimal import Decimal
-from typing import Dict, Any, List, Optional
+from typing import Any
+
 import httpx
-import pytest
 from faker import Faker
 
 # Configure logging
@@ -99,18 +96,18 @@ class ComprehensiveEndpointTester:
                         logger.info(f"✅ Authentication successful with password: {password}")
                         return True
                         
-                except Exception as e:
+                except Exception:
                     continue
                     
-            logger.error(f"❌ Authentication failed with all passwords")
+            logger.error("❌ Authentication failed with all passwords")
             return False
                     
         except Exception as e:
             logger.error(f"❌ Authentication error: {str(e)}")
             return False
 
-    async def test_endpoint(self, method: str, endpoint: str, data: Optional[Dict] = None, 
-                           expected_status: int = 200, description: str = "") -> Dict[str, Any]:
+    async def test_endpoint(self, method: str, endpoint: str, data: dict | None = None, 
+                           expected_status: int = 200, description: str = "") -> dict[str, Any]:
         """Test a single endpoint."""
         try:
             url = f"{self.base_url}{endpoint}"
@@ -143,7 +140,7 @@ class ComprehensiveEndpointTester:
             
             try:
                 result['response_data'] = response.json()
-            except:
+            except Exception:
                 result['response_data'] = response.text
             
             if success:
@@ -177,7 +174,7 @@ class ComprehensiveEndpointTester:
                 'error': str(e)
             }
 
-    async def create_test_data(self) -> Dict[str, Any]:
+    async def create_test_data(self) -> dict[str, Any]:
         """Create necessary test data for comprehensive testing."""
         logger.info("📋 Creating test data...")
         
@@ -545,7 +542,7 @@ class ComprehensiveEndpointTester:
             if results:
                 passed = sum(1 for r in results if r.get('success', False))
                 failed = len(results) - passed
-                print(f"📋 {module.upper()}: {passed}/{len(results)} passed")
+                print(f"📋 {module.upper()}: {passed}/{len(results)} passed ({failed} failed)")
         
         # Print errors if any
         if self.test_results['errors']:

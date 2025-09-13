@@ -1,18 +1,20 @@
 """
 PDF generation utilities using ReportLab.
 """
+from collections.abc import Mapping, Sequence
 from io import BytesIO
-from typing import List, Optional, Sequence, Mapping, Any
-from reportlab.lib.pagesizes import A4
-from reportlab.pdfgen import canvas
-from reportlab.lib.units import mm
-from reportlab.lib import colors
-from reportlab.lib.styles import getSampleStyleSheet
-from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle, Image
+from typing import Any
+
 import httpx
+from reportlab.lib import colors
+from reportlab.lib.pagesizes import A4
+from reportlab.lib.styles import getSampleStyleSheet
+from reportlab.lib.units import mm
+from reportlab.pdfgen import canvas
+from reportlab.platypus import Image, Paragraph, SimpleDocTemplate, Spacer, Table, TableStyle
 
 
-def generate_simple_pdf(title: str, lines: List[str], subtitle: Optional[str] = None) -> bytes:
+def generate_simple_pdf(title: str, lines: list[str], subtitle: str | None = None) -> bytes:
     """
     Create a simple PDF with a title and a list of text lines.
     Returns PDF bytes suitable for application/pdf responses.
@@ -48,7 +50,7 @@ def generate_simple_pdf(title: str, lines: List[str], subtitle: Optional[str] = 
     return pdf
 
 
-def _fetch_image_bytes(url: str, timeout: float = 5.0) -> Optional[bytes]:
+def _fetch_image_bytes(url: str, timeout: float = 5.0) -> bytes | None:
     """Best-effort fetch of an image URL; returns bytes or None on failure."""
     try:
         with httpx.Client(follow_redirects=True, timeout=timeout) as client:
@@ -62,11 +64,11 @@ def _fetch_image_bytes(url: str, timeout: float = 5.0) -> Optional[bytes]:
 
 def generate_table_pdf(
     title: str,
-    subtitle: Optional[str],
+    subtitle: str | None,
     headers: Sequence[str],
     rows: Sequence[Sequence[Any]],
-    totals: Optional[Mapping[str, Any]] = None,
-    logo_url: Optional[str] = None,
+    totals: Mapping[str, Any] | None = None,
+    logo_url: str | None = None,
 ) -> bytes:
     """
     Generate a branded PDF with an optional logo, title/subtitle, and a styled table.
@@ -80,7 +82,7 @@ def generate_table_pdf(
     doc = SimpleDocTemplate(buf, pagesize=A4, leftMargin=18*mm, rightMargin=18*mm, topMargin=18*mm, bottomMargin=18*mm)
     styles = getSampleStyleSheet()
 
-    story: List[Any] = []
+    story: list[Any] = []
 
     # Header with optional logo
     img_width = 0
@@ -113,7 +115,7 @@ def generate_table_pdf(
     story.append(Spacer(1, 12))
 
     # Build table data
-    data: List[List[str]] = [list(map(str, headers))]
+    data: list[list[str]] = [list(map(str, headers))]
     for r in rows:
         data.append(["" if v is None else (f"{v:.2f}" if isinstance(v, (int, float)) else str(v)) for v in r])
 

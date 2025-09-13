@@ -2,8 +2,8 @@
 Notifications module service layer.
 """
 import logging
-from typing import List, Dict, Any, Optional
 from datetime import datetime
+from typing import Any
 
 from app.core.notifications import connection_manager
 from app.db.prisma import Prisma
@@ -15,15 +15,15 @@ logger = logging.getLogger(__name__)
 class NotificationService:
     """Service for managing notifications with DB persistence and realtime push."""
 
-    def __init__(self, db: Optional[Prisma] = None):
+    def __init__(self, db: Prisma | None = None):
         self.db = db
 
-    async def get_user_notifications(self, user_id: int, unread_only: bool = False, limit: int = 50, cursor: Optional[str] = None) -> List[Dict[str, Any]]:
+    async def get_user_notifications(self, user_id: int, unread_only: bool = False, limit: int = 50, cursor: str | None = None) -> list[dict[str, Any]]:
         """Get notifications for a user with stable ordering and optional cursor (createdAt based).
 
         Cursor format: ISO timestamp or notification ID convertible to int for DB ordering. Falls back to createdAt.
         """
-        results: List[Dict[str, Any]] = []
+        results: list[dict[str, Any]] = []
 
         # 1) Fetch from DB (best-effort)
         if self.db and hasattr(self.db, "notification"):
@@ -31,7 +31,7 @@ class NotificationService:
                 where = {"userId": user_id}
                 if unread_only:
                     where["read"] = False
-                query_args: Dict[str, Any] = {
+                query_args: dict[str, Any] = {
                     "where": where,
                     "order": {"createdAt": "desc"},
                     "take": limit,
@@ -59,7 +59,7 @@ class NotificationService:
         mem = connection_manager.get_user_notifications(user_id, unread_only)
         existing_ids = {str(r.get("id")) for r in results}
 
-        def parse_iso_datetime(value: Any) -> Optional[datetime]:
+        def parse_iso_datetime(value: Any) -> datetime | None:
             if isinstance(value, datetime):
                 return value
             if isinstance(value, str) and value:
@@ -88,7 +88,7 @@ class NotificationService:
                 )
                 results.append(dto.dump_snake())
                 existing_ids.add(mid)
-            except Exception as e:
+            except Exception:
                 # Last-resort: include raw dict but ensure minimal required fields
                 normalized = {
                     "id": mid,
@@ -103,7 +103,7 @@ class NotificationService:
                 existing_ids.add(mid)
 
         # 3) Sort robustly by created_at/timestamp (newest first)
-        def sort_key(x: Dict[str, Any]) -> float:
+        def sort_key(x: dict[str, Any]) -> float:
             dt = parse_iso_datetime(x.get("created_at") or x.get("timestamp") or x.get("createdAt"))
             try:
                 return dt.timestamp() if dt else 0.0
@@ -148,12 +148,12 @@ class NotificationService:
             logger.error(f"Error marking notification as read: {e}")
             return False
 
-    async def send_notification(self, user_id: int, notification: Dict[str, Any]) -> bool:
+    async def send_notification(self, user_id: int, notification: dict[str, Any]) -> bool:
         """Send a notification to a user and persist in DB if available."""
         try:
             # Persist to DB
-            notif_id: Optional[int] = None
-            created_at_iso: Optional[str] = None
+            notif_id: int | None = None
+            created_at_iso: str | None = None
             if self.db and hasattr(self.db, "notification"):
                 try:
                     created = await self.db.notification.create(
@@ -166,7 +166,7 @@ class NotificationService:
                         }
                     )
                     notif_id = created.id
-                    created_at_iso = getattr(created, "createdAt").isoformat() if getattr(created, "createdAt", None) else None
+                    created_at_iso = created.createdAt.isoformat() if getattr(created, "createdAt", None) else None
                 except Exception:
                     notif_id = None
 
@@ -188,7 +188,7 @@ class NotificationService:
             logger.error(f"Error sending notification: {e}")
             return False
 
-    def get_connected_users(self) -> List[Dict[str, Any]]:
+    def get_connected_users(self) -> list[dict[str, Any]]:
         """Get list of connected users from in-memory manager."""
         try:
             users = connection_manager.get_connected_users()

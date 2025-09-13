@@ -1,21 +1,23 @@
 """
 Journal Entry data models and schemas.
 """
-from typing import Optional, List
 from datetime import datetime
 from decimal import Decimal
-from pydantic import BaseModel, Field, validator
+
+from pydantic import Field, validator
+
 from app.core.base_schema import ApiBaseModel
+
 
 class JournalEntryLineSchema(ApiBaseModel):
     """Schema for individual journal entry line."""
-    id: Optional[int] = None
+    id: int | None = None
     account_id: int
-    account_name: Optional[str] = None
-    account_code: Optional[str] = None
+    account_name: str | None = None
+    account_code: str | None = None
     debit: Decimal = Field(default=Decimal('0'), decimal_places=2)
     credit: Decimal = Field(default=Decimal('0'), decimal_places=2)
-    description: Optional[str] = None
+    description: str | None = None
 
     class Config:
         from_attributes = True
@@ -29,10 +31,10 @@ class JournalEntryLineSchema(ApiBaseModel):
 
 class JournalEntryCreateSchema(ApiBaseModel):
     """Schema for creating a journal entry."""
-    reference_type: Optional[str] = Field(None, description="Type of business transaction")
-    reference_id: Optional[int] = Field(None, description="ID of the business record")
-    lines: List[JournalEntryLineSchema] = Field(..., min_items=2)
-    date: Optional[datetime] = None
+    reference_type: str | None = Field(None, description="Type of business transaction")
+    reference_id: int | None = Field(None, description="ID of the business record")
+    lines: list[JournalEntryLineSchema] = Field(..., min_items=2)
+    date: datetime | None = None
 
     @validator('lines')
     def validate_balanced_entry(cls, v):
@@ -60,20 +62,20 @@ class JournalEntryCreateSchema(ApiBaseModel):
 
 class JournalEntryUpdateSchema(ApiBaseModel):
     """Schema for updating a journal entry."""
-    reference_type: Optional[str] = None
-    reference_id: Optional[int] = None
-    lines: Optional[List[JournalEntryLineSchema]] = None
-    date: Optional[datetime] = None
+    reference_type: str | None = None
+    reference_id: int | None = None
+    lines: list[JournalEntryLineSchema] | None = None
+    date: datetime | None = None
 
 class JournalEntrySchema(ApiBaseModel):
     """Schema for journal entry response."""
     id: int
-    reference_type: Optional[str]
-    reference_id: Optional[int]
+    reference_type: str | None
+    reference_id: int | None
     date: datetime
     created_at: datetime
     updated_at: datetime
-    lines: List[JournalEntryLineSchema]
+    lines: list[JournalEntryLineSchema]
     total_amount: Decimal
     is_balanced: bool
 
@@ -82,7 +84,7 @@ class JournalEntrySchema(ApiBaseModel):
 
 class JournalEntryListSchema(ApiBaseModel):
     """Schema for paginated journal entry list."""
-    entries: List[JournalEntrySchema]
+    entries: list[JournalEntrySchema]
     total: int
     page: int
     size: int
@@ -103,7 +105,7 @@ class TrialBalanceLineSchema(ApiBaseModel):
 class TrialBalanceSchema(ApiBaseModel):
     """Schema for trial balance report."""
     as_of_date: datetime
-    lines: List[TrialBalanceLineSchema]
+    lines: list[TrialBalanceLineSchema]
     total_debits: Decimal
     total_credits: Decimal
     is_balanced: bool

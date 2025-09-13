@@ -12,16 +12,16 @@ This module provides comprehensive inventory management capabilities including:
 """
 
 from .routes import router
-from .service import InventoryService, create_inventory_service
 from .schema import (
-    StockLevelSchema,
-    InventoryReportSchema,
-    StockAdjustmentSchema,
-    LowStockAlertSchema,
-    InventoryValuationSchema,
     DeadStockAnalysisSchema,
-    ReorderPointSchema
+    InventoryReportSchema,
+    InventoryValuationSchema,
+    LowStockAlertSchema,
+    ReorderPointSchema,
+    StockAdjustmentSchema,
+    StockLevelSchema,
 )
+from .service import InventoryService, create_inventory_service
 
 __all__ = [
     "router",

@@ -3,13 +3,14 @@
 Quick test of the new ResponseBuilder system
 Shows the standardized response format across endpoints
 """
-import requests
 import json
-from typing import Dict, Any
+from typing import Any
+
+import requests
 
 BASE_URL = "http://localhost:8000"
 
-def test_endpoint(method: str, path: str, **kwargs) -> Dict[str, Any]:
+def test_endpoint(method: str, path: str, **kwargs) -> dict[str, Any]:
     """Test an endpoint and return response info"""
     try:
         response = requests.request(method, f"{BASE_URL}{path}", **kwargs)

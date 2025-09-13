@@ -1,57 +1,51 @@
+import enum
+import importlib
 import os
 import sys
-import enum
 import textwrap
-import importlib
-from pathlib import Path
-from keyword import iskeyword
-from itertools import chain
+from collections.abc import Iterable, Iterator
+from contextvars import ContextVar
 from importlib import machinery, util as importlib_util
 from importlib.abc import InspectLoader
-from contextvars import ContextVar
+from itertools import chain
+from keyword import iskeyword
+from pathlib import Path
 from typing import (
     TYPE_CHECKING,
+    Annotated,
     Any,
     ClassVar,
     Generic,
-    Iterable,
     NoReturn,
     Optional,
-    List,
-    Tuple,
     TypeVar,
     Union,
-    Iterator,
-    Dict,
-    Type,
     cast,
 )
-from typing_extensions import Annotated
 
 import click
 import pydantic
 from pydantic.fields import PrivateAttr
 
-from .utils import Faker, Sampler, clean_multiline
 from .. import config
-from ..utils import DEBUG_GENERATOR, assert_never
 from .._compat import (
     PYDANTIC_V2,
     BaseConfig,
-    ConfigDict,
     BaseSettings,
     BaseSettingsConfig,
-    PlainSerializer,
-    GenericModel,
+    ConfigDict,
     Field as FieldInfo,
-    root_validator,
-    field_validator,
+    GenericModel,
+    PlainSerializer,
     cached_property,
+    field_validator,
     model_rebuild,
+    root_validator,
 )
 from .._constants import QUERY_BUILDER_ALIASES
 from ..errors import UnsupportedListTypeError
-
+from ..utils import DEBUG_GENERATOR, assert_never
+from .utils import Faker, Sampler, clean_multiline
 
 __all__ = (
     'AnyData',
@@ -133,7 +127,7 @@ def get_config() -> Union[None, pydantic.BaseModel, 'Config']:
     return config_ctx.get(None)
 
 
-def get_list_types() -> Iterable[Tuple[str, str]]:
+def get_list_types() -> Iterable[tuple[str, str]]:
     # WARNING: do not edit this function without also editing Field.is_supported_scalar_list_type()
     return chain(
         ((t, TYPE_MAPPING[t]) for t in FILTER_TYPES),
@@ -230,11 +224,11 @@ class BaseModel(pydantic.BaseModel):
 
         class Config(BaseConfig):
             arbitrary_types_allowed: bool = True
-            json_encoders: Dict[Type[Any], Any] = {
+            json_encoders: dict[type[Any], Any] = {
                 Path: _pathlib_serializer,
                 machinery.ModuleSpec: _module_spec_serializer,
             }
-            keep_untouched: Tuple[Type[Any], ...] = (cached_property,)
+            keep_untouched: tuple[type[Any], ...] = (cached_property,)
 
 
 class InterfaceChoices(str, enum.Enum):
@@ -284,8 +278,8 @@ class Module(BaseModel):
 
     @field_validator('spec', pre=True, allow_reuse=True)
     @classmethod
-    def spec_validator(cls, value: Optional[str]) -> machinery.ModuleSpec:
-        spec: Optional[machinery.ModuleSpec] = None
+    def spec_validator(cls, value: str | None) -> machinery.ModuleSpec:
+        spec: machinery.ModuleSpec | None = None
 
         # TODO: this should really work based off of the schema path
         # and this should suport checking  just partial_types.py if we are in a `prisma` dir
@@ -341,8 +335,8 @@ class GenericData(GenericModel, Generic[ConfigT]):
     generator: 'Generator[ConfigT]'
     dmmf: 'DMMF' = FieldInfo(alias='dmmf')
     schema_path: Path = FieldInfo(alias='schemaPath')
-    datasources: List['Datasource'] = FieldInfo(alias='datasources')
-    other_generators: List['Generator[_ModelAllowAll]'] = FieldInfo(
+    datasources: list['Datasource'] = FieldInfo(alias='datasources')
+    other_generators: list['Generator[_ModelAllowAll]'] = FieldInfo(
         alias='otherGenerators'
     )
     binary_paths: 'BinaryPaths' = FieldInfo(
@@ -364,7 +358,7 @@ class GenericData(GenericModel, Generic[ConfigT]):
             data_ctx.set(data)
             return data
 
-    def to_params(self) -> Dict[str, Any]:
+    def to_params(self) -> dict[str, Any]:
         """Get the parameters that should be sent to Jinja templates"""
         params = vars(self)
         params['type_schema'] = Schema.from_data(self)
@@ -384,7 +378,7 @@ class GenericData(GenericModel, Generic[ConfigT]):
 
     @root_validator(pre=True, allow_reuse=True, skip_on_failure=True)
     @classmethod
-    def validate_version(cls, values: Dict[Any, Any]) -> Dict[Any, Any]:
+    def validate_version(cls, values: dict[Any, Any]) -> dict[Any, Any]:
         # TODO: test this
         version = values.get('version')
         if not DEBUG_GENERATOR and version != config.expected_engine_version:
@@ -415,23 +409,23 @@ class BinaryPaths(BaseModel):
     This is only available if the generator explicitly requests them using the `requires_engines` manifest property.
     """
 
-    query_engine: Dict[str, str] = FieldInfo(
+    query_engine: dict[str, str] = FieldInfo(
         default_factory=dict,
         alias='queryEngine',
     )
-    introspection_engine: Dict[str, str] = FieldInfo(
+    introspection_engine: dict[str, str] = FieldInfo(
         default_factory=dict,
         alias='introspectionEngine',
     )
-    migration_engine: Dict[str, str] = FieldInfo(
+    migration_engine: dict[str, str] = FieldInfo(
         default_factory=dict,
         alias='migrationEngine',
     )
-    libquery_engine: Dict[str, str] = FieldInfo(
+    libquery_engine: dict[str, str] = FieldInfo(
         default_factory=dict,
         alias='libqueryEngine',
     )
-    prisma_format: Dict[str, str] = FieldInfo(
+    prisma_format: dict[str, str] = FieldInfo(
         default_factory=dict,
         alias='prismaFmt',
     )
@@ -459,14 +453,14 @@ class Generator(GenericModel, Generic[ConfigT]):
     output: 'ValueFromEnvVar'
     provider: 'OptionalValueFromEnvVar'
     config: ConfigT
-    binary_targets: List['ValueFromEnvVar'] = FieldInfo(alias='binaryTargets')
-    preview_features: List[str] = FieldInfo(alias='previewFeatures')
+    binary_targets: list['ValueFromEnvVar'] = FieldInfo(alias='binaryTargets')
+    preview_features: list[str] = FieldInfo(alias='previewFeatures')
 
     @field_validator('binary_targets')
     @classmethod
     def warn_binary_targets(
-        cls, targets: List['ValueFromEnvVar']
-    ) -> List['ValueFromEnvVar']:
+        cls, targets: list['ValueFromEnvVar']
+    ) -> list['ValueFromEnvVar']:
         # Prisma by default sends one binary target which is the current platform.
         if len(targets) > 1:
             click.echo(
@@ -486,12 +480,12 @@ class Generator(GenericModel, Generic[ConfigT]):
 
 class ValueFromEnvVar(BaseModel):
     value: str
-    from_env_var: Optional[str] = FieldInfo(alias='fromEnvVar')
+    from_env_var: str | None = FieldInfo(alias='fromEnvVar')
 
 
 class OptionalValueFromEnvVar(BaseModel):
-    value: Optional[str] = None
-    from_env_var: Optional[str] = FieldInfo(alias='fromEnvVar')
+    value: str | None = None
+    from_env_var: str | None = FieldInfo(alias='fromEnvVar')
 
     def resolve(self) -> str:
         value = self.value
@@ -513,7 +507,7 @@ class Config(BaseSettings):
     interface: InterfaceChoices = FieldInfo(
         default=InterfaceChoices.asyncio, env='PRISMA_PY_CONFIG_INTERFACE'
     )
-    partial_type_generator: Optional[Module] = FieldInfo(
+    partial_type_generator: Module | None = FieldInfo(
         default=None, env='PRISMA_PY_CONFIG_PARTIAL_TYPE_GENERATOR'
     )
     recursive_type_depth: int = FieldInfo(
@@ -565,7 +559,7 @@ class Config(BaseSettings):
 
     @root_validator(pre=True, skip_on_failure=True)
     @classmethod
-    def transform_engine_type(cls, values: Dict[str, Any]) -> Dict[str, Any]:
+    def transform_engine_type(cls, values: dict[str, Any]) -> dict[str, Any]:
         # prioritise env variable over schema option
         engine_type = os.environ.get('PRISMA_CLIENT_ENGINE_TYPE')
         if engine_type is None:
@@ -581,8 +575,8 @@ class Config(BaseSettings):
     @root_validator(pre=True, skip_on_failure=True)
     @classmethod
     def removed_http_option_validator(
-        cls, values: Dict[str, Any]
-    ) -> Dict[str, Any]:
+        cls, values: dict[str, Any]
+    ) -> dict[str, Any]:
         http = values.get('http')
         if http is not None:
             if http in {'aiohttp', 'httpx-async'}:
@@ -605,10 +599,10 @@ class Config(BaseSettings):
         @root_validator(pre=True, skip_on_failure=True)
         @classmethod
         def partial_type_generator_converter(
-            cls, values: Dict[str, Any]
-        ) -> Dict[str, Any]:
+            cls, values: dict[str, Any]
+        ) -> dict[str, Any]:
             # ensure env resolving happens
-            values = cast(Dict[str, Any], cls.root_validator(values))  # type: ignore
+            values = cast(dict[str, Any], cls.root_validator(values))  # type: ignore
 
             value = values.get('partial_type_generator')
 
@@ -631,8 +625,8 @@ class Config(BaseSettings):
         )
         @classmethod
         def _partial_type_generator_converter(
-            cls, value: Optional[str]
-        ) -> Optional[Module]:
+            cls, value: str | None
+        ) -> Module | None:
             try:
                 return Module(
                     spec=value  # pyright: ignore[reportGeneralTypeIssues]
@@ -675,15 +669,15 @@ class DMMF(BaseModel):
 
 
 class Datamodel(BaseModel):
-    enums: List['Enum']
-    models: List['Model']
+    enums: list['Enum']
+    models: list['Model']
 
     # not implemented yet
-    types: List[object]
+    types: list[object]
 
     @field_validator('types')
     @classmethod
-    def no_composite_types_validator(cls, types: List[object]) -> object:
+    def no_composite_types_validator(cls, types: list[object]) -> object:
         if types:
             raise ValueError(
                 'Composite types are not supported yet. Please indicate you need this here: https://github.com/RobertCraigie/prisma-client-py/issues/314'
@@ -694,25 +688,25 @@ class Datamodel(BaseModel):
 
 class Enum(BaseModel):
     name: str
-    db_name: Optional[str] = FieldInfo(alias='dbName')
-    values: List['EnumValue']
+    db_name: str | None = FieldInfo(alias='dbName')
+    values: list['EnumValue']
 
 
 class EnumValue(BaseModel):
     name: str
-    db_name: Optional[str] = FieldInfo(alias='dbName')
+    db_name: str | None = FieldInfo(alias='dbName')
 
 
 class Model(BaseModel):
     name: str
-    documentation: Optional[str] = None
-    db_name: Optional[str] = FieldInfo(alias='dbName')
+    documentation: str | None = None
+    db_name: str | None = FieldInfo(alias='dbName')
     is_generated: bool = FieldInfo(alias='isGenerated')
     compound_primary_key: Optional['PrimaryKey'] = FieldInfo(
         alias='primaryKey'
     )
-    unique_indexes: List['UniqueIndex'] = FieldInfo(alias='uniqueIndexes')
-    all_fields: List['Field'] = FieldInfo(alias='fields')
+    unique_indexes: list['UniqueIndex'] = FieldInfo(alias='uniqueIndexes')
+    all_fields: list['Field'] = FieldInfo(alias='fields')
 
     _sampler: Sampler = PrivateAttr()
 
@@ -807,11 +801,11 @@ class Model(BaseModel):
 
 class Constraint(BaseModel):
     name: str
-    fields: List[str]
+    fields: list[str]
 
     @root_validator(pre=True, allow_reuse=True, skip_on_failure=True)
     @classmethod
-    def resolve_name(cls, values: Dict[str, Any]) -> Dict[str, Any]:
+    def resolve_name(cls, values: dict[str, Any]) -> dict[str, Any]:
         name = values.get('name')
         if isinstance(name, str):
             return values
@@ -830,7 +824,7 @@ class UniqueIndex(Constraint):
 
 class Field(BaseModel):
     name: str
-    documentation: Optional[str] = None
+    documentation: str | None = None
 
     # TODO: switch to enums
     kind: str
@@ -844,29 +838,29 @@ class Field(BaseModel):
     is_generated: bool = FieldInfo(alias='isGenerated')
     is_updated_at: bool = FieldInfo(alias='isUpdatedAt')
 
-    default: Optional[Union['DefaultValue', object, List[object]]] = None
+    default: Union['DefaultValue', object, list[object]] | None = None
     has_default_value: bool = FieldInfo(alias='hasDefaultValue')
 
-    relation_name: Optional[str] = FieldInfo(
+    relation_name: str | None = FieldInfo(
         alias='relationName', default=None
     )
-    relation_on_delete: Optional[str] = FieldInfo(
+    relation_on_delete: str | None = FieldInfo(
         alias='relationOnDelete', default=None
     )
-    relation_to_fields: Optional[List[str]] = FieldInfo(
+    relation_to_fields: list[str] | None = FieldInfo(
         alias='relationToFields',
         default=None,
     )
-    relation_from_fields: Optional[List[str]] = FieldInfo(
+    relation_from_fields: list[str] | None = FieldInfo(
         alias='relationFromFields',
         default=None,
     )
 
-    _last_sampled: Optional[str] = PrivateAttr()
+    _last_sampled: str | None = PrivateAttr()
 
     @root_validator(pre=True, skip_on_failure=True)
     @classmethod
-    def scalar_type_validator(cls, values: Dict[str, Any]) -> Dict[str, Any]:
+    def scalar_type_validator(cls, values: dict[str, Any]) -> dict[str, Any]:
         kind = values.get('kind')
         type_ = values.get('type')
 
@@ -1154,11 +1148,11 @@ class PythonData(GenericData[Config]):
 
         class Config(BaseConfig):
             arbitrary_types_allowed: bool = True
-            json_encoders: Dict[Type[Any], Any] = {
+            json_encoders: dict[type[Any], Any] = {
                 Path: _pathlib_serializer,
                 machinery.ModuleSpec: _module_spec_serializer,
             }
-            keep_untouched: Tuple[Type[Any], ...] = (cached_property,)
+            keep_untouched: tuple[type[Any], ...] = (cached_property,)
 
 
 class DefaultData(GenericData[_EmptyModel]):
@@ -1179,8 +1173,8 @@ model_rebuild(Generator)
 model_rebuild(Datasource)
 
 
-from .schema import Schema
 from .errors import (
     PartialTypeGeneratorError,
     TemplateError,
 )
+from .schema import Schema

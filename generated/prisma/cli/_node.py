@@ -1,22 +1,21 @@
 from __future__ import annotations
 
-import re
-import os
-import sys
-import shutil
 import logging
+import os
+import re
+import shutil
 import subprocess
-from pathlib import Path
+import sys
 from abc import ABC, abstractmethod
-from typing import IO, Union, Any, Mapping, cast
-from typing_extensions import Literal
+from collections.abc import Mapping
+from pathlib import Path
+from typing import IO, Any, Literal, Union, cast
 
 from .. import config
+from .._compat import get_args, nodejs
 from .._proxy import LazyProxy
 from ..binaries import platform
 from ..errors import PrismaError
-from .._compat import nodejs, get_args
-
 
 log: logging.Logger = logging.getLogger(__name__)
 File = Union[int, IO[Any]]

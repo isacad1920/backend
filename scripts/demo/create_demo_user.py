@@ -3,16 +3,17 @@
 Create a demo user for testing the SOFinance system
 """
 import asyncio
-import sys
 import os
+import sys
 
 # Add the current directory to Python path
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
-from app.db.prisma import connect_db, disconnect_db, get_db
-from app.modules.users.service import create_user_service
-from app.modules.users.schema import UserCreateSchema
 from app.core.config import UserRole
+from app.db.prisma import connect_db, disconnect_db
+from app.modules.users.schema import UserCreateSchema
+from app.modules.users.service import create_user_service
+
 
 async def create_demo_user():
     """Create a demo user for testing."""
@@ -52,8 +53,8 @@ async def create_demo_user():
         print(f"   ID: {result.id}")
         
         print("\n🔑 Login credentials:")
-        print(f"   Email: demo@sofinance.com")
-        print(f"   Password: demo123")
+        print("   Email: demo@sofinance.com")
+        print("   Password: demo123")
         
         print("\n🌐 To test login:")
         print("1. Go to http://localhost:8000/docs")

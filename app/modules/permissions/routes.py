@@ -1,17 +1,20 @@
 """
 Permissions API routes and endpoints.
 """
-from typing import List, Optional
-from fastapi import APIRouter, Depends, HTTPException, Query, Path, status
-from fastapi.security import HTTPBearer
 import logging
 
-from app.core.dependencies import get_current_user, get_current_active_user
-from app.core.response import ResponseBuilder, SuccessResponse, ErrorResponse, success_response
-from app.db.prisma import get_db
+from fastapi import APIRouter, Depends, HTTPException, Path, Query
+from fastapi.security import HTTPBearer
+
+from app.core.dependencies import get_current_active_user
+from app.core.response import ResponseBuilder, SuccessResponse, success_response
 from app.core.security import PermissionManager
+from app.db.prisma import get_db
 from app.modules.permissions.schema import (
-    PermissionGrantRequest, PermissionRevokeRequest, UserPermissionResponse, AvailablePermissionsResponse
+    AvailablePermissionsResponse,
+    PermissionGrantRequest,
+    PermissionRevokeRequest,
+    UserPermissionResponse,
 )
 
 security = HTTPBearer()
@@ -145,7 +148,7 @@ async def revoke_permission(
 @router.post("/user/{user_id}/grant/batch")
 async def grant_permissions_batch(
     user_id: int = Path(..., description="User ID"),
-    permissions: List[str] = Query(..., description="Repeated permission parameters e.g. ?permissions=resource:action"),
+    permissions: list[str] = Query(..., description="Repeated permission parameters e.g. ?permissions=resource:action"),
     current_user = Depends(get_current_active_user),
     db = Depends(get_db),
 ):
@@ -171,7 +174,7 @@ async def grant_permissions_batch(
 @router.post("/user/{user_id}/revoke/batch")
 async def revoke_permissions_batch(
     user_id: int = Path(..., description="User ID"),
-    permissions: List[str] = Query(..., description="Repeated permission parameters e.g. ?permissions=resource:action"),
+    permissions: list[str] = Query(..., description="Repeated permission parameters e.g. ?permissions=resource:action"),
     current_user = Depends(get_current_active_user),
     db = Depends(get_db),
 ):
@@ -260,7 +263,7 @@ async def assign_role_to_user(
 @router.get("/check")
 async def check_permission(
     permission: str = Query(..., description="Permission to check"),
-    user_id: Optional[int] = Query(None, description="User ID (defaults to current user)"),
+    user_id: int | None = Query(None, description="User ID (defaults to current user)"),
     current_user = Depends(get_current_active_user),
     db = Depends(get_db),
 ):
@@ -313,9 +316,9 @@ from pydantic import BaseModel
 
 
 class BulkGrantRequest(BaseModel):
-    user_ids: List[int]
-    permissions: List[str]
-    reason: Optional[str] = None
+    user_ids: list[int]
+    permissions: list[str]
+    reason: str | None = None
 
 
 @legacy_router.post("/grant")
@@ -374,13 +377,14 @@ async def legacy_bulk_grant_permissions(
 @legacy_router.get("/user/{user_id}")
 async def legacy_get_user_permissions(
     user_id: int = Path(...),
-    user_role: Optional[str] = Query(None),
+    user_role: str | None = Query(None),
     current_user = Depends(get_current_active_user),
     db = Depends(get_db),
 ):
     """Legacy endpoint to get user permissions (unwrapped)."""
     try:
         from app.core.config import UserRole
+
         from .service import PermissionService
         service = PermissionService()
         # Default to ADMIN if not provided for compatibility with tests
@@ -394,7 +398,7 @@ async def legacy_get_user_permissions(
 
 @legacy_router.get("/audit-logs")
 async def legacy_audit_logs(
-    user_id: Optional[int] = Query(None),
+    user_id: int | None = Query(None),
     current_user = Depends(get_current_active_user),
     db = Depends(get_db),
 ):

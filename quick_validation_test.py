@@ -4,8 +4,8 @@ Quick validation script to test authentication and core endpoints after fixes.
 """
 
 import asyncio
+
 import httpx
-import json
 
 BASE_URL = "http://localhost:8000"
 
@@ -62,7 +62,7 @@ async def test_auth_and_endpoints():
             print("❌ Could not authenticate with any password!")
             return
         
-        print(f"\n🎉 Authenticated successfully! Testing endpoints...")
+        print("\n🎉 Authenticated successfully! Testing endpoints...")
         
         # Test some endpoints that were failing
         test_endpoints = [
@@ -94,7 +94,7 @@ async def test_auth_and_endpoints():
         total = results["passed"] + results["failed"]
         success_rate = (results["passed"] / total * 100) if total > 0 else 0
         
-        print(f"\n📊 QUICK VALIDATION RESULTS:")
+        print("\n📊 QUICK VALIDATION RESULTS:")
         print(f"   ✅ Passed: {results['passed']}")
         print(f"   ❌ Failed: {results['failed']}")
         print(f"   📈 Success Rate: {success_rate:.1f}%")

@@ -2,19 +2,19 @@ from __future__ import annotations
 
 import json
 import logging
-from typing import Any, NoReturn
 from datetime import timedelta
-from typing_extensions import override
+from typing import Any, NoReturn
 
 import httpx
+from typing_extensions import override
 
-from . import utils, errors
-from ..utils import is_dict
-from .._types import Method
-from ._abstract import SyncAbstractEngine, AsyncAbstractEngine
-from .._sync_http import SyncHTTP
 from .._async_http import AsyncHTTP
+from .._sync_http import SyncHTTP
+from .._types import Method
 from ..http_abstract import AbstractResponse
+from ..utils import is_dict
+from . import errors, utils
+from ._abstract import AsyncAbstractEngine, SyncAbstractEngine
 
 log: logging.Logger = logging.getLogger(__name__)
 

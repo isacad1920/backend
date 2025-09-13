@@ -2,12 +2,12 @@
 Stock request service layer.
 """
 import logging
-from typing import List, Dict, Any, Optional
+
 from app.core.stock_requests import stock_request_service
 from app.modules.stock_requests.schema import (
-    CreateStockRequestSchema, ApproveStockRequestSchema,
-    ShipStockRequestSchema, ReceiveStockRequestSchema,
-    StockRequestResponseSchema
+    ApproveStockRequestSchema,
+    CreateStockRequestSchema,
+    StockRequestResponseSchema,
 )
 
 logger = logging.getLogger(__name__)
@@ -56,12 +56,12 @@ class StockRequestService:
     
     async def get_stock_requests(
         self, 
-        status_filter: Optional[str] = None,
-        from_branch_id: Optional[int] = None,
-        to_branch_id: Optional[int] = None,
+        status_filter: str | None = None,
+        from_branch_id: int | None = None,
+        to_branch_id: int | None = None,
         limit: int = 20,
         offset: int = 0
-    ) -> List[StockRequestResponseSchema]:
+    ) -> list[StockRequestResponseSchema]:
         """Get stock requests with filtering."""
         try:
             # Get all requests from the core service

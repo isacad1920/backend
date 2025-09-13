@@ -3,9 +3,11 @@ Create initial setup data for SOFinance system.
 """
 import asyncio
 import traceback
-from app.db import connect_db, close_db
-from app.db.prisma import prisma
+
 from app.core.config import UserRole
+from app.db import close_db, connect_db
+from app.db.prisma import prisma
+
 
 async def setup_initial_data():
     """Create initial setup data including branch, categories, and demo user."""

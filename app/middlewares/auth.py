@@ -1,19 +1,22 @@
 """
 Authentication and authorization middleware.
 """
-from typing import Optional, Callable, List, Dict, Any
-from fastapi import Request, Response, HTTPException, status
+import json
+import logging
+import time
+from collections.abc import Callable
+from datetime import datetime
+from typing import Any
+
+from fastapi import HTTPException, Request, Response, status
 from fastapi.responses import JSONResponse
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.types import ASGIApp
-import logging
-import time
-from datetime import datetime
-import json
 
-from app.core.security import JWTManager, TokenType, PermissionManager, rate_limiter
-from app.core.config import settings, UserRole
+from app.core.config import UserRole
+from app.core.security import JWTManager, PermissionManager, TokenType, rate_limiter
 from generated.prisma import fields  # Import for proper JSON handling
+
 # No longer needed: db_manager
 
 logger = logging.getLogger(__name__)
@@ -24,8 +27,8 @@ class AuthenticationMiddleware(BaseHTTPMiddleware):
     def __init__(
         self,
         app: ASGIApp,
-        exclude_paths: Optional[List[str]] = None,
-        public_paths: Optional[List[str]] = None
+        exclude_paths: list[str] | None = None,
+        public_paths: list[str] | None = None
     ):
         super().__init__(app)
         self.exclude_paths = exclude_paths or []
@@ -111,7 +114,7 @@ class AuthenticationMiddleware(BaseHTTPMiddleware):
                 return True
         return False
     
-    async def _extract_token(self, request: Request) -> Optional[str]:
+    async def _extract_token(self, request: Request) -> str | None:
         """Extract JWT token from request headers.
         Accepts both 'Bearer <token>' and '<token>'; ignores placeholders.
         """
@@ -127,7 +130,7 @@ class AuthenticationMiddleware(BaseHTTPMiddleware):
             return None
         return token
     
-    async def _verify_token(self, token: str) -> Optional[Dict[str, Any]]:
+    async def _verify_token(self, token: str) -> dict[str, Any] | None:
         """Verify JWT token and return payload."""
         try:
             # Check if token is blacklisted
@@ -169,7 +172,7 @@ class AuthorizationMiddleware(BaseHTTPMiddleware):
     def __init__(
         self,
         app: ASGIApp,
-        route_permissions: Optional[Dict[str, List[str]]] = None
+        route_permissions: dict[str, list[str]] | None = None
     ):
         super().__init__(app)
         self.route_permissions = route_permissions or {}
@@ -203,7 +206,7 @@ class AuthorizationMiddleware(BaseHTTPMiddleware):
         
         return await call_next(request)
     
-    def _get_required_permissions(self, path: str, method: str) -> List[str]:
+    def _get_required_permissions(self, path: str, method: str) -> list[str]:
         """Get required permissions for a route."""
         route_key = f"{method} {path}"
         
@@ -242,7 +245,7 @@ class AuthorizationMiddleware(BaseHTTPMiddleware):
             # Fallback to ADMIN for now to avoid breaking existing functionality
             return UserRole.ADMIN
     
-    def _check_permissions(self, user_role: UserRole, required_permissions: List[str]) -> bool:
+    def _check_permissions(self, user_role: UserRole, required_permissions: list[str]) -> bool:
         """Check if user has required permissions."""
         if not user_role:
             return False
@@ -261,7 +264,7 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
         app: ASGIApp,
         requests_per_minute: int = 60,
         burst_requests: int = 100,
-        exclude_paths: Optional[List[str]] = None
+        exclude_paths: list[str] | None = None
     ):
         super().__init__(app)
         self.requests_per_minute = requests_per_minute
@@ -315,7 +318,7 @@ class AuditLogMiddleware(BaseHTTPMiddleware):
         app: ASGIApp,
         log_requests: bool = True,
         log_responses: bool = True,  # Enable response logging by default
-        exclude_paths: Optional[List[str]] = None
+        exclude_paths: list[str] | None = None
     ):
         super().__init__(app)
         self.log_requests = log_requests
@@ -529,9 +532,9 @@ class CORSMiddleware(BaseHTTPMiddleware):
     def __init__(
         self,
         app: ASGIApp,
-        allowed_origins: List[str] = None,
-        allowed_methods: List[str] = None,
-        allowed_headers: List[str] = None,
+        allowed_origins: list[str] = None,
+        allowed_methods: list[str] = None,
+        allowed_headers: list[str] = None,
         allow_credentials: bool = True
     ):
         super().__init__(app)
@@ -576,15 +579,15 @@ class CORSMiddleware(BaseHTTPMiddleware):
 # Middleware factory functions
 def create_auth_middleware(
     app: ASGIApp,
-    exclude_paths: Optional[List[str]] = None,
-    public_paths: Optional[List[str]] = None
+    exclude_paths: list[str] | None = None,
+    public_paths: list[str] | None = None
 ) -> AuthenticationMiddleware:
     """Create authentication middleware with configuration."""
     return AuthenticationMiddleware(app, exclude_paths, public_paths)
 
 def create_authz_middleware(
     app: ASGIApp,
-    route_permissions: Optional[Dict[str, List[str]]] = None
+    route_permissions: dict[str, list[str]] | None = None
 ) -> AuthorizationMiddleware:
     """Create authorization middleware with configuration."""
     return AuthorizationMiddleware(app, route_permissions)

@@ -2,21 +2,20 @@
 Backup service layer for managing database backups.
 """
 import json
-import os
-import shutil
 import logging
-from typing import List, Optional, Tuple, Dict, Any
+import shutil
 from datetime import datetime
 from pathlib import Path
 
-from generated.prisma import Prisma
-from app.core.exceptions import (
-    ValidationError, NotFoundError, DatabaseError, AuthorizationError
-)
+from app.core.exceptions import AuthorizationError, DatabaseError, NotFoundError, ValidationError
 from app.modules.system.schema import (
-    BackupSchema, BackupResponseSchema, BackupType, BackupStatus,
-    BackupStatsSchema, BackupRestoreResultSchema
+    BackupResponseSchema,
+    BackupRestoreResultSchema,
+    BackupSchema,
+    BackupStatsSchema,
+    BackupType,
 )
+from generated.prisma import Prisma
 
 logger = logging.getLogger(__name__)
 
@@ -121,7 +120,7 @@ class BackupService:
         current_user = None,
         skip: int = 0,
         limit: int = 50
-    ) -> List[BackupResponseSchema]:
+    ) -> list[BackupResponseSchema]:
         """Get all backups with pagination."""
         try:
             # Check permissions
@@ -394,7 +393,7 @@ class BackupService:
         self,
         backup_id: int,
         dry_run: bool = True,
-        tables: Optional[List[str]] = None,
+        tables: list[str] | None = None,
         current_user=None
     ) -> BackupRestoreResultSchema:
         """Restore from a JSON backup file.
@@ -426,13 +425,13 @@ class BackupService:
                 raise NotFoundError("Backup file not found on disk")
 
             # Load JSON
-            with open(file_path_json, 'r') as f:
+            with open(file_path_json) as f:
                 payload = json.load(f)
             data_section = payload.get('data', {})
             all_tables = list(data_section.keys())
             target_tables = tables or all_tables
-            restored: List[str] = []
-            skipped: List[str] = []
+            restored: list[str] = []
+            skipped: list[str] = []
 
             if dry_run:
                 return BackupRestoreResultSchema(

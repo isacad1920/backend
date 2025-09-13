@@ -1,23 +1,41 @@
 """
 Product and Category API routes and endpoints.
 """
-from typing import Optional, List
-from fastapi import APIRouter, Depends, status, Query, Request
-from fastapi.security import HTTPBearer
 import logging
 
-from app.core.dependencies import get_current_user, get_current_active_user, require_role
-from app.core.config import UserRole
-from app.core.exceptions import (
-    APIError,
-    ValidationError, NotFoundError, AlreadyExistsError, AuthorizationError, InsufficientStockError, DatabaseError, ErrorMessages
-)
-from app.core.response import success_response, error_response, paginated_response
-from app.core.audit_decorator import audit_log
+from fastapi import APIRouter, Depends, Query, Request, status
+from fastapi.security import HTTPBearer
+
 from app.core.audit import AuditAction, AuditSeverity
+from app.core.audit_decorator import audit_log
+from app.core.config import UserRole
+from app.core.dependencies import get_current_active_user, require_role
+from app.core.exceptions import (
+    AlreadyExistsError,
+    APIError,
+    AuthorizationError,
+    DatabaseError,
+    InsufficientStockError,
+    NotFoundError,
+    ValidationError,
+)
+from app.core.response import error_response, paginated_response, success_response
 from app.db import get_db
-from app.modules.products.service import create_product_service, create_category_service
-from app.modules.products.schema import ( ProductCreateSchema, ProductUpdateSchema, ProductResponseSchema, ProductDetailResponseSchema, ProductListResponseSchema, ProductStatsSchema, CategoryCreateSchema, CategoryUpdateSchema, CategoryResponseSchema, StockAdjustmentSchema, BulkStockAdjustmentSchema, ProductStatus, StockStatus )
+from app.modules.products.schema import (
+    BulkStockAdjustmentSchema,
+    CategoryCreateSchema,
+    CategoryResponseSchema,
+    CategoryUpdateSchema,
+    ProductCreateSchema,
+    ProductListResponseSchema,
+    ProductResponseSchema,
+    ProductStatsSchema,
+    ProductStatus,
+    ProductUpdateSchema,
+    StockAdjustmentSchema,
+    StockStatus,
+)
+from app.modules.products.service import create_category_service, create_product_service
 
 logger = logging.getLogger(__name__)
 
@@ -60,10 +78,10 @@ async def create_product(
 async def list_products(
     page: int = Query(1, ge=1, description="Page number"),
     size: int = Query(20, ge=1, le=100, description="Page size"),
-    search: Optional[str] = Query(None, description="Search term"),
-    category_id: Optional[int] = Query(None, description="Filter by category ID"),
-    status_filter: Optional[ProductStatus] = Query(None, alias="status", description="Filter by status"),
-    stock_status: Optional[StockStatus] = Query(None, description="Filter by stock status"),
+    search: str | None = Query(None, description="Search term"),
+    category_id: int | None = Query(None, description="Filter by category ID"),
+    status_filter: ProductStatus | None = Query(None, alias="status", description="Filter by status"),
+    stock_status: StockStatus | None = Query(None, description="Filter by stock status"),
     current_user = Depends(get_current_active_user),
     db = Depends(get_db)
 ):
@@ -83,8 +101,8 @@ async def list_products(
         )
         # result likely a Pydantic model; extract items + total gracefully
         if hasattr(result, 'items') and hasattr(result, 'total'):
-            items = getattr(result, 'items')
-            total = getattr(result, 'total')
+            items = result.items
+            total = result.total
         elif isinstance(result, dict):
             items = result.get('items') or result.get('products') or []
             total = result.get('total') or len(items)
@@ -376,7 +394,7 @@ async def create_category(
 async def list_categories(
     page: int = Query(1, ge=1, description="Page number"),
     size: int = Query(50, ge=1, le=100, description="Page size"),
-    search: Optional[str] = Query(None, description="Search term"),
+    search: str | None = Query(None, description="Search term"),
     current_user = Depends(get_current_active_user),
     db = Depends(get_db)
 ):

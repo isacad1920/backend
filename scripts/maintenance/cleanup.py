@@ -9,11 +9,10 @@ This script performs comprehensive cleanup and optimization tasks:
 4. Check for security issues
 5. Optimize imports and dependencies
 """
+import logging
 import os
-import glob
 import shutil
 from pathlib import Path
-import logging
 
 # Configure logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
@@ -111,7 +110,7 @@ class ProjectCleanup:
         
         requirements_file = self.project_root / 'requirements.txt'
         if requirements_file.exists():
-            with open(requirements_file, 'r') as f:
+            with open(requirements_file) as f:
                 lines = f.readlines()
             
             # Remove duplicates while preserving order

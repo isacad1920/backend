@@ -1,12 +1,15 @@
 """
 Financial management Pydantic schemas for POS system.
 """
-from datetime import datetime, date
+from datetime import date, datetime
 from decimal import Decimal
-from typing import Optional, List, Dict, Any
-from pydantic import BaseModel, Field, field_validator
-from app.core.base_schema import ApiBaseModel
 from enum import Enum
+from typing import Any
+
+from pydantic import Field, field_validator
+
+from app.core.base_schema import ApiBaseModel
+
 
 class ReportType(str, Enum):
     """Financial report type enumeration."""
@@ -56,12 +59,12 @@ class FinancialSummarySchema(ApiBaseModel):
 
 class SalesAnalyticsSchema(ApiBaseModel):
     """Schema for sales analytics data."""
-    daily_sales: List[Dict[str, Any]] = Field(..., description="Daily sales data")
-    monthly_sales: List[Dict[str, Any]] = Field(..., description="Monthly sales data")
-    top_products: List[Dict[str, Any]] = Field(..., description="Top selling products")
-    sales_by_category: List[Dict[str, Any]] = Field(..., description="Sales by product category")
-    sales_by_branch: List[Dict[str, Any]] = Field(..., description="Sales by branch")
-    sales_trends: Dict[str, Any] = Field(..., description="Sales trend analysis")
+    daily_sales: list[dict[str, Any]] = Field(..., description="Daily sales data")
+    monthly_sales: list[dict[str, Any]] = Field(..., description="Monthly sales data")
+    top_products: list[dict[str, Any]] = Field(..., description="Top selling products")
+    sales_by_category: list[dict[str, Any]] = Field(..., description="Sales by product category")
+    sales_by_branch: list[dict[str, Any]] = Field(..., description="Sales by branch")
+    sales_trends: dict[str, Any] = Field(..., description="Sales trend analysis")
     
     class Config:
         from_attributes = True
@@ -69,11 +72,11 @@ class SalesAnalyticsSchema(ApiBaseModel):
 class InventoryAnalyticsSchema(ApiBaseModel):
     """Schema for inventory analytics data."""
     total_inventory_value: Decimal = Field(..., description="Total inventory value")
-    low_stock_items: List[Dict[str, Any]] = Field(..., description="Low stock items")
-    out_of_stock_items: List[Dict[str, Any]] = Field(..., description="Out of stock items")
+    low_stock_items: list[dict[str, Any]] = Field(..., description="Low stock items")
+    out_of_stock_items: list[dict[str, Any]] = Field(..., description="Out of stock items")
     inventory_turnover: Decimal = Field(..., description="Inventory turnover ratio")
-    dead_stock_items: List[Dict[str, Any]] = Field(..., description="Dead stock items")
-    inventory_by_category: List[Dict[str, Any]] = Field(..., description="Inventory by category")
+    dead_stock_items: list[dict[str, Any]] = Field(..., description="Dead stock items")
+    inventory_by_category: list[dict[str, Any]] = Field(..., description="Inventory by category")
     
     class Config:
         from_attributes = True
@@ -85,8 +88,8 @@ class CustomerAnalyticsSchema(ApiBaseModel):
     customer_acquisition_rate: Decimal = Field(..., description="Customer acquisition rate")
     customer_retention_rate: Decimal = Field(..., description="Customer retention rate")
     average_customer_value: Decimal = Field(..., description="Average customer lifetime value")
-    top_customers: List[Dict[str, Any]] = Field(..., description="Top customers by purchase value")
-    customer_segments: List[Dict[str, Any]] = Field(..., description="Customer segmentation data")
+    top_customers: list[dict[str, Any]] = Field(..., description="Top customers by purchase value")
+    customer_segments: list[dict[str, Any]] = Field(..., description="Customer segmentation data")
     
     class Config:
         from_attributes = True
@@ -109,9 +112,9 @@ class FinancialReportRequestSchema(ApiBaseModel):
     """Schema for financial report requests."""
     report_type: ReportType = Field(..., description="Type of report to generate")
     period: ReportPeriod = Field(ReportPeriod.MONTHLY, description="Report period")
-    start_date: Optional[date] = Field(None, description="Start date for custom period")
-    end_date: Optional[date] = Field(None, description="End date for custom period")
-    branch_id: Optional[int] = Field(None, description="Specific branch ID for branch reports")
+    start_date: date | None = Field(None, description="Start date for custom period")
+    end_date: date | None = Field(None, description="End date for custom period")
+    branch_id: int | None = Field(None, description="Specific branch ID for branch reports")
     include_details: bool = Field(False, description="Include detailed breakdown")
     
     @field_validator('end_date')
@@ -127,13 +130,13 @@ class IncomeStatementSchema(ApiBaseModel):
     """Schema for income statement data."""
     period_start: date = Field(..., description="Period start date")
     period_end: date = Field(..., description="Period end date")
-    revenue: Dict[str, Decimal] = Field(..., description="Revenue breakdown")
-    cost_of_goods_sold: Dict[str, Decimal] = Field(..., description="COGS breakdown")
+    revenue: dict[str, Decimal] = Field(..., description="Revenue breakdown")
+    cost_of_goods_sold: dict[str, Decimal] = Field(..., description="COGS breakdown")
     gross_profit: Decimal = Field(..., description="Gross profit")
-    operating_expenses: Dict[str, Decimal] = Field(..., description="Operating expenses breakdown")
+    operating_expenses: dict[str, Decimal] = Field(..., description="Operating expenses breakdown")
     operating_income: Decimal = Field(..., description="Operating income")
-    other_income: Dict[str, Decimal] = Field(..., description="Other income sources")
-    other_expenses: Dict[str, Decimal] = Field(..., description="Other expenses")
+    other_income: dict[str, Decimal] = Field(..., description="Other income sources")
+    other_expenses: dict[str, Decimal] = Field(..., description="Other expenses")
     net_income: Decimal = Field(..., description="Net income")
     
     class Config:
@@ -142,9 +145,9 @@ class IncomeStatementSchema(ApiBaseModel):
 class BalanceSheetSchema(ApiBaseModel):
     """Schema for balance sheet data."""
     as_of_date: date = Field(..., description="Balance sheet date")
-    assets: Dict[str, Any] = Field(..., description="Assets breakdown")
-    liabilities: Dict[str, Any] = Field(..., description="Liabilities breakdown")
-    equity: Dict[str, Any] = Field(..., description="Equity breakdown")
+    assets: dict[str, Any] = Field(..., description="Assets breakdown")
+    liabilities: dict[str, Any] = Field(..., description="Liabilities breakdown")
+    equity: dict[str, Any] = Field(..., description="Equity breakdown")
     total_assets: Decimal = Field(..., description="Total assets")
     total_liabilities: Decimal = Field(..., description="Total liabilities")
     total_equity: Decimal = Field(..., description="Total equity")
@@ -156,9 +159,9 @@ class CashFlowStatementSchema(ApiBaseModel):
     """Schema for cash flow statement data."""
     period_start: date = Field(..., description="Period start date")
     period_end: date = Field(..., description="Period end date")
-    operating_activities: Dict[str, Decimal] = Field(..., description="Operating activities cash flow")
-    investing_activities: Dict[str, Decimal] = Field(..., description="Investing activities cash flow")
-    financing_activities: Dict[str, Decimal] = Field(..., description="Financing activities cash flow")
+    operating_activities: dict[str, Decimal] = Field(..., description="Operating activities cash flow")
+    investing_activities: dict[str, Decimal] = Field(..., description="Investing activities cash flow")
+    financing_activities: dict[str, Decimal] = Field(..., description="Financing activities cash flow")
     net_cash_flow: Decimal = Field(..., description="Net cash flow")
     beginning_cash: Decimal = Field(..., description="Beginning cash balance")
     ending_cash: Decimal = Field(..., description="Ending cash balance")
@@ -174,7 +177,7 @@ class TaxReportSchema(ApiBaseModel):
     tax_collected: Decimal = Field(..., description="Total tax collected")
     tax_exempt_sales: Decimal = Field(..., description="Tax exempt sales")
     tax_rate: Decimal = Field(..., description="Average tax rate")
-    sales_by_tax_rate: List[Dict[str, Any]] = Field(..., description="Sales breakdown by tax rate")
+    sales_by_tax_rate: list[dict[str, Any]] = Field(..., description="Sales breakdown by tax rate")
     
     class Config:
         from_attributes = True
@@ -183,7 +186,7 @@ class BudgetComparisonSchema(ApiBaseModel):
     """Schema for budget vs actual comparison."""
     period_start: date = Field(..., description="Period start date")
     period_end: date = Field(..., description="Period end date")
-    budget_items: List[Dict[str, Any]] = Field(..., description="Budget vs actual items")
+    budget_items: list[dict[str, Any]] = Field(..., description="Budget vs actual items")
     total_budgeted: Decimal = Field(..., description="Total budgeted amount")
     total_actual: Decimal = Field(..., description="Total actual amount")
     variance: Decimal = Field(..., description="Total variance")
@@ -196,11 +199,11 @@ class ProfitLossAnalysisSchema(ApiBaseModel):
     """Schema for profit and loss analysis."""
     period_start: date = Field(..., description="Period start date")
     period_end: date = Field(..., description="Period end date")
-    revenue_analysis: Dict[str, Any] = Field(..., description="Revenue analysis")
-    cost_analysis: Dict[str, Any] = Field(..., description="Cost analysis")
-    expense_analysis: Dict[str, Any] = Field(..., description="Expense analysis")
-    profitability_ratios: Dict[str, Decimal] = Field(..., description="Profitability ratios")
-    period_comparison: Dict[str, Any] = Field(..., description="Comparison with previous periods")
+    revenue_analysis: dict[str, Any] = Field(..., description="Revenue analysis")
+    cost_analysis: dict[str, Any] = Field(..., description="Cost analysis")
+    expense_analysis: dict[str, Any] = Field(..., description="Expense analysis")
+    profitability_ratios: dict[str, Decimal] = Field(..., description="Profitability ratios")
+    period_comparison: dict[str, Any] = Field(..., description="Comparison with previous periods")
     
     class Config:
         from_attributes = True
@@ -239,7 +242,7 @@ class AlertSchema(ApiBaseModel):
     priority: str = Field(..., description="Alert priority")
     title: str = Field(..., description="Alert title")
     message: str = Field(..., description="Alert message")
-    data: Optional[Dict[str, Any]] = Field(None, description="Additional alert data")
+    data: dict[str, Any] | None = Field(None, description="Additional alert data")
     created_at: datetime = Field(..., description="Alert creation time")
     
     class Config:
@@ -247,7 +250,7 @@ class AlertSchema(ApiBaseModel):
 
 class FinancialAlertsSchema(ApiBaseModel):
     """Schema for financial alerts summary."""
-    alerts: List[AlertSchema] = Field(..., description="List of active alerts")
+    alerts: list[AlertSchema] = Field(..., description="List of active alerts")
     total_alerts: int = Field(..., description="Total number of alerts")
     high_priority_count: int = Field(..., description="High priority alerts count")
     medium_priority_count: int = Field(..., description="Medium priority alerts count")

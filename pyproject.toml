@@ -23,7 +23,25 @@ indent-style = "space"
 skip-magic-trailing-comma = false
 
 [tool.ruff.per-file-ignores]
-"tests/**" = ["S101"]
+"tests/**" = [
+  "S101",  # allow assert usage in tests
+  "E501",  # ignore line length in tests to preserve readability of long payloads/URLs
+]
+"generated/**" = [
+  "E501",  # generated prisma types have long lines
+  "E402",  # import position artifacts in generated code
+  "B011",  # deliberate assert False patterns used as sentinels
+  "UP007", # allow 'Union' syntax in generated code
+]
+"scripts/**" = [
+  "E501",  # permit long instructional/help strings and formatted logging
+]
+"quick_*" = [
+  "E501",  # quick helper scripts with long lines
+]
+"test_all_endpoints_comprehensive.py" = [
+  "E501",  # single comprehensive script allowed long lines
+]
 
 [tool.black]
 line-length = 100

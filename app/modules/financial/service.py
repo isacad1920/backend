@@ -2,33 +2,29 @@
 Financial service orchestrator.
 """
 import logging
-from datetime import datetime, date, timedelta
-from typing import Optional, Dict, Any
-from generated.prisma import Prisma
-from app.modules.financial.services import ReportService, ExportService, AnalyticsService
+from datetime import date, timedelta
+from typing import Any
+
+from app.core.exceptions import AuthorizationError, DatabaseError, ValidationError
 from app.modules.financial.schema import (
-    FinancialSummarySchema,
-    SalesAnalyticsSchema,
-    InventoryAnalyticsSchema,
-    DashboardSummarySchema,
-    FinancialAlertsSchema,
-    IncomeStatementSchema,
     BalanceSheetSchema,
     CashFlowStatementSchema,
+    DashboardSummarySchema,
+    FinancialAlertsSchema,
+    FinancialSummarySchema,
+    IncomeStatementSchema,
+    InventoryAnalyticsSchema,
+    ReportPeriod,
+    SalesAnalyticsSchema,
     TaxReportSchema,
-    ReportPeriod
 )
-from app.core.exceptions import (
-    ValidationError,
-    AuthorizationError,
-    DatabaseError
-)
+from app.modules.financial.services import AnalyticsService, ExportService, ReportService
 from app.modules.financial.utils import (
-    DateUtils,
+    ErrorHandler,
     ValidationUtils,
     validate_financial_permission,
-    ErrorHandler
 )
+from generated.prisma import Prisma
 
 logger = logging.getLogger(__name__)
 
@@ -49,10 +45,10 @@ class FinancialService:
     # Analytics Methods (delegated to AnalyticsService)
     async def get_financial_summary(
         self, 
-        start_date: Optional[date] = None,
-        end_date: Optional[date] = None,
-        branch_id: Optional[int] = None,
-        current_user: Dict[str, Any] = None
+        start_date: date | None = None,
+        end_date: date | None = None,
+        branch_id: int | None = None,
+        current_user: dict[str, Any] = None
     ) -> FinancialSummarySchema:
         """Get financial summary for a given period.
         
@@ -78,10 +74,10 @@ class FinancialService:
     
     async def get_sales_analytics(
         self,
-        start_date: Optional[date] = None,
-        end_date: Optional[date] = None,
-        branch_id: Optional[int] = None,
-        current_user: Dict[str, Any] = None
+        start_date: date | None = None,
+        end_date: date | None = None,
+        branch_id: int | None = None,
+        current_user: dict[str, Any] = None
     ) -> SalesAnalyticsSchema:
         """Get detailed sales analytics."""
         return await self.analytics_service.get_sales_analytics(
@@ -90,8 +86,8 @@ class FinancialService:
     
     async def get_inventory_analytics(
         self,
-        branch_id: Optional[int] = None,
-        current_user: Dict[str, Any] = None
+        branch_id: int | None = None,
+        current_user: dict[str, Any] = None
     ) -> InventoryAnalyticsSchema:
         """Get inventory analytics."""
         return await self.analytics_service.get_inventory_analytics(
@@ -100,14 +96,14 @@ class FinancialService:
     
     async def get_dashboard_summary(
         self,
-        current_user: Dict[str, Any] = None
+        current_user: dict[str, Any] = None
     ) -> DashboardSummarySchema:
         """Get dashboard summary for quick overview."""
         return await self.analytics_service.get_dashboard_summary(current_user)
     
     async def get_financial_alerts(
         self,
-        current_user: Dict[str, Any] = None
+        current_user: dict[str, Any] = None
     ) -> FinancialAlertsSchema:
         """Get financial alerts and warnings."""
         return await self.analytics_service.get_financial_alerts(current_user)
@@ -117,8 +113,8 @@ class FinancialService:
         self,
         start_date: date,
         end_date: date,
-        branch_id: Optional[int] = None,
-        current_user: Dict[str, Any] = None
+        branch_id: int | None = None,
+        current_user: dict[str, Any] = None
     ) -> IncomeStatementSchema:
         """Generate income statement for specified period."""
         return await self.report_service.generate_income_statement(
@@ -128,8 +124,8 @@ class FinancialService:
     async def generate_balance_sheet(
         self,
         as_of_date: date,
-        branch_id: Optional[int] = None,
-        current_user: Dict[str, Any] = None
+        branch_id: int | None = None,
+        current_user: dict[str, Any] = None
     ) -> BalanceSheetSchema:
         """Generate balance sheet as of specific date."""
         return await self.report_service.generate_balance_sheet(
@@ -140,8 +136,8 @@ class FinancialService:
         self,
         start_date: date,
         end_date: date,
-        branch_id: Optional[int] = None,
-        current_user: Dict[str, Any] = None
+        branch_id: int | None = None,
+        current_user: dict[str, Any] = None
     ) -> CashFlowStatementSchema:
         """Generate cash flow statement for specified period."""
         return await self.report_service.generate_cash_flow_statement(
@@ -152,8 +148,8 @@ class FinancialService:
         self,
         start_date: date,
         end_date: date,
-        branch_id: Optional[int] = None,
-        current_user: Dict[str, Any] = None
+        branch_id: int | None = None,
+        current_user: dict[str, Any] = None
     ) -> TaxReportSchema:
         """Generate tax report for specified period."""
         return await self.report_service.generate_tax_report(
@@ -165,11 +161,11 @@ class FinancialService:
         self,
         report_type: str,
         format: str,
-        start_date: Optional[date] = None,
-        end_date: Optional[date] = None,
-        branch_id: Optional[int] = None,
-        current_user: Dict[str, Any] = None
-    ) -> Dict[str, Any]:
+        start_date: date | None = None,
+        end_date: date | None = None,
+        branch_id: int | None = None,
+        current_user: dict[str, Any] = None
+    ) -> dict[str, Any]:
         """Export financial report in specified format."""
         return await self.export_service.export_financial_report(
             report_type, format, start_date, end_date, branch_id, current_user

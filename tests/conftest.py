@@ -1,16 +1,15 @@
 """
 Pytest configuration and fixtures for SOFinance tests.
 """
-import pytest
 import asyncio
-from typing import Generator, AsyncGenerator
-from types import SimpleNamespace
+from collections.abc import AsyncGenerator, Generator
+
+import pytest
 from fastapi.testclient import TestClient
 from httpx import AsyncClient
 
-from app.main import app
-from app.db.client import get_db
 from app.core.config import settings
+from app.main import app
 from generated.prisma import Prisma
 
 
@@ -54,8 +53,8 @@ async def authenticated_client(async_client: AsyncClient, test_db: Prisma) -> As
     # Ensure test user exists
     test_user = await test_db.user.find_first(where={"email": "test@sofinance.com"})
     if not test_user:
-        from app.modules.users.service import create_user_service
         from app.modules.users.schema import UserCreateSchema
+        from app.modules.users.service import create_user_service
         user_service = create_user_service(test_db)
         user_data = UserCreateSchema(
             email="test@sofinance.com",
@@ -105,8 +104,8 @@ async def system_manage_client(async_client: AsyncClient, test_db: Prisma) -> As
     """
     admin = await test_db.user.find_first(where={"email": "sysadmin@sofinance.com"})
     if not admin:
-        from app.modules.users.service import create_user_service
         from app.modules.users.schema import UserCreateSchema
+        from app.modules.users.service import create_user_service
         user_service = create_user_service(test_db)
         admin = await user_service.create_user(UserCreateSchema(
             email="sysadmin@sofinance.com",
@@ -152,8 +151,8 @@ async def admin_user(test_db: Prisma) -> dict:
     admin_user = await test_db.user.find_first(where={"email": "admin@sofinance.com"})
     
     if not admin_user:
-        from app.modules.users.service import create_user_service
         from app.modules.users.schema import UserCreateSchema
+        from app.modules.users.service import create_user_service
         
         user_service = create_user_service(test_db)
         user_data = UserCreateSchema(
@@ -191,8 +190,8 @@ async def cashier_user(test_db: Prisma) -> dict:
     cashier_user = await test_db.user.find_first(where={"email": "cashier@sofinance.com"})
     
     if not cashier_user:
-        from app.modules.users.service import create_user_service
         from app.modules.users.schema import UserCreateSchema
+        from app.modules.users.service import create_user_service
         
         user_service = create_user_service(test_db)
         user_data = UserCreateSchema(
@@ -326,8 +325,8 @@ async def _ensure_user_and_token(async_client: AsyncClient, test_db: Prisma, *, 
     """Helper to ensure a user exists and return a fresh JWT access token."""
     user = await test_db.user.find_first(where={"email": email})
     if not user:
-        from app.modules.users.service import create_user_service
         from app.modules.users.schema import UserCreateSchema
+        from app.modules.users.service import create_user_service
         user_service = create_user_service(test_db)
         user_data = UserCreateSchema(
             email=email,
@@ -354,8 +353,8 @@ async def test_user_inventory_clerk(test_db: Prisma) -> dict:
     """Create or get an inventory clerk user for tests."""
     user = await test_db.user.find_first(where={"email": "inventory@sofinance.com"})
     if not user:
-        from app.modules.users.service import create_user_service
         from app.modules.users.schema import UserCreateSchema
+        from app.modules.users.service import create_user_service
         user_service = create_user_service(test_db)
         user_data = UserCreateSchema(
             email="inventory@sofinance.com",
@@ -373,8 +372,8 @@ async def test_user_accountant(test_db: Prisma) -> dict:
     """Create or get an accountant user for tests."""
     user = await test_db.user.find_first(where={"email": "accountant@sofinance.com"})
     if not user:
-        from app.modules.users.service import create_user_service
         from app.modules.users.schema import UserCreateSchema
+        from app.modules.users.service import create_user_service
         user_service = create_user_service(test_db)
         user_data = UserCreateSchema(
             email="accountant@sofinance.com",

@@ -1,12 +1,13 @@
 """
 Application configuration management using Pydantic settings.
 """
-from typing import Optional, List
-from pydantic_settings import BaseSettings, SettingsConfigDict
-from pydantic import field_validator, ConfigDict, AnyHttpUrl
-from enum import Enum
 import secrets
+from enum import Enum
 from pathlib import Path
+
+from pydantic import field_validator
+from pydantic_settings import BaseSettings, SettingsConfigDict
+
 
 class Environment(str, Enum):
     """Application environment types."""
@@ -66,17 +67,17 @@ class Settings(BaseSettings):
     redis_url: str = "redis://localhost:6379/0"
     
     # Email Configuration
-    smtp_host: Optional[str] = None
+    smtp_host: str | None = None
     smtp_port: int = 587
-    smtp_user: Optional[str] = None
-    smtp_password: Optional[str] = None
-    from_email: Optional[str] = None
+    smtp_user: str | None = None
+    smtp_password: str | None = None
+    from_email: str | None = None
     
     # File Upload Configuration
     upload_path: str = "./uploads"
     max_file_size_mb: int = 10
-    allowed_image_types: List[str] = ["image/jpeg", "image/png", "image/gif"]
-    allowed_document_types: List[str] = ["application/pdf", "text/csv", "application/vnd.ms-excel"]
+    allowed_image_types: list[str] = ["image/jpeg", "image/png", "image/gif"]
+    allowed_document_types: list[str] = ["application/pdf", "text/csv", "application/vnd.ms-excel"]
     
     # Company Information
     company_name: str = "SOFinance Company"
@@ -136,14 +137,14 @@ class Settings(BaseSettings):
     enable_inventory_forecasting: bool = False
     enable_reports: bool = True
     enable_notifications: bool = True
-    enable_key_mirroring: bool = True  # Legacy response top-level key mirroring (can be disabled for full standardization)
+    enable_key_mirroring: bool = False  # Disabled to enforce strict standardized envelope (no root key mirroring)
     # Response enrichment / observability
     enable_response_enrichment: bool = True
     response_enrichment_add_to_meta: bool = False
     response_enrichment_meta_namespace: str = "_ctx"
     include_correlation_id: bool = True
     include_app_version_meta: bool = True
-    mirror_pagination_keys: bool = True  # If False, do not promote page/size/total/items to top-level
+    mirror_pagination_keys: bool = False  # Do not promote pagination/item keys to top-level
     
     @field_validator("backend_cors_origins", mode="before")
     @classmethod

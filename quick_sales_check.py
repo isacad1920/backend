@@ -4,6 +4,7 @@
 Logs in as demo user, fetches first stock item, and posts a sale using stock_id.
 """
 import os
+
 import requests
 
 BASE = os.getenv("BASE_URL", "http://127.0.0.1:8000")

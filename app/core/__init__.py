@@ -1,14 +1,21 @@
 """
 Core package initialization.
 """
-from .config import settings, Constants, UserRole, Currency, Environment
+from .config import Constants, Currency, Environment, UserRole, settings
 from .dependencies import (
-    get_db, get_current_user, get_current_active_user,
-    require_role, require_permission, get_pagination_params
+    get_current_active_user,
+    get_current_user,
+    get_db,
+    get_pagination_params,
+    require_permission,
+    require_role,
 )
 from .security import (
-    PasswordManager, JWTManager, PermissionManager,
-    PasswordValidator, SecurityUtils
+    JWTManager,
+    PasswordManager,
+    PasswordValidator,
+    PermissionManager,
+    SecurityUtils,
 )
 
 __all__ = [

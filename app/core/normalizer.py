@@ -1,10 +1,10 @@
 """
 Utilities for normalizing attribute/key access across camelCase and snake_case.
 """
-from typing import Any, Optional
+from typing import Any
 
 
-def get_any(obj: Any, key_camel: str, key_snake: Optional[str] = None, default: Any = None) -> Any:
+def get_any(obj: Any, key_camel: str, key_snake: str | None = None, default: Any = None) -> Any:
     """Get attribute or dict key preferring camelCase then snake_case.
     - obj can be a model or dict
     - key_snake defaults to a snake_case version of key_camel if not provided

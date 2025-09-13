@@ -1,12 +1,15 @@
 """
 Inventory management schemas and data models.
 """
-from datetime import datetime, date
+from datetime import date, datetime
 from decimal import Decimal
-from typing import Optional, List, Dict, Any
 from enum import Enum
-from pydantic import BaseModel, Field, ConfigDict
+from typing import Any
+
+from pydantic import ConfigDict, Field
+
 from app.core.base_schema import ApiBaseModel
+
 
 class StockStatus(str, Enum):
     """Stock status enumeration."""
@@ -44,8 +47,8 @@ class StockLevelSchema(ApiBaseModel):
     id: int = Field(..., description="Stock record ID")
     product_id: int = Field(..., alias="productId", description="Product ID")
     product_name: str = Field(..., description="Product name")
-    product_sku: Optional[str] = Field(default=None, description="Product SKU")
-    category_name: Optional[str] = Field(default=None, description="Product category")
+    product_sku: str | None = Field(default=None, description="Product SKU")
+    category_name: str | None = Field(default=None, description="Product category")
     current_quantity: int = Field(..., ge=0, description="Current stock quantity")
     reserved_quantity: int = Field(default=0, ge=0, description="Reserved quantity")
     available_quantity: int = Field(..., ge=0, description="Available quantity")
@@ -53,8 +56,8 @@ class StockLevelSchema(ApiBaseModel):
     unit_cost: Decimal = Field(..., ge=0, description="Unit cost price")
     unit_price: Decimal = Field(..., ge=0, description="Unit selling price")
     stock_status: StockStatus = Field(..., description="Current stock status")
-    days_of_stock: Optional[int] = Field(default=None, description="Estimated days of stock remaining")
-    last_restocked: Optional[datetime] = Field(default=None, description="Last restock date")
+    days_of_stock: int | None = Field(default=None, description="Estimated days of stock remaining")
+    last_restocked: datetime | None = Field(default=None, description="Last restock date")
     created_at: datetime = Field(..., description="Record creation timestamp")
     updated_at: datetime = Field(..., description="Record last update timestamp")
 
@@ -64,8 +67,8 @@ class StockAdjustmentCreateSchema(ApiBaseModel):
     adjustment_type: AdjustmentType = Field(..., description="Type of adjustment")
     quantity: int = Field(..., gt=0, description="Quantity to adjust")
     reason: str = Field(..., description="Reason for adjustment")
-    notes: Optional[str] = Field(default=None, max_length=500, description="Additional notes")
-    reference_number: Optional[str] = Field(default=None, max_length=100, description="Reference number")
+    notes: str | None = Field(default=None, max_length=500, description="Additional notes")
+    reference_number: str | None = Field(default=None, max_length=100, description="Reference number")
 
 class StockAdjustmentSchema(ApiBaseModel):
     """Schema for stock adjustment information."""
@@ -79,8 +82,8 @@ class StockAdjustmentSchema(ApiBaseModel):
     quantity_after: int = Field(..., description="Quantity after adjustment")
     adjustment_quantity: int = Field(..., description="Adjustment quantity")
     reason: AdjustmentReason = Field(..., description="Reason for adjustment")
-    notes: Optional[str] = Field(default=None, description="Additional notes")
-    reference_number: Optional[str] = Field(default=None, description="Reference number")
+    notes: str | None = Field(default=None, description="Additional notes")
+    reference_number: str | None = Field(default=None, description="Reference number")
     created_by: int = Field(..., description="User who made the adjustment")
     created_at: datetime = Field(..., description="Adjustment timestamp")
 
@@ -94,9 +97,9 @@ class LowStockAlertSchema(ApiBaseModel):
     current_quantity: int = Field(..., description="Current stock quantity")
     reorder_level: int = Field(..., description="Reorder point threshold")
     suggested_order_quantity: int = Field(..., description="Suggested order quantity")
-    days_out_of_stock: Optional[int] = Field(default=None, description="Estimated days until out of stock")
-    last_sale_date: Optional[datetime] = Field(default=None, description="Last sale date")
-    average_daily_sales: Optional[Decimal] = Field(default=None, description="Average daily sales")
+    days_out_of_stock: int | None = Field(default=None, description="Estimated days until out of stock")
+    last_sale_date: datetime | None = Field(default=None, description="Last sale date")
+    average_daily_sales: Decimal | None = Field(default=None, description="Average daily sales")
 
 class InventoryValuationSchema(ApiBaseModel):
     """Schema for inventory valuation information."""
@@ -121,8 +124,8 @@ class InventoryReportSchema(ApiBaseModel):
     low_stock_items: int = Field(..., description="Number of low stock items")
     out_of_stock_items: int = Field(..., description="Number of out of stock items")
     overstock_items: int = Field(..., description="Number of overstock items")
-    stock_levels: List[StockLevelSchema] = Field(..., description="Detailed stock levels")
-    low_stock_alerts: List[LowStockAlertSchema] = Field(..., description="Low stock alerts")
+    stock_levels: list[StockLevelSchema] = Field(..., description="Detailed stock levels")
+    low_stock_alerts: list[LowStockAlertSchema] = Field(..., description="Low stock alerts")
 
 class DeadStockAnalysisSchema(ApiBaseModel):
     """Schema for dead stock analysis."""
@@ -130,8 +133,8 @@ class DeadStockAnalysisSchema(ApiBaseModel):
     product_name: str = Field(..., description="Product name")
     product_sku: str = Field(..., description="Product SKU")
     quantity: int = Field(..., description="Current stock quantity")
-    last_sale_date: Optional[datetime] = Field(default=None, description="Last sale date")
-    days_since_last_sale: Optional[int] = Field(default=None, description="Days since last sale")
+    last_sale_date: datetime | None = Field(default=None, description="Last sale date")
+    days_since_last_sale: int | None = Field(default=None, description="Days since last sale")
     total_cost_value: Decimal = Field(..., description="Total cost value tied up")
     suggested_action: str = Field(..., description="Suggested action for dead stock")
     priority_level: str = Field(..., description="Priority level for action")
@@ -156,8 +159,8 @@ class InventoryMovementSchema(ApiBaseModel):
     product_name: str = Field(..., description="Product name")
     movement_type: str = Field(..., description="Type of movement (sale, adjustment, transfer)")
     quantity: int = Field(..., description="Quantity moved")
-    reference_id: Optional[int] = Field(default=None, description="Reference transaction ID")
-    notes: Optional[str] = Field(default=None, description="Movement notes")
+    reference_id: int | None = Field(default=None, description="Reference transaction ID")
+    notes: str | None = Field(default=None, description="Movement notes")
     created_at: datetime = Field(..., description="Movement timestamp")
 
 class StockMovementSchema(ApiBaseModel):
@@ -168,11 +171,11 @@ class StockMovementSchema(ApiBaseModel):
     product_sku: str
     movement_type: str  # SALE, ADJUSTMENT, TRANSFER, RECEIPT
     quantity: int
-    unit_cost: Optional[Decimal] = None
-    reference_number: Optional[str] = None
-    description: Optional[str] = None
+    unit_cost: Decimal | None = None
+    reference_number: str | None = None
+    description: str | None = None
     created_at: datetime
-    created_by: Optional[int] = None
+    created_by: int | None = None
     running_balance: int
 
 class InventoryTurnoverSchema(ApiBaseModel):
@@ -188,18 +191,18 @@ class InventoryTurnoverSchema(ApiBaseModel):
 # Response Schemas
 class InventoryDashboardSchema(ApiBaseModel):
     """Schema for inventory dashboard data."""
-    summary: Dict[str, Any] = Field(..., description="Inventory summary statistics")
-    low_stock_alerts: List[LowStockAlertSchema] = Field(..., description="Current low stock alerts")
-    recent_adjustments: List[StockAdjustmentSchema] = Field(..., description="Recent stock adjustments")
-    top_selling_products: List[Dict[str, Any]] = Field(..., description="Top selling products")
-    dead_stock_items: List[DeadStockAnalysisSchema] = Field(..., description="Dead stock analysis")
-    inventory_trends: Dict[str, Any] = Field(..., description="Inventory trend data")
+    summary: dict[str, Any] = Field(..., description="Inventory summary statistics")
+    low_stock_alerts: list[LowStockAlertSchema] = Field(..., description="Current low stock alerts")
+    recent_adjustments: list[StockAdjustmentSchema] = Field(..., description="Recent stock adjustments")
+    top_selling_products: list[dict[str, Any]] = Field(..., description="Top selling products")
+    dead_stock_items: list[DeadStockAnalysisSchema] = Field(..., description="Dead stock analysis")
+    inventory_trends: dict[str, Any] = Field(..., description="Inventory trend data")
 
 class BulkStockUpdateSchema(ApiBaseModel):
     """Schema for bulk stock updates."""
-    updates: List[Dict[str, Any]] = Field(..., description="List of stock updates")
+    updates: list[dict[str, Any]] = Field(..., description="List of stock updates")
     reason: AdjustmentReason = Field(..., description="Reason for bulk update")
-    notes: Optional[str] = Field(default=None, description="Bulk update notes")
+    notes: str | None = Field(default=None, description="Bulk update notes")
 
 # Export/Import Schemas
 class InventoryExportSchema(ApiBaseModel):
@@ -207,9 +210,9 @@ class InventoryExportSchema(ApiBaseModel):
     format: str = Field(default="csv", description="Export format (csv, excel, pdf)")
     include_valuation: bool = Field(default=True, description="Include valuation data")
     include_movements: bool = Field(default=False, description="Include movement history")
-    date_from: Optional[date] = Field(default=None, description="Start date for data")
-    date_to: Optional[date] = Field(default=None, description="End date for data")
-    product_ids: Optional[List[int]] = Field(default=None, description="Specific product IDs")
+    date_from: date | None = Field(default=None, description="Start date for data")
+    date_to: date | None = Field(default=None, description="End date for data")
+    product_ids: list[int] | None = Field(default=None, description="Specific product IDs")
 
 class InventoryImportSchema(ApiBaseModel):
     """Schema for inventory data import."""

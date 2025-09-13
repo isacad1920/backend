@@ -2,21 +2,18 @@
 Financial analytics service.
 """
 import logging
-from datetime import datetime, date, timedelta
-from decimal import Decimal
-from typing import Optional, List, Dict, Any
-from generated.prisma import Prisma
+from datetime import date, datetime, timedelta
+from typing import Any
+
 from app.modules.financial.schema import (
-    FinancialSummarySchema,
-    SalesAnalyticsSchema,
-    InventoryAnalyticsSchema,
-    CustomerAnalyticsSchema,
-    DashboardSummarySchema,
-    PerformanceMetricsSchema,
-    FinancialAlertsSchema,
     AlertSchema,
-    ReportPeriod
+    DashboardSummarySchema,
+    FinancialAlertsSchema,
+    FinancialSummarySchema,
+    InventoryAnalyticsSchema,
+    SalesAnalyticsSchema,
 )
+from generated.prisma import Prisma
 
 logger = logging.getLogger(__name__)
 
@@ -33,10 +30,10 @@ class AnalyticsService:
     
     async def get_financial_summary(
         self, 
-        start_date: Optional[date] = None,
-        end_date: Optional[date] = None,
-        branch_id: Optional[int] = None,
-        current_user: Dict[str, Any] = None
+        start_date: date | None = None,
+        end_date: date | None = None,
+        branch_id: int | None = None,
+        current_user: dict[str, Any] = None
     ) -> FinancialSummarySchema:
         """Get financial summary for a given period.
         
@@ -166,10 +163,10 @@ class AnalyticsService:
     
     async def get_sales_analytics(
         self,
-        start_date: Optional[date] = None,
-        end_date: Optional[date] = None,
-        branch_id: Optional[int] = None,
-        current_user: Dict[str, Any] = None
+        start_date: date | None = None,
+        end_date: date | None = None,
+        branch_id: int | None = None,
+        current_user: dict[str, Any] = None
     ) -> SalesAnalyticsSchema:
         """Get detailed sales analytics.
         
@@ -263,8 +260,8 @@ class AnalyticsService:
     
     async def get_inventory_analytics(
         self,
-        branch_id: Optional[int] = None,
-        current_user: Dict[str, Any] = None
+        branch_id: int | None = None,
+        current_user: dict[str, Any] = None
     ) -> InventoryAnalyticsSchema:
         """Get inventory analytics.
         
@@ -336,7 +333,7 @@ class AnalyticsService:
     
     async def get_dashboard_summary(
         self,
-        current_user: Dict[str, Any] = None
+        current_user: dict[str, Any] = None
     ) -> DashboardSummarySchema:
         """Get dashboard summary for quick overview.
         
@@ -458,7 +455,7 @@ class AnalyticsService:
     
     async def get_financial_alerts(
         self,
-        current_user: Dict[str, Any] = None
+        current_user: dict[str, Any] = None
     ) -> FinancialAlertsSchema:
         """Get financial alerts and warnings.
         
@@ -576,7 +573,7 @@ class AnalyticsService:
             raise
     
     # Helper methods for analytics calculations
-    def _analyze_daily_sales(self, sales_data: List) -> List[Dict[str, Any]]:
+    def _analyze_daily_sales(self, sales_data: list) -> list[dict[str, Any]]:
         """Analyze sales data by day."""
         daily_data = {}
         
@@ -599,7 +596,7 @@ class AnalyticsService:
             for day, data in sorted(daily_data.items())
         ]
     
-    def _analyze_monthly_sales(self, sales_data: List) -> List[Dict[str, Any]]:
+    def _analyze_monthly_sales(self, sales_data: list) -> list[dict[str, Any]]:
         """Analyze sales data by month."""
         monthly_data = {}
         
@@ -622,7 +619,7 @@ class AnalyticsService:
             for month, data in sorted(monthly_data.items())
         ]
     
-    def _analyze_top_products(self, sales_data: List, limit: int = 10) -> List[Dict[str, Any]]:
+    def _analyze_top_products(self, sales_data: list, limit: int = 10) -> list[dict[str, Any]]:
         """Analyze top-selling products."""
         product_data = {}
         
@@ -656,7 +653,7 @@ class AnalyticsService:
             for data in sorted_products
         ]
     
-    def _analyze_sales_by_category(self, sales_data: List) -> List[Dict[str, Any]]:
+    def _analyze_sales_by_category(self, sales_data: list) -> list[dict[str, Any]]:
         """Analyze sales by product category."""
         category_data = {}
         
@@ -685,7 +682,7 @@ class AnalyticsService:
             for data in category_data.values()
         ]
     
-    def _analyze_sales_by_branch(self, sales_data: List) -> List[Dict[str, Any]]:
+    def _analyze_sales_by_branch(self, sales_data: list) -> list[dict[str, Any]]:
         """Analyze sales by branch."""
         branch_data = {}
         
@@ -714,7 +711,7 @@ class AnalyticsService:
             for data in branch_data.values()
         ]
     
-    def _analyze_sales_trends(self, sales_data: List) -> Dict[str, Any]:
+    def _analyze_sales_trends(self, sales_data: list) -> dict[str, Any]:
         """Analyze sales trends and patterns."""
         if not sales_data:
             return {'trend': 'stable', 'growth_rate': 0, 'pattern': 'insufficient_data'}
@@ -758,15 +755,15 @@ class AnalyticsService:
             'pattern': 'normal'  # Could be enhanced with more sophisticated analysis
         }
     
-    def _get_top_products(self, sales_data: List, limit: int = 5) -> List[Dict[str, Any]]:
+    def _get_top_products(self, sales_data: list, limit: int = 5) -> list[dict[str, Any]]:
         """Get top-selling products for summary."""
         return self._analyze_top_products(sales_data, limit)
     
-    def _get_sales_by_category(self, sales_data: List) -> List[Dict[str, Any]]:
+    def _get_sales_by_category(self, sales_data: list) -> list[dict[str, Any]]:
         """Get sales by category for summary."""
         return self._analyze_sales_by_category(sales_data)
     
-    def _check_financial_permission(self, user: Dict[str, Any], action: str) -> bool:
+    def _check_financial_permission(self, user: dict[str, Any], action: str) -> bool:
         """Check if user has financial permission for specified action.
         
         Args:

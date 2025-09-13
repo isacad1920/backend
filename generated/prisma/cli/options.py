@@ -1,8 +1,7 @@
 import click
 
-from .utils import PathlibPath
 from .._types import FuncType
-
+from .utils import PathlibPath
 
 schema: FuncType = click.option(
     '--schema',

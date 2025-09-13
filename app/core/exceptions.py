@@ -3,7 +3,7 @@ Global custom exceptions for SOFinance POS System.
 Simple, consistent error handling across all endpoints.
 """
 from datetime import datetime
-from typing import Dict, Any, Optional
+from typing import Any
 
 
 class APIError(Exception):
@@ -14,7 +14,7 @@ class APIError(Exception):
         message: str,
         status_code: int = 400,
         error_code: str = "API_ERROR",
-        details: Optional[Dict[str, Any]] = None
+        details: dict[str, Any] | None = None
     ):
         """Initialize API error.
         
@@ -31,7 +31,7 @@ class APIError(Exception):
         self.details = details or {}
         self.timestamp = datetime.utcnow()
     
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """Convert error to dictionary for JSON response."""
         return {
             "error": {
@@ -92,7 +92,7 @@ class NotFoundError(APIError):
         self,
         message: str = "Resource not found",
         resource: str = None,
-        error_code: Optional[str] = None,
+        error_code: str | None = None,
         **kwargs
     ):
         # Gracefully handle callers that pass 'detail' instead of message
@@ -109,7 +109,7 @@ class NotFoundError(APIError):
 class AlreadyExistsError(APIError):
     """Resource already exists."""
     
-    def __init__(self, message: str = "Resource already exists", error_code: Optional[str] = None, **kwargs):
+    def __init__(self, message: str = "Resource already exists", error_code: str | None = None, **kwargs):
         # Allow 'detail' kwarg to provide the message
         details = kwargs.pop('details', {})
         detail_msg = kwargs.pop('detail', None)

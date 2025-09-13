@@ -3,6 +3,7 @@ Base Pydantic model with project-wide settings for casing and ORM usage.
 """
 from pydantic import BaseModel, ConfigDict
 
+
 class ApiBaseModel(BaseModel):
     """Base model enforcing Option A conventions:
     - camelCase field names in code

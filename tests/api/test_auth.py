@@ -3,7 +3,15 @@ Authentication API endpoint tests.
 """
 import pytest
 from httpx import AsyncClient
+
 from app.core.config import settings
+
+
+def _unwrap(json_obj: dict):
+    """Return inner data object if present, else original."""
+    if isinstance(json_obj, dict) and isinstance(json_obj.get("data"), dict):
+        return json_obj["data"]
+    return json_obj
 
 
 class TestAuthenticationEndpoints:
@@ -21,11 +29,12 @@ class TestAuthenticationEndpoints:
         )
         
         assert response.status_code == 200
-        data = response.json()
+        payload = response.json()
+        data = _unwrap(payload)
+        # Token fields now live inside envelope.data
         assert "access_token" in data
         assert "refresh_token" in data
-        assert "token_type" in data
-        assert data["token_type"] == "bearer"
+        assert data.get("token_type") == "bearer"
         assert "user" in data
     
     @pytest.mark.asyncio
@@ -41,7 +50,13 @@ class TestAuthenticationEndpoints:
         
         assert response.status_code == 401
         data = response.json()
-        assert "detail" in data
+        # Unified error envelope: success false + error object
+        assert data.get("success") is False
+        assert "error" in data and isinstance(data["error"], dict)
+        err = data["error"]
+        # Accept either generic UNAUTHORIZED code or fallback HTTP status message
+        assert err.get("code") in ("UNAUTHORIZED", "AUTH_INVALID_CREDENTIALS", "HTTP_401")
+        assert isinstance(err.get("message"), str) and err.get("message")
     
     @pytest.mark.asyncio
     async def test_login_missing_fields(self, async_client: AsyncClient):
@@ -66,7 +81,8 @@ class TestAuthenticationEndpoints:
         )
         
         assert login_response.status_code == 200
-        login_data = login_response.json()
+        login_payload = login_response.json()
+        login_data = _unwrap(login_payload)
         refresh_token = login_data["refresh_token"]
         
         # Test refresh
@@ -76,9 +92,10 @@ class TestAuthenticationEndpoints:
         )
         
         assert response.status_code == 200
-        data = response.json()
+        payload = response.json()
+        data = _unwrap(payload)
         assert "access_token" in data
-        assert "token_type" in data
+        assert data.get("token_type") == "bearer"
     
     @pytest.mark.asyncio
     async def test_refresh_token_invalid(self, async_client: AsyncClient):

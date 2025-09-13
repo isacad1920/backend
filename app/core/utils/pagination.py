@@ -1,6 +1,5 @@
 """Common pagination utilities for consistent API behavior."""
 from __future__ import annotations
-from typing import Tuple
 
 DEFAULT_PAGE = 1
 DEFAULT_SIZE = 25

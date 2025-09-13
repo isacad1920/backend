@@ -1,25 +1,26 @@
 """
 Journal API routes and endpoints.
 """
-from typing import List, Optional, Dict, Any
-from datetime import date
-from fastapi import APIRouter, Depends, HTTPException, Query, Path, status
-from fastapi.security import HTTPBearer
 import logging
+from datetime import date
+from typing import Any
 
-from app.core.dependencies import get_current_user, get_current_active_user
-from app.core.response import ResponseBuilder, SuccessResponse, ErrorResponse
-from app.db.prisma import get_db
-from app.modules.journal.service import create_journal_service
-from app.utils.pdf import generate_simple_pdf
+from fastapi import APIRouter, Depends, HTTPException, Path, Query, status
 from fastapi.responses import StreamingResponse
+from fastapi.security import HTTPBearer
+
+from app.core.dependencies import get_current_active_user
+from app.core.response import ResponseBuilder, SuccessResponse
+from app.db.prisma import get_db
 from app.modules.journal.schema import (
     JournalEntryCreateSchema,
-    JournalEntryUpdateSchema,
-    JournalEntrySchema,
     JournalEntryListSchema,
+    JournalEntrySchema,
+    JournalEntryUpdateSchema,
     TrialBalanceSchema,
 )
+from app.modules.journal.service import create_journal_service
+from app.utils.pdf import generate_simple_pdf
 
 security = HTTPBearer()
 logger = logging.getLogger(__name__)
@@ -29,9 +30,9 @@ router = APIRouter(prefix="/journal", tags=["Journal"])
 
 @router.get("/entries", response_model=SuccessResponse[JournalEntryListSchema])
 async def get_journal_entries(
-    start_date: Optional[date] = Query(None, description="Filter entries from this date"),
-    end_date: Optional[date] = Query(None, description="Filter entries up to this date"),
-    entry_type: Optional[str] = Query(None, description="Filter by entry type"),
+    start_date: date | None = Query(None, description="Filter entries from this date"),
+    end_date: date | None = Query(None, description="Filter entries up to this date"),
+    entry_type: str | None = Query(None, description="Filter by entry type"),
     limit: int = Query(50, description="Number of entries to return"),
     offset: int = Query(0, description="Number of entries to skip"),
     current_user = Depends(get_current_active_user),
@@ -171,7 +172,7 @@ async def delete_journal_entry(
 
 @router.get("/trial-balance", response_model=SuccessResponse[TrialBalanceSchema])
 async def get_trial_balance(
-    as_of_date: Optional[date] = Query(None, description="Trial balance as of this date"),
+    as_of_date: date | None = Query(None, description="Trial balance as of this date"),
     current_user = Depends(get_current_active_user),
     db = Depends(get_db),
 ):
@@ -213,7 +214,7 @@ async def export_journal_entry_pdf(entry_id: int, current_user = Depends(get_cur
         raise HTTPException(status_code=500, detail=f"Failed to export journal entry: {str(e)}")
 
 @router.get("/trial-balance/export.pdf")
-async def export_trial_balance_pdf(as_of_date: Optional[date] = None, current_user = Depends(get_current_active_user), db = Depends(get_db)):
+async def export_trial_balance_pdf(as_of_date: date | None = None, current_user = Depends(get_current_active_user), db = Depends(get_db)):
     """Generate a PDF for the trial balance."""
     try:
         service = create_journal_service(db)
@@ -226,7 +227,7 @@ async def export_trial_balance_pdf(as_of_date: Optional[date] = None, current_us
             f"Total Credits: {tb.total_credits}",
             f"Balanced: {tb.is_balanced}",
         ]
-        pdf = generate_simple_pdf(title=f"Trial Balance", subtitle=f"As of {tb.as_of_date}", lines=lines)
+        pdf = generate_simple_pdf(title="Trial Balance", subtitle=f"As of {tb.as_of_date}", lines=lines)
         return StreamingResponse(iter([pdf]), media_type="application/pdf", headers={
             "Content-Disposition": "attachment; filename=trial_balance.pdf"
         })
@@ -265,7 +266,7 @@ async def get_chart_of_accounts(
 
 @router.get("/account-balances")
 async def get_account_balances(
-    account_code: Optional[str] = Query(None, description="Specific account code"),
+    account_code: str | None = Query(None, description="Specific account code"),
     current_user = Depends(get_current_active_user),
     db = Depends(get_db),
 ):
@@ -277,7 +278,7 @@ async def get_account_balances(
     try:
         # Compute balances from journal lines
         lines = await db.journalentryline.find_many(include={"account": True})
-        totals: dict[int, Dict[str, Any]] = {}
+        totals: dict[int, dict[str, Any]] = {}
         for l in lines:
             aid = l.accountId
             if aid not in totals:
@@ -313,9 +314,9 @@ async def get_account_balances(
 
 @router.get("/audit-trail")
 async def get_audit_trail(
-    start_date: Optional[date] = Query(None, description="Audit trail start date"),
-    end_date: Optional[date] = Query(None, description="Audit trail end date"),
-    user_id: Optional[int] = Query(None, description="Filter by user ID"),
+    start_date: date | None = Query(None, description="Audit trail start date"),
+    end_date: date | None = Query(None, description="Audit trail end date"),
+    user_id: int | None = Query(None, description="Filter by user ID"),
     limit: int = Query(100, description="Number of audit entries to return"),
     current_user = Depends(get_current_active_user),
     db = Depends(get_db),

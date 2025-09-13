@@ -1,8 +1,9 @@
-from generated.prisma import Prisma
-from contextlib import asynccontextmanager
-from typing import AsyncGenerator
-import logging
 import asyncio
+import logging
+from collections.abc import AsyncGenerator
+from contextlib import asynccontextmanager
+
+from generated.prisma import Prisma
 
 logger = logging.getLogger(__name__)
 

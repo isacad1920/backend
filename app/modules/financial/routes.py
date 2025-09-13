@@ -1,36 +1,20 @@
 """
 Financial API routes and endpoints.
 """
-from typing import List, Optional, Dict, Any
-from datetime import date, datetime, timedelta
-from fastapi import APIRouter, Depends, HTTPException, Query, Path, status, Request
-from fastapi.security import HTTPBearer
-from fastapi.responses import StreamingResponse
 import logging
+from datetime import date, timedelta
 
-from app.core.dependencies import get_current_user, get_current_active_user
-from app.core.response import ResponseBuilder, SuccessResponse, ErrorResponse, success_response  # added success_response
-from app.db.prisma import get_db
-from app.modules.financial.service import FinancialService
+from fastapi import APIRouter, Depends, HTTPException, Query, Request
+from fastapi.responses import StreamingResponse
+from fastapi.security import HTTPBearer
+
+from app.core.dependencies import get_current_active_user
 from app.core.exceptions import AuthorizationError
-from app.utils.pdf import generate_simple_pdf, generate_table_pdf
-from app.modules.financial.schema import (
-    FinancialSummarySchema,
-    SalesAnalyticsSchema,
-    InventoryAnalyticsSchema,
-    CustomerAnalyticsSchema,
-    FinancialRatiosSchema,
-    FinancialReportRequestSchema,
-    IncomeStatementSchema,
-    BalanceSheetSchema,
-    CashFlowStatementSchema,
-    TaxReportSchema,
-    BudgetComparisonSchema,
-    ProfitLossAnalysisSchema,
-    DashboardSummarySchema,
-    PerformanceMetricsSchema,
-    FinancialAlertsSchema
-)
+from app.core.response import success_response  # added success_response
+from app.db.prisma import get_db
+from app.modules.financial.schema import FinancialReportRequestSchema
+from app.modules.financial.service import FinancialService
+from app.utils.pdf import generate_table_pdf
 
 security = HTTPBearer()
 logger = logging.getLogger(__name__)
@@ -40,9 +24,9 @@ router = APIRouter(prefix="/financial", tags=["Financial"])
 
 @router.get("/balance-sheet")
 async def generate_balance_sheet(
-    start_date: Optional[date] = Query(None, description="Balance sheet start date"),
-    end_date: Optional[date] = Query(None, description="Balance sheet end date"),
-    branch_id: Optional[int] = Query(None, description="Filter by branch ID"),
+    start_date: date | None = Query(None, description="Balance sheet start date"),
+    end_date: date | None = Query(None, description="Balance sheet end date"),
+    branch_id: int | None = Query(None, description="Filter by branch ID"),
     current_user = Depends(get_current_active_user),
     db = Depends(get_db),
 ):
@@ -73,12 +57,12 @@ async def generate_balance_sheet(
 @router.get("/income-statement")
 async def generate_income_statement(
     # Support either explicit dates or period/year/month as used in tests
-    start_date: Optional[date] = Query(None, description="Income statement start date"),
-    end_date: Optional[date] = Query(None, description="Income statement end date"),
-    period: Optional[str] = Query(None, description="Report period (e.g., MONTHLY)"),
-    year: Optional[int] = Query(None, description="Year for period-based queries"),
-    month: Optional[int] = Query(None, description="Month for period-based queries"),
-    branch_id: Optional[int] = Query(None, description="Filter by branch ID"),
+    start_date: date | None = Query(None, description="Income statement start date"),
+    end_date: date | None = Query(None, description="Income statement end date"),
+    period: str | None = Query(None, description="Report period (e.g., MONTHLY)"),
+    year: int | None = Query(None, description="Year for period-based queries"),
+    month: int | None = Query(None, description="Month for period-based queries"),
+    branch_id: int | None = Query(None, description="Filter by branch ID"),
     current_user = Depends(get_current_active_user),
     db = Depends(get_db),
 ):
@@ -127,30 +111,33 @@ async def generate_income_statement(
         payload = {
             'revenue': is_dict.get('revenue', []),
             'expenses': is_dict.get('expenses', []),
-            'gross_profit': is_dict.get('gross_profit') or is_dict.get('grossProfit'),
-            'net_income': is_dict.get('net_income') or is_dict.get('netIncome'),
-            'total_revenue': is_dict.get('total_revenue') or is_dict.get('totalRevenue'),
-            'total_expenses': is_dict.get('total_expenses') or is_dict.get('totalExpenses'),
+            'gross_profit': is_dict.get('gross_profit') or is_dict.get('grossProfit') or 0,
+            'net_income': is_dict.get('net_profit') or is_dict.get('netIncome') or 0,
+            'total_revenue': is_dict.get('total_revenue') or is_dict.get('totalRevenue') or 0,
+            'total_expenses': is_dict.get('total_expenses') or is_dict.get('totalExpenses') or 0,
             'period_start': str(start_date),
             'period_end': str(end_date),
         }
-        # Return raw dict (let middleware decide whether to wrap; tests just need top-level keys)
-        return payload
+        # Return standardized success envelope
+        return success_response(data=payload, message="Income statement generated")
     except AuthorizationError as e:
         raise HTTPException(status_code=401, detail=str(e))
     except HTTPException as e:
         raise e
     except Exception as e:
         logger.error(f"Failed to generate income statement: {str(e)}")
-        # Fallback minimal payload with required keys
-        return {"revenue": [], "expenses": [], "gross_profit": 0, "total_revenue": 0, "total_expenses": 0}
+        # Fallback success envelope with minimal payload
+        return success_response(
+            data={"revenue": [], "expenses": [], "gross_profit": 0, "total_revenue": 0, "total_expenses": 0},
+            message="Income statement generation failed - fallback data"
+        )
 
 
 @router.get("/cash-flow")
 async def generate_cash_flow_statement(
-    start_date: Optional[date] = Query(None, description="Cash flow start date"),
-    end_date: Optional[date] = Query(None, description="Cash flow end date"),
-    branch_id: Optional[int] = Query(None, description="Filter by branch ID"),
+    start_date: date | None = Query(None, description="Cash flow start date"),
+    end_date: date | None = Query(None, description="Cash flow end date"),
+    branch_id: int | None = Query(None, description="Filter by branch ID"),
     current_user = Depends(get_current_active_user),
     db = Depends(get_db),
 ):
@@ -187,9 +174,9 @@ async def generate_cash_flow_statement(
 
 @router.get("/profit-loss")
 async def get_profit_loss_report(
-    start_date: Optional[date] = Query(None, description="P&L start date"),
-    end_date: Optional[date] = Query(None, description="P&L end date"),
-    branch_id: Optional[int] = Query(None, description="Filter by branch ID"),
+    start_date: date | None = Query(None, description="P&L start date"),
+    end_date: date | None = Query(None, description="P&L end date"),
+    branch_id: int | None = Query(None, description="Filter by branch ID"),
     current_user = Depends(get_current_active_user),
     db = Depends(get_db),
 ):
@@ -244,8 +231,8 @@ async def get_profit_loss_report(
 
 @router.get("/balance-sheet/export.pdf")
 async def export_balance_sheet_pdf(
-    end_date: Optional[date] = Query(None),
-    branch_id: Optional[int] = Query(None),
+    end_date: date | None = Query(None),
+    branch_id: int | None = Query(None),
     current_user = Depends(get_current_active_user),
     db = Depends(get_db),
 ):
@@ -296,9 +283,9 @@ async def export_balance_sheet_pdf(
 
 @router.get("/income-statement/export.pdf")
 async def export_income_statement_pdf(
-    start_date: Optional[date] = Query(None),
-    end_date: Optional[date] = Query(None),
-    branch_id: Optional[int] = Query(None),
+    start_date: date | None = Query(None),
+    end_date: date | None = Query(None),
+    branch_id: int | None = Query(None),
     current_user = Depends(get_current_active_user),
     db = Depends(get_db),
 ):
@@ -339,9 +326,9 @@ async def export_income_statement_pdf(
 
 @router.get("/cash-flow/export.pdf")
 async def export_cash_flow_pdf(
-    start_date: Optional[date] = Query(None),
-    end_date: Optional[date] = Query(None),
-    branch_id: Optional[int] = Query(None),
+    start_date: date | None = Query(None),
+    end_date: date | None = Query(None),
+    branch_id: int | None = Query(None),
     current_user = Depends(get_current_active_user),
     db = Depends(get_db),
 ):
@@ -386,9 +373,9 @@ async def export_cash_flow_pdf(
 
 @router.get("/profit-loss/export.pdf")
 async def export_profit_loss_pdf(
-    start_date: Optional[date] = Query(None),
-    end_date: Optional[date] = Query(None),
-    branch_id: Optional[int] = Query(None),
+    start_date: date | None = Query(None),
+    end_date: date | None = Query(None),
+    branch_id: int | None = Query(None),
     current_user = Depends(get_current_active_user),
     db = Depends(get_db),
 ):
@@ -473,9 +460,9 @@ async def export_financial_data(
 
 @router.get("/summary")
 async def get_financial_summary(
-    start_date: Optional[date] = Query(None, description="Summary start date"),
-    end_date: Optional[date] = Query(None, description="Summary end date"),
-    branch_id: Optional[int] = Query(None, description="Filter by branch ID"),
+    start_date: date | None = Query(None, description="Summary start date"),
+    end_date: date | None = Query(None, description="Summary end date"),
+    branch_id: int | None = Query(None, description="Filter by branch ID"),
     request: Request = None,
     current_user = Depends(get_current_active_user),
     db = Depends(get_db),
@@ -549,8 +536,8 @@ async def get_dashboard_summary(
 
 @router.get("/analytics/sales")
 async def get_sales_analytics(
-    start_date: Optional[date] = Query(None, description="Analytics start date"),
-    end_date: Optional[date] = Query(None, description="Analytics end date"),
+    start_date: date | None = Query(None, description="Analytics start date"),
+    end_date: date | None = Query(None, description="Analytics end date"),
     current_user = Depends(get_current_active_user),
     db = Depends(get_db),
 ):
@@ -611,8 +598,8 @@ async def get_inventory_analytics(
 
 @router.get("/ratios")
 async def get_financial_ratios(
-    start_date: Optional[date] = Query(None, description="Ratios calculation start date"),
-    end_date: Optional[date] = Query(None, description="Ratios calculation end date"),
+    start_date: date | None = Query(None, description="Ratios calculation start date"),
+    end_date: date | None = Query(None, description="Ratios calculation end date"),
     current_user = Depends(get_current_active_user),
     db = Depends(get_db),
 ):
@@ -665,7 +652,7 @@ async def get_financial_alerts(
 @router.get("/tax/report")
 async def generate_tax_report(
     tax_year: int = Query(..., description="Tax year for the report"),
-    quarter: Optional[int] = Query(None, description="Specific quarter (1-4)"),
+    quarter: int | None = Query(None, description="Specific quarter (1-4)"),
     current_user = Depends(get_current_active_user),
     db = Depends(get_db),
 ):
@@ -799,9 +786,9 @@ async def get_customer_analytics_alias(
 
 @router.get("/tax-report")
 async def generate_tax_report_alias(
-    period: Optional[str] = Query(None),
+    period: str | None = Query(None),
     year: int = Query(...),
-    quarter: Optional[int] = Query(None),
+    quarter: int | None = Query(None),
     current_user = Depends(get_current_active_user),
     db = Depends(get_db),
 ):

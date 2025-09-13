@@ -14,19 +14,22 @@ Simplified implementation focusing on quick integration; financial report genera
 where possible to existing financial ReportService for income_statement/balance_sheet/cash_flow.
 """
 from __future__ import annotations
-from fastapi import APIRouter, Depends, Query, Body, HTTPException, Path, status
-from typing import Optional, Dict, Any, List
+
+from datetime import datetime
+from typing import Any
 from uuid import uuid4
-from datetime import datetime, date
-from app.db.prisma import get_db
-from generated.prisma import Prisma
+
+from fastapi import APIRouter, Body, Depends, HTTPException, Path, Query
+
 from app.core.dependencies import get_current_active_user
+from app.core.response import paginated_response, success_response
+from app.db.prisma import get_db
 from app.modules.financial.services.report_service import ReportService
-from app.core.response import success_response, paginated_response
+from generated.prisma import Prisma
 
 router = APIRouter(prefix="/reports", tags=["Reports"])
 
-_REPORT_JOBS: Dict[str, Dict[str, Any]] = {}
+_REPORT_JOBS: dict[str, dict[str, Any]] = {}
 
 SUPPORTED_TYPES = {
     'inventory_valuation',
@@ -40,7 +43,7 @@ SUPPORTED_TYPES = {
 
 NON_JSON_FORMATS = {'csv','xlsx','pdf'}
 
-async def _build_report(*, rtype: str, db: Prisma, current_user, params: Dict[str, Any]) -> Any:
+async def _build_report(*, rtype: str, db: Prisma, current_user, params: dict[str, Any]) -> Any:
     # Minimal branching; placeholders for inventory/sales metrics
     if rtype == 'income_statement':
         svc = ReportService(db)
@@ -50,7 +53,7 @@ async def _build_report(*, rtype: str, db: Prisma, current_user, params: Dict[st
         return (await svc.generate_balance_sheet()).model_dump()  # type: ignore
     if rtype == 'cash_flow':
         svc = ReportService(db)
-        from datetime import date, timedelta
+        from datetime import date
         today = date.today()
         return (await svc.generate_cash_flow_statement(start_date=today.replace(day=1), end_date=today, branch_id=None, current_user=current_user)).model_dump()  # type: ignore
     # Placeholders for others
@@ -111,7 +114,7 @@ async def dispatch_report_get(
 @router.post('')
 @router.post('/')
 async def dispatch_report_post(
-    body: Dict[str, Any] = Body(...),
+    body: dict[str, Any] = Body(...),
     current_user = Depends(get_current_active_user),
     db: Prisma = Depends(get_db),
 ):

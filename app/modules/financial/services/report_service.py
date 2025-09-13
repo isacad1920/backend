@@ -2,33 +2,24 @@
 Financial report generation service.
 """
 import logging
-from datetime import datetime, date, timedelta
-from decimal import Decimal
-from typing import Optional, List, Dict, Any
-from generated.prisma import Prisma
+from datetime import date, datetime
+from typing import Any
+
+from app.core.exceptions import AuthorizationError, ExportError, ValidationError
 from app.modules.financial.schema import (
-    IncomeStatementSchema,
     BalanceSheetSchema,
     CashFlowStatementSchema,
+    IncomeStatementSchema,
     TaxReportSchema,
-    ReportPeriod,
-    TransactionCategory
-)
-from app.core.exceptions import (
-    ValidationError,
-    AuthorizationError,
-    DatabaseError,
-    ExportError
 )
 from app.modules.financial.utils import (
     DateUtils,
-    NumberUtils,
-    ValidationUtils,
-    DataAggregationUtils,
     ErrorHandler,
+    ValidationUtils,
+    safe_decimal_sum,
     validate_financial_permission,
-    safe_decimal_sum
 )
+from generated.prisma import Prisma
 
 logger = logging.getLogger(__name__)
 
@@ -45,10 +36,10 @@ class ReportService:
     
     async def generate_income_statement(
         self,
-        start_date: Optional[date] = None,
-        end_date: Optional[date] = None,
-        branch_id: Optional[int] = None,
-        current_user: Dict[str, Any] = None
+        start_date: date | None = None,
+        end_date: date | None = None,
+        branch_id: int | None = None,
+        current_user: dict[str, Any] = None
     ) -> IncomeStatementSchema:
         """Generate income statement for specified period.
         
@@ -125,7 +116,7 @@ class ReportService:
                 generated_at=datetime.utcnow()
             )
             
-        except (AuthorizationError, ValidationError, ValidationError):
+        except (AuthorizationError, ValidationError):
             raise
         except Exception as e:
             ErrorHandler.log_and_raise(
@@ -138,9 +129,9 @@ class ReportService:
     
     async def generate_balance_sheet(
         self,
-        as_of_date: Optional[date] = None,
-        branch_id: Optional[int] = None,
-        current_user: Dict[str, Any] = None
+        as_of_date: date | None = None,
+        branch_id: int | None = None,
+        current_user: dict[str, Any] = None
     ) -> BalanceSheetSchema:
         """Generate balance sheet as of specific date.
         
@@ -240,8 +231,8 @@ class ReportService:
         self,
         start_date: date,
         end_date: date,
-        branch_id: Optional[int] = None,
-        current_user: Dict[str, Any] = None
+        branch_id: int | None = None,
+        current_user: dict[str, Any] = None
     ) -> CashFlowStatementSchema:
         """Generate cash flow statement for specified period.
         
@@ -313,8 +304,8 @@ class ReportService:
         self,
         start_date: date,
         end_date: date,
-        branch_id: Optional[int] = None,
-        current_user: Dict[str, Any] = None
+        branch_id: int | None = None,
+        current_user: dict[str, Any] = None
     ) -> TaxReportSchema:
         """Generate tax report for specified period.
         
@@ -386,7 +377,7 @@ class ReportService:
             raise
     
     # Helper methods for data retrieval
-    async def _get_revenue_data(self, date_filter: Dict) -> List[Dict[str, Any]]:
+    async def _get_revenue_data(self, date_filter: dict) -> list[dict[str, Any]]:
         """Get revenue data for the period."""
         sales = await self.db.sale.find_many(
             where=date_filter,
@@ -405,7 +396,7 @@ class ReportService:
         
         return revenue_data
     
-    async def _get_expense_data(self, date_filter: Dict) -> List[Dict[str, Any]]:
+    async def _get_expense_data(self, date_filter: dict) -> list[dict[str, Any]]:
         """Get expense data for the period."""
         expenses = await self.db.expense.find_many(where=date_filter)
         
@@ -419,7 +410,7 @@ class ReportService:
             for expense in expenses
         ]
     
-    async def _get_cogs_data(self, date_filter: Dict) -> List[Dict[str, Any]]:
+    async def _get_cogs_data(self, date_filter: dict) -> list[dict[str, Any]]:
         """Get cost of goods sold data."""
         sales = await self.db.sale.find_many(
             where=date_filter,
@@ -438,7 +429,7 @@ class ReportService:
         
         return cogs_data
     
-    async def _get_assets_data(self, date_filter: Dict) -> List[Dict[str, Any]]:
+    async def _get_assets_data(self, date_filter: dict) -> list[dict[str, Any]]:
         """Get assets data."""
         # This is simplified - in a real system, you'd have specific asset tracking
         assets = []
@@ -461,50 +452,50 @@ class ReportService:
         
         return assets
     
-    async def _get_liabilities_data(self, date_filter: Dict) -> List[Dict[str, Any]]:
+    async def _get_liabilities_data(self, date_filter: dict) -> list[dict[str, Any]]:
         """Get liabilities data."""
         # This is simplified - in a real system, you'd have specific liability tracking
         return []
     
-    async def _get_equity_data(self, date_filter: Dict) -> List[Dict[str, Any]]:
+    async def _get_equity_data(self, date_filter: dict) -> list[dict[str, Any]]:
         """Get equity data."""
         # This is simplified - in a real system, you'd have specific equity tracking
         return []
     
-    async def _get_operating_cash_flow(self, date_filter: Dict) -> List[Dict[str, Any]]:
+    async def _get_operating_cash_flow(self, date_filter: dict) -> list[dict[str, Any]]:
         """Get operating cash flow activities."""
         # Simplified implementation
         return []
     
-    async def _get_investing_cash_flow(self, date_filter: Dict) -> List[Dict[str, Any]]:
+    async def _get_investing_cash_flow(self, date_filter: dict) -> list[dict[str, Any]]:
         """Get investing cash flow activities."""
         return []
     
-    async def _get_financing_cash_flow(self, date_filter: Dict) -> List[Dict[str, Any]]:
+    async def _get_financing_cash_flow(self, date_filter: dict) -> list[dict[str, Any]]:
         """Get financing cash flow activities."""
         return []
     
-    async def _get_opening_cash_balance(self, start_date: date, branch_id: Optional[int]) -> float:
+    async def _get_opening_cash_balance(self, start_date: date, branch_id: int | None) -> float:
         """Get opening cash balance."""
         return 0.0  # Simplified
     
-    async def _get_taxable_income(self, date_filter: Dict) -> List[Dict[str, Any]]:
+    async def _get_taxable_income(self, date_filter: dict) -> list[dict[str, Any]]:
         """Get taxable income data."""
         return await self._get_revenue_data(date_filter)
     
-    async def _get_tax_deductions(self, date_filter: Dict) -> List[Dict[str, Any]]:
+    async def _get_tax_deductions(self, date_filter: dict) -> list[dict[str, Any]]:
         """Get tax deductions."""
         return await self._get_expense_data(date_filter)
     
-    async def _get_tax_payments(self, date_filter: Dict) -> List[Dict[str, Any]]:
+    async def _get_tax_payments(self, date_filter: dict) -> list[dict[str, Any]]:
         """Get tax payments made."""
         return []  # Simplified
     
-    async def _get_total_cash_balance(self, date_filter: Dict) -> float:
+    async def _get_total_cash_balance(self, date_filter: dict) -> float:
         """Get total cash balance."""
         return 10000.0  # Simplified
     
-    async def _get_inventory_value(self, date_filter: Dict) -> float:
+    async def _get_inventory_value(self, date_filter: dict) -> float:
         """Get total inventory value."""
         stocks = await self.db.stock.find_many(
             include={'product': True}
@@ -517,7 +508,7 @@ class ReportService:
         
         return total_value
     
-    def _check_financial_permission(self, user: Dict[str, Any], action: str) -> bool:
+    def _check_financial_permission(self, user: dict[str, Any], action: str) -> bool:
         """Check if user has financial permission for specified action.
         
         Args:

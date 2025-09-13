@@ -4,9 +4,9 @@ Automated migration script to update all modules to use the new response system.
 This script systematically updates imports, response formats, and field mappings.
 """
 
-import os
 import re
 from pathlib import Path
+
 
 def update_file_content(file_path: str, content: str) -> str:
     """Update file content with new imports and response patterns."""
@@ -100,7 +100,7 @@ def process_directory(directory: str):
         print(f"Processing: {file_path}")
         
         try:
-            with open(file_path, 'r', encoding='utf-8') as f:
+            with open(file_path, encoding='utf-8') as f:
                 content = f.read()
             
             # Skip if no relevant imports

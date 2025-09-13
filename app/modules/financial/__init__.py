@@ -2,37 +2,37 @@
 Financial analytics and reporting module for POS system.
 """
 
-from app.modules.financial.service import FinancialService, create_financial_service
 from app.modules.financial.routes import router
+from app.modules.financial.schema import (
+    AlertSchema,
+    BalanceSheetSchema,
+    BudgetComparisonSchema,
+    CashFlowStatementSchema,
+    CustomerAnalyticsSchema,
+    DashboardSummarySchema,
+    FinancialAlertsSchema,
+    FinancialRatiosSchema,
+    FinancialSummarySchema,
+    IncomeStatementSchema,
+    InventoryAnalyticsSchema,
+    PerformanceMetricsSchema,
+    ProfitLossAnalysisSchema,
+    ReportPeriod,
+    ReportType,
+    SalesAnalyticsSchema,
+    TaxReportSchema,
+    TransactionCategory,
+)
+from app.modules.financial.service import FinancialService, create_financial_service
 from app.modules.financial.utils import (
+    DataAggregationUtils,
     DateUtils,
+    ErrorHandler,
     NumberUtils,
     ValidationUtils,
-    DataAggregationUtils,
-    ErrorHandler,
-    validate_financial_permission,
+    format_financial_amount,
     safe_decimal_sum,
-    format_financial_amount
-)
-from app.modules.financial.schema import (
-    FinancialSummarySchema,
-    SalesAnalyticsSchema,
-    InventoryAnalyticsSchema,
-    CustomerAnalyticsSchema,
-    FinancialRatiosSchema,
-    IncomeStatementSchema,
-    BalanceSheetSchema,
-    CashFlowStatementSchema,
-    TaxReportSchema,
-    BudgetComparisonSchema,
-    ProfitLossAnalysisSchema,
-    DashboardSummarySchema,
-    PerformanceMetricsSchema,
-    FinancialAlertsSchema,
-    AlertSchema,
-    ReportType,
-    ReportPeriod,
-    TransactionCategory
+    validate_financial_permission,
 )
 
 __all__ = [

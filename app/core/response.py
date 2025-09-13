@@ -6,14 +6,14 @@ usage inside route handlers, returning JSONResponse objects. These sit atop
 ResponseBuilder so existing code remains compatible.
 """
 
-from typing import Any, Dict, List, Optional, Union, Generic, TypeVar, Callable
-from enum import Enum
-from datetime import datetime
-from pydantic import BaseModel, Field
-from fastapi import HTTPException, status
-from fastapi.responses import JSONResponse
-from fastapi.encoders import jsonable_encoder
 import logging
+from datetime import datetime
+from enum import Enum
+from typing import Any, Generic, TypeVar
+
+from fastapi.encoders import jsonable_encoder
+from fastapi.responses import JSONResponse
+from pydantic import BaseModel, Field
 
 logger = logging.getLogger(__name__)
 
@@ -23,13 +23,13 @@ logger = logging.getLogger(__name__)
 class ErrorResponseModel(BaseModel):
     success: bool = False
     message: str
-    error: Dict[str, Any]
-    path: Optional[str] = None
-    method: Optional[str] = None
+    error: dict[str, Any]
+    path: str | None = None
+    method: str | None = None
     timestamp: datetime = Field(default_factory=lambda: datetime.utcnow().isoformat() + "Z")
 
     @classmethod
-    def create(cls, code: str, message: str, details: Optional[Dict[str, Any]], path: Optional[str], method: Optional[str]):
+    def create(cls, code: str, message: str, details: dict[str, Any] | None, path: str | None, method: str | None):
         return cls(
             message="Request failed",
             error={
@@ -45,12 +45,12 @@ class ErrorResponseModel(BaseModel):
 # ResponseBuilder class -----------------------------------------------------
 
 def build_success_payload(
-    data: Optional[Any] = None,
+    data: Any | None = None,
     message: str = "Success",
     status_code: int = 200,
-    meta: Optional[Dict[str, Any]] = None,
-    force_success: Optional[bool] = None,
-) -> Dict[str, Any]:
+    meta: dict[str, Any] | None = None,
+    force_success: bool | None = None,
+) -> dict[str, Any]:
     """Build the standardized success-style payload.
 
     success flag logic:
@@ -85,7 +85,7 @@ def build_success_payload(
             except Exception:
                 pass
 
-    error_obj: Optional[Dict[str, Any]] = None
+    error_obj: dict[str, Any] | None = None
     if not inferred_success:
         # Attempt to derive a structured error from data if present
         if isinstance(data, dict):
@@ -136,11 +136,11 @@ def build_success_payload(
 class ResponseBuilder:
     @staticmethod
     def success(
-        data: Optional[Any] = None,
+        data: Any | None = None,
         message: str = "Success",
         status_code: int = 200,
-        meta: Optional[Dict[str, Any]] = None,
-        force_success: Optional[bool] = None,
+        meta: dict[str, Any] | None = None,
+        force_success: bool | None = None,
     ) -> JSONResponse:
         payload = build_success_payload(
             data=data,
@@ -155,10 +155,10 @@ class ResponseBuilder:
     def error(
         code: str,
         message: str,
-        details: Optional[Dict[str, Any]] = None,
+        details: dict[str, Any] | None = None,
         status_code: int = 500,
-        path: Optional[str] = None,
-        method: Optional[str] = None
+        path: str | None = None,
+        method: str | None = None
     ) -> JSONResponse:
         err = ErrorResponseModel.create(code, message, details, path, method)
         return JSONResponse(
@@ -176,7 +176,7 @@ class ResponseBuilder:
         return ResponseBuilder.error(code="NOT_FOUND", message=message, status_code=404)
 
     @staticmethod
-    def validation_error(message: str = "Validation error", details: Optional[Dict[str, Any]] = None) -> JSONResponse:
+    def validation_error(message: str = "Validation error", details: dict[str, Any] | None = None) -> JSONResponse:
         return ResponseBuilder.error(code="VALIDATION_ERROR", message=message, details=details, status_code=422)
 
     # Newly added legacy-compatible helpers referenced in routes but previously absent
@@ -204,11 +204,11 @@ class ErrorCodes(str, Enum):
 # Convenience wrappers for simplified route usage
 
 def success_response(
-    data: Optional[Any] = None,
+    data: Any | None = None,
     message: str = "Success",
     status_code: int = 200,
-    meta: Optional[Dict[str, Any]] = None,
-    force_success: Optional[bool] = None,
+    meta: dict[str, Any] | None = None,
+    force_success: bool | None = None,
 ) -> JSONResponse:
     payload = build_success_payload(
         data=data,
@@ -220,7 +220,7 @@ def success_response(
     return JSONResponse(status_code=status_code, content=jsonable_encoder(payload))
 
 
-def set_json_body(response: JSONResponse, payload: Dict[str, Any]):
+def set_json_body(response: JSONResponse, payload: dict[str, Any]):
     """Safely replace the JSON body of an existing JSONResponse and update Content-Length.
 
     Many routes mutate `resp.body` directly after calling `success_response` to
@@ -269,9 +269,9 @@ def error_response(
     code: str,
     message: str,
     status_code: int = 500,
-    details: Optional[Dict[str, Any]] = None,
-    path: Optional[str] = None,
-    method: Optional[str] = None,
+    details: dict[str, Any] | None = None,
+    path: str | None = None,
+    method: str | None = None,
 ) -> JSONResponse:
     """Return a standardized error JSONResponse.
 
@@ -290,9 +290,9 @@ def error_response(
 def failure_response(
     message: str,
     status_code: int = 400,
-    errors: Optional[Dict[str, Any]] = None,
-    meta: Optional[Dict[str, Any]] = None,
-    code: Optional[str] = None,
+    errors: dict[str, Any] | None = None,
+    meta: dict[str, Any] | None = None,
+    code: str | None = None,
 ) -> JSONResponse:
     """Unified failure helper returning standardized envelope.
 
@@ -315,7 +315,7 @@ def failure_response(
         500: 'INTERNAL_ERROR',
     }
     err_code = code or default_code_map.get(status_code, 'ERROR')
-    error_body: Dict[str, Any] = {
+    error_body: dict[str, Any] = {
         'code': err_code,
         'message': message,
         'details': errors or {},
@@ -333,12 +333,12 @@ def failure_response(
 
 
 def paginated_response(
-    items: List[Any],
+    items: list[Any],
     total: int,
     page: int = 1,
     limit: int = 10,
     message: str = "Success",
-    meta_extra: Optional[Dict[str, Any]] = None,
+    meta_extra: dict[str, Any] | None = None,
 ) -> JSONResponse:
     """Return a standardized paginated success response.
 
@@ -384,25 +384,25 @@ class SuccessResponse(BaseModel, Generic[T]):
     """
     success: bool = True
     message: str = "Success"
-    data: Optional[T] = None
-    error: Optional[Dict[str, Any]] = None
-    meta: Dict[str, Any] = {}
+    data: T | None = None
+    error: dict[str, Any] | None = None
+    meta: dict[str, Any] = {}
     timestamp: str = Field(default_factory=lambda: datetime.utcnow().isoformat() + "Z")
 
     @classmethod
-    def create(cls, data: Optional[T] = None, message: str = "Success", meta: Optional[Dict[str, Any]] = None):
+    def create(cls, data: T | None = None, message: str = "Success", meta: dict[str, Any] | None = None):
         return cls(data=data, message=message, meta=meta or {})
 
 
 class ErrorResponse(BaseModel, Generic[T]):
     success: bool = False
     message: str = "Request failed"
-    error: Dict[str, Any]
-    meta: Dict[str, Any] = {}
+    error: dict[str, Any]
+    meta: dict[str, Any] = {}
     timestamp: str = Field(default_factory=lambda: datetime.utcnow().isoformat() + "Z")
 
     @classmethod
-    def create(cls, code: str, message: str, details: Optional[Dict[str, Any]] = None):
+    def create(cls, code: str, message: str, details: dict[str, Any] | None = None):
         return cls(error={"code": code, "message": message, "details": details or {}}, message="Request failed")
 
 
@@ -416,7 +416,7 @@ class ErrorResponse(BaseModel, Generic[T]):
 # helper to "flatten" the standardized envelope into the legacy shape when
 # explicitly invoked by tests (they can import flatten_legacy for assertions).
 
-def flatten_legacy(response_json: Dict[str, Any]) -> Dict[str, Any]:
+def flatten_legacy(response_json: dict[str, Any]) -> dict[str, Any]:
     """Flatten a standardized response envelope into legacy shape.
 
     Rules:

@@ -2,16 +2,17 @@
 Sales database operations and models.
 """
 import logging
-from typing import Optional, List, Dict, Any, Tuple
-from datetime import datetime, date
+from datetime import date, datetime
 from decimal import Decimal
+from typing import Any
 
-from generated.prisma import Prisma
-from generated.prisma.models import Sale, SaleItem, ReturnSale, ReturnItem, Payment, Stock
 from app.modules.sales.schema import (
-    SaleCreateSchema, SaleUpdateSchema, RefundCreateSchema,
-    SaleStatus, PaymentMethod
+    RefundCreateSchema,
+    SaleCreateSchema,
+    SaleUpdateSchema,
 )
+from generated.prisma import Prisma
+from generated.prisma.models import ReturnSale, Sale
 
 logger = logging.getLogger(__name__)
 
@@ -98,7 +99,7 @@ class SalesModel:
                     )
                 
                 # Create payment record(s) if provided
-                payments: List[Dict[str, Any]] = []
+                payments: list[dict[str, Any]] = []
                 single = getattr(sale_data, "payment", None)
                 if single and getattr(single, "amount", 0) > 0:
                     payments.append({
@@ -213,7 +214,7 @@ class SalesModel:
             logger.error(f"Error creating sale: {str(e)}")
             raise
     
-    async def get_sale(self, sale_id: int) -> Optional[Sale]:
+    async def get_sale(self, sale_id: int) -> Sale | None:
         """Get sale by ID with full details."""
         try:
             sale = await self.db.sale.find_unique(
@@ -249,11 +250,11 @@ class SalesModel:
         self, 
         skip: int = 0, 
         limit: int = 20,
-        filters: Optional[Dict[str, Any]] = None
-    ) -> Tuple[List[Sale], int]:
+        filters: dict[str, Any] | None = None
+    ) -> tuple[list[Sale], int]:
         """Get paginated list of sales with filters."""
         try:
-            where_conditions: Dict[str, Any] = {}
+            where_conditions: dict[str, Any] = {}
             # Exclude soft-deleted by default unless explicit flag provided
             if not (filters and filters.get("include_deleted")):
                 # Add soft-delete filter optimistically; if the generated
@@ -352,7 +353,7 @@ class SalesModel:
         self, 
         sale_id: int, 
         sale_data: SaleUpdateSchema
-    ) -> Optional[Sale]:
+    ) -> Sale | None:
         """Update sale - limited to certain fields."""
         try:
             # Only allow updating discount and customer
@@ -395,7 +396,7 @@ class SalesModel:
             logger.error(f"Error updating sale {sale_id}: {str(e)}")
             raise
     
-    async def get_sale_basic(self, sale_id: int) -> Optional[Sale]:
+    async def get_sale_basic(self, sale_id: int) -> Sale | None:
         """Get basic sale info without includes."""
         try:
             return await self.db.sale.find_unique(where={"id": sale_id})
@@ -530,7 +531,7 @@ class SalesModel:
                         raise ValueError(f"Sale item {return_item_data.sale_item_id} not found in original sale")
                     
                     if return_item_data.quantity > original_item.quantity:
-                        raise ValueError(f"Return quantity cannot exceed original quantity")
+                        raise ValueError("Return quantity cannot exceed original quantity")
                     
                     # Calculate refund amount
                     refund_amount = (original_item.price * return_item_data.quantity)
@@ -573,11 +574,11 @@ class SalesModel:
         self, 
         skip: int = 0, 
         limit: int = 20,
-        filters: Optional[Dict[str, Any]] = None
-    ) -> Tuple[List[ReturnSale], int]:
+        filters: dict[str, Any] | None = None
+    ) -> tuple[list[ReturnSale], int]:
         """Get paginated list of refunds."""
         try:
-            where_conditions: Dict[str, Any] = {}
+            where_conditions: dict[str, Any] = {}
             
             if filters:
                 if filters.get('start_date') and filters.get('end_date'):
@@ -629,10 +630,10 @@ class SalesModel:
     
     async def get_sales_stats(
         self,
-        branch_id: Optional[int] = None,
-        start_date: Optional[date] = None,
-        end_date: Optional[date] = None
-    ) -> Dict[str, Any]:
+        branch_id: int | None = None,
+        start_date: date | None = None,
+        end_date: date | None = None
+    ) -> dict[str, Any]:
         """Get sales statistics."""
         try:
             where_conditions = {}

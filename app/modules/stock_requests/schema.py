@@ -1,9 +1,8 @@
 """
 Stock request schemas for request/response validation.
 """
-from pydantic import BaseModel
+
 from app.core.base_schema import ApiBaseModel
-from typing import List, Dict, Any, Optional
 from app.core.stock_requests import StockRequestPriority, StockRequestStatus
 
 
@@ -18,14 +17,14 @@ class StockRequestItemSchema(ApiBaseModel):
 
 class CreateStockRequestSchema(ApiBaseModel):
     """Schema for creating stock request."""
-    items: List[StockRequestItemSchema]
+    items: list[StockRequestItemSchema]
     priority: StockRequestPriority = StockRequestPriority.NORMAL
     notes: str = ""
 
 
 class ApproveStockRequestSchema(ApiBaseModel):
     """Schema for approving stock request."""
-    approved_items: Dict[str, int]  # product_id -> approved_quantity
+    approved_items: dict[str, int]  # product_id -> approved_quantity
     notes: str = ""
 
 
@@ -37,7 +36,7 @@ class ShipStockRequestSchema(ApiBaseModel):
 
 class ReceiveStockRequestSchema(ApiBaseModel):
     """Schema for receiving stock request."""
-    received_items: Dict[str, int]  # product_id -> received_quantity
+    received_items: dict[str, int]  # product_id -> received_quantity
     notes: str = ""
 
 
@@ -48,7 +47,7 @@ class StockRequestResponseSchema(ApiBaseModel):
     requester_branch: str
     status: StockRequestStatus
     priority: StockRequestPriority
-    items: List[StockRequestItemSchema]
+    items: list[StockRequestItemSchema]
     notes: str = ""
     created_at: str
     updated_at: str

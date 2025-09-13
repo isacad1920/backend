@@ -16,7 +16,10 @@ JSONResponse constructions without the helper utilities.
 Heuristic only (static text scan) – keeps implementation lightweight without AST.
 """
 from __future__ import annotations
-import os, re, sys, textwrap
+
+import os
+import re
+import sys
 
 ROOT = os.path.dirname(__file__)
 MODULES_DIR = os.path.join(ROOT, 'app', 'modules')
@@ -44,43 +47,20 @@ ALLOW_KEYWORDS = [
 ]
 
 def scan_file(path: str):
-    with open(path, 'r', encoding='utf-8') as fh:
+    """Return list of (handler_name, snippet) lacking standardized helpers.
+
+    First a quick read of the file content, then a simple split-based heuristic.
+    Removed prior unused state variables to satisfy linter.
+    """
+    with open(path, encoding='utf-8') as fh:
         lines = fh.readlines()
-    findings = []
-    current_handler = None
-    in_handler = False
-    handler_lines = []
-    decorator_buffer = []
-    for i, raw in enumerate(lines):
-        line = raw.rstrip('\n')
-        if ROUTE_DECORATOR.search(line):
-            decorator_buffer.append(line)
-            continue
-        m_func = re.match(r"^async\s+def\s+(\w+)\s*\(", line)
-        if m_func:
-            # Start new handler context
-            current_handler = m_func.group(1)
-            in_handler = True
-            handler_lines = []
-            continue
-        if in_handler:
-            handler_lines.append(line)
-            # crude end detection: blank line at col 0 after some content
-            if line.startswith('def ') or line.startswith('async def '):
-                # nested def (unlikely) -> ignore
-                pass
-            # When next decorator encountered we will evaluate previous handler
-        # Evaluate on decorator start or EOF
-        if decorator_buffer and not ROUTE_DECORATOR.search(line) and m_func:
-            decorator_buffer = []
-    # Second pass simpler: split by 'async def'
     content = ''.join(lines)
     chunks = re.split(r"(async\s+def\s+\w+\s*\([^:]+:)", content)
     # The split keeps separators; pair them
     suspicious = []
-    for i in range(1, len(chunks), 2):
-        header = chunks[i]
-        body = chunks[i+1] if i+1 < len(chunks) else ''
+    for idx in range(1, len(chunks), 2):
+        header = chunks[idx]
+        body = chunks[idx+1] if idx+1 < len(chunks) else ''
         name_match = re.match(r"async\s+def\s+(\w+)", header)
         if not name_match:
             continue
@@ -119,7 +99,9 @@ def main():
             for name, snippet in suspicious:
                 all_suspicious.append((f, name, snippet))
     if not all_suspicious:
-        print("All route handlers appear to use standardized response helpers or are allowed exceptions.")
+        print(
+            "All route handlers appear to use standardized response helpers or are allowed exceptions."
+        )
         return 0
     print("Potential non-standard handlers detected (heuristic):\n")
     for path, name, snippet in all_suspicious:

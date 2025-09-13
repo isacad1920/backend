@@ -4,11 +4,10 @@ Demo script for financial report export functionality.
 This demonstrates the export capabilities that have been implemented.
 """
 
-import sys
-import os
 import json
-from datetime import date, datetime
-from decimal import Decimal
+import os
+import sys
+from datetime import datetime
 
 # Add the backend directory to Python path
 sys.path.insert(0, '/Users/abdiqayum/Desktop/SOFinance/backend')
@@ -219,12 +218,12 @@ def main():
     print("-" * 30)
     
     print("Income Statement JSON (first 200 chars):")
-    with open(json_result['filepath'], 'r') as f:
+    with open(json_result['filepath']) as f:
         content = f.read()
         print(content[:200] + "..." if len(content) > 200 else content)
     
     print("\nBalance Sheet CSV (first 10 lines):")
-    with open(csv_result2['filepath'], 'r') as f:
+    with open(csv_result2['filepath']) as f:
         lines = f.readlines()
         for i, line in enumerate(lines[:10]):
             print(f"  {line.strip()}")

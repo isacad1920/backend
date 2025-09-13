@@ -1,17 +1,16 @@
 from enum import Enum
-from typing import Any, Dict, List, Tuple, Type, Union
-from typing_extensions import ClassVar
+from typing import Any, ClassVar, Union
 
 from pydantic import BaseModel
 
-from .models import AnyData, Model as ModelInfo, PrimaryKey
 from .._compat import (
     PYDANTIC_V2,
     ConfigDict,
-    root_validator,
     cached_property,
     model_rebuild,
+    root_validator,
 )
+from .models import AnyData, Model as ModelInfo, PrimaryKey
 
 
 class Kind(str, Enum):
@@ -23,11 +22,11 @@ class Kind(str, Enum):
 class PrismaType(BaseModel):
     name: str
     kind: Kind
-    subtypes: List['PrismaType'] = []
+    subtypes: list['PrismaType'] = []
 
     @classmethod
     def from_subtypes(
-        cls, subtypes: List['PrismaType'], **kwargs: Any
+        cls, subtypes: list['PrismaType'], **kwargs: Any
     ) -> Union['PrismaUnion', 'PrismaAlias']:
         """Return either a `PrismaUnion` or a `PrismaAlias` depending on the number of subtypes"""
         if len(subtypes) > 1:
@@ -38,13 +37,13 @@ class PrismaType(BaseModel):
 
 class PrismaDict(PrismaType):
     kind: Kind = Kind.typeddict
-    fields: Dict[str, str]
+    fields: dict[str, str]
     total: bool
 
 
 class PrismaUnion(PrismaType):
     kind: Kind = Kind.union
-    subtypes: List[PrismaType]
+    subtypes: list[PrismaType]
 
 
 class PrismaAlias(PrismaType):
@@ -53,14 +52,14 @@ class PrismaAlias(PrismaType):
 
     @root_validator(pre=True)
     @classmethod
-    def transform_to(cls, values: Dict[str, Any]) -> Dict[str, Any]:
+    def transform_to(cls, values: dict[str, Any]) -> dict[str, Any]:
         if 'to' not in values and 'subtypes' in values:
             values['to'] = values['subtypes'][0].name
         return values
 
 
 class Schema(BaseModel):
-    models: List['Model']
+    models: list['Model']
 
     @classmethod
     def from_data(cls, data: AnyData) -> 'Schema':
@@ -85,13 +84,13 @@ class Model(BaseModel):
     else:
 
         class Config:
-            keep_untouched: Tuple[Type[Any], ...] = (cached_property,)
+            keep_untouched: tuple[type[Any], ...] = (cached_property,)
 
     @cached_property
     def where_unique(self) -> PrismaType:
         info = self.info
         model = info.name
-        subtypes: List[PrismaType] = [
+        subtypes: list[PrismaType] = [
             PrismaDict(
                 total=True,
                 name=f'_{model}WhereUnique_{field.name}_Input',
@@ -141,7 +140,7 @@ class Model(BaseModel):
     @cached_property
     def order_by(self) -> PrismaType:
         model = self.info.name
-        subtypes: List[PrismaType] = [
+        subtypes: list[PrismaType] = [
             PrismaDict(
                 name=f'_{model}_{field.name}_OrderByInput',
                 total=True,

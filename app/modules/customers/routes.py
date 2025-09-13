@@ -1,30 +1,25 @@
 """
 Customers API routes and endpoints.
 """
-from typing import List, Optional, Dict, Any
-from fastapi import APIRouter, Depends, HTTPException, Query, Path, status
-from fastapi.security import HTTPBearer
 import logging
+from typing import Any
 
-from app.core.dependencies import get_current_user, get_current_active_user
-from app.core.response import success_response, paginated_response
+from fastapi import APIRouter, Depends, HTTPException, Path, Query, status
+from fastapi.security import HTTPBearer
+
+from app.core.dependencies import get_current_active_user
+from app.core.response import paginated_response, success_response
 from app.db.prisma import get_db
 from app.modules.customers.model import CustomerModel
-from app.modules.customers.service import CustomerService
 from app.modules.customers.schema import (
-    CustomerCreateSchema,
-    CustomerUpdateSchema,
-    CustomerResponseSchema,
-    CustomerDetailResponseSchema,
-    CustomerListResponseSchema,
-    CustomerStatsSchema,
-    CustomerPurchaseHistoryListSchema,
-    BulkCustomerUpdateSchema,
     BulkCustomerStatusUpdateSchema,
-    BulkOperationResponseSchema,
+    BulkCustomerUpdateSchema,
+    CustomerCreateSchema,
     CustomerStatus,
     CustomerType,
+    CustomerUpdateSchema,
 )
+from app.modules.customers.service import CustomerService
 
 security = HTTPBearer()
 logger = logging.getLogger(__name__)
@@ -73,12 +68,12 @@ async def create_customer(
 
 @router.get("/")
 async def list_customers(
-    search: Optional[str] = Query(None, description="Search customers by name, email, or phone"),
-    customer_type: Optional[str] = Query(None, description="Filter by customer type"),
-    status: Optional[str] = Query(None, description="Filter by customer status"),
+    search: str | None = Query(None, description="Search customers by name, email, or phone"),
+    customer_type: str | None = Query(None, description="Filter by customer type"),
+    status: str | None = Query(None, description="Filter by customer status"),
     page: int = Query(1, description="Page number"),
     size: int = Query(20, description="Number of customers to return"),
-    expand: Optional[str] = Query(None, description="Comma separated expansions: ar_summary,stats"),
+    expand: str | None = Query(None, description="Comma separated expansions: ar_summary,stats"),
     current_user = Depends(get_current_active_user),
     db = Depends(get_db),
 ):
@@ -92,13 +87,13 @@ async def list_customers(
 
         customers_service = CustomerService(customer_model)
         # Sanitize filters (tests may send unknown values like REGULAR)
-        ct: Optional[CustomerType] = None
+        ct: CustomerType | None = None
         if customer_type:
             try:
                 ct = CustomerType(customer_type)
             except Exception:
                 ct = None
-        st: Optional[CustomerStatus] = None
+        st: CustomerStatus | None = None
         if status:
             try:
                 st = CustomerStatus(status)
@@ -113,7 +108,7 @@ async def list_customers(
             current_user=current_user.__dict__
         )
         payload = customers_list.model_dump(by_alias=True)
-        expands: List[str] = []
+        expands: list[str] = []
         if expand:
             expands = [e.strip() for e in expand.split(',') if e.strip()]
         # Lightweight expansions (aggregate over returned items only) to avoid heavy queries
@@ -183,7 +178,7 @@ async def get_customer_statistics_alias(
 @router.get("/{customer_id}")
 async def get_customer_details(
     customer_id: int = Path(..., description="Customer ID"),
-    expand: Optional[str] = Query(None, description="Comma separated expansions: ar_summary,stats"),
+    expand: str | None = Query(None, description="Comma separated expansions: ar_summary,stats"),
     current_user = Depends(get_current_active_user),
     db = Depends(get_db),
 ):
@@ -207,7 +202,7 @@ async def get_customer_details(
         parts = name.split(" ", 1)
         data["firstName"] = parts[0] if parts else ""
         data["lastName"] = parts[1] if len(parts) > 1 else ""
-        expands: List[str] = []
+        expands: list[str] = []
         if expand:
             expands = [e.strip() for e in expand.split(',') if e.strip()]
         if 'ar_summary' in expands:
@@ -509,7 +504,7 @@ async def adjust_customer_balance(
 @router.get("/{customer_id}/ar/summary")
 async def get_customer_ar_summary(
     customer_id: int = Path(..., description="Customer ID"),
-    branch_id: Optional[int] = Query(None, description="Optional branch filter (currently unused placeholder)"),
+    branch_id: int | None = Query(None, description="Optional branch filter (currently unused placeholder)"),
     current_user = Depends(get_current_active_user),
     db = Depends(get_db),
 ):
@@ -528,7 +523,9 @@ async def get_customer_ar_summary(
     """
     try:
         # We deliberately access the sales service instead of duplicating logic.
-        from app.modules.sales.service import SalesService  # local import to avoid circulars on startup
+        from app.modules.sales.service import (
+            SalesService,  # local import to avoid circulars on startup
+        )
         service = SalesService(db)
         # Using filters; SalesService.list_sales likely supports filter keys present in DB model.
         filters = {"customer_id": customer_id}
@@ -602,7 +599,7 @@ async def get_customer_purchase_history_alias(
 
 @router.post("/bulk-update")
 async def bulk_update_customers_alias(
-    payload: Dict[str, Any],
+    payload: dict[str, Any],
     current_user = Depends(get_current_active_user),
     db = Depends(get_db),
 ):

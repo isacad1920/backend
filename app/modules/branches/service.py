@@ -2,23 +2,28 @@
 Branch service layer for business logic.
 """
 import logging
-from typing import Optional, List, Dict, Any
-from decimal import Decimal
 from datetime import datetime
+from decimal import Decimal
+from typing import Any
 
-from generated.prisma import Prisma
-
-from app.core.config import UserRole
 from app.core.exceptions import (
-    AlreadyExistsError, NotFoundError, ValidationError, 
-    DatabaseError, AuthorizationError, BusinessRuleError
+    AlreadyExistsError,
+    BusinessRuleError,
+    NotFoundError,
 )
 from app.modules.branches.model import BranchModel
 from app.modules.branches.schema import (
-    BranchCreateSchema, BranchUpdateSchema, BranchResponseSchema,
-    BranchDetailResponseSchema, BranchListResponseSchema, BranchStatsSchema,
-    BulkBranchUpdateSchema, BulkBranchStatusUpdateSchema, BulkOperationResponseSchema
+    BranchCreateSchema,
+    BranchDetailResponseSchema,
+    BranchListResponseSchema,
+    BranchResponseSchema,
+    BranchStatsSchema,
+    BranchUpdateSchema,
+    BulkBranchStatusUpdateSchema,
+    BulkBranchUpdateSchema,
+    BulkOperationResponseSchema,
 )
+from generated.prisma import Prisma
 
 logger = logging.getLogger(__name__)
 
@@ -32,7 +37,7 @@ class BranchService:
     async def create_branch(
         self,
         branch_data: BranchCreateSchema,
-        created_by_id: Optional[int] = None
+        created_by_id: int | None = None
     ) -> BranchResponseSchema:
         """Create a new branch."""
         # Check if branch name already exists
@@ -52,7 +57,7 @@ class BranchService:
         data.setdefault("status", "ACTIVE" if data.get("isActive") else "INACTIVE")
         return BranchResponseSchema(**data)
     
-    async def get_branch(self, branch_id: int) -> Optional[BranchDetailResponseSchema]:
+    async def get_branch(self, branch_id: int) -> BranchDetailResponseSchema | None:
         """Get branch by ID with details."""
         branch = await self.branch_model.get_branch(branch_id)
         if not branch:
@@ -116,7 +121,7 @@ class BranchService:
         self,
         page: int = 1,
         size: int = 20,
-        filters: Optional[Dict[str, Any]] = None
+        filters: dict[str, Any] | None = None
     ) -> BranchListResponseSchema:
         """Get paginated list of branches."""
         skip = (page - 1) * size

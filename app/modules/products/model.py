@@ -2,16 +2,17 @@
 Product and Category database operations and models.
 """
 import logging
-from typing import Optional, List, Dict, Any
-from datetime import datetime
-from decimal import Decimal
+from typing import Any
 
-from generated.prisma import Prisma
-from generated.prisma.models import Product, Category, Stock
 from app.modules.products.schema import (
-    ProductCreateSchema, ProductUpdateSchema, CategoryCreateSchema, CategoryUpdateSchema,
-    StockAdjustmentSchema
+    CategoryCreateSchema,
+    CategoryUpdateSchema,
+    ProductCreateSchema,
+    ProductUpdateSchema,
+    StockAdjustmentSchema,
 )
+from generated.prisma import Prisma
+from generated.prisma.models import Category, Product
 
 logger = logging.getLogger(__name__)
 
@@ -24,7 +25,7 @@ class ProductModel:
     async def create_product(
         self, 
         product_data: ProductCreateSchema, 
-        created_by_id: Optional[int] = None
+        created_by_id: int | None = None
     ) -> Product:
         """Create a new product."""
         try:
@@ -58,7 +59,7 @@ class ProductModel:
             logger.error(f"Error creating product: {str(e)}")
             raise
     
-    async def get_product(self, product_id: int) -> Optional[Product]:
+    async def get_product(self, product_id: int) -> Product | None:
         """Get product by ID."""
         try:
             product = await self.db.product.find_unique(
@@ -78,8 +79,8 @@ class ProductModel:
         self, 
         skip: int = 0, 
         limit: int = 20,
-        filters: Optional[Dict[str, Any]] = None
-    ) -> tuple[List[Product], int]:
+        filters: dict[str, Any] | None = None
+    ) -> tuple[list[Product], int]:
         """Get paginated list of products."""
         try:
             where_conditions = {}
@@ -123,7 +124,7 @@ class ProductModel:
         self, 
         product_id: int, 
         product_data: ProductUpdateSchema
-    ) -> Optional[Product]:
+    ) -> Product | None:
         """Update product."""
         try:
             data = product_data.model_dump(exclude_unset=True)
@@ -161,7 +162,7 @@ class ProductModel:
     async def adjust_stock(
         self,
         adjustment: StockAdjustmentSchema,
-        created_by_id: Optional[int] = None
+        created_by_id: int | None = None
     ) -> bool:
         """Adjust product stock."""
         try:
@@ -195,7 +196,7 @@ class ProductModel:
             logger.error(f"Error adjusting stock: {str(e)}")
             raise
     
-    async def get_low_stock_products(self) -> List[Product]:
+    async def get_low_stock_products(self) -> list[Product]:
         """Get products with low stock."""
         try:
             # Out-of-stock products based on Stock quantity <= 0
@@ -206,7 +207,7 @@ class ProductModel:
             logger.error(f"Error getting low stock products: {str(e)}")
             raise
     
-    async def get_product_stats(self) -> Dict[str, Any]:
+    async def get_product_stats(self) -> dict[str, Any]:
         """Get product statistics."""
         try:
             total_products = await self.db.product.count()
@@ -239,7 +240,7 @@ class CategoryModel:
     async def create_category(
         self, 
         category_data: CategoryCreateSchema, 
-        created_by_id: Optional[int] = None
+        created_by_id: int | None = None
     ) -> Category:
         """Create a new category."""
         try:
@@ -254,7 +255,7 @@ class CategoryModel:
             logger.error(f"Error creating category: {str(e)}")
             raise
     
-    async def get_category(self, category_id: int) -> Optional[Category]:
+    async def get_category(self, category_id: int) -> Category | None:
         """Get category by ID."""
         try:
             category = await self.db.category.find_unique(
@@ -270,8 +271,8 @@ class CategoryModel:
         self, 
         skip: int = 0, 
         limit: int = 50,
-        search: Optional[str] = None
-    ) -> tuple[List[Category], int]:
+        search: str | None = None
+    ) -> tuple[list[Category], int]:
         """Get paginated list of categories."""
         try:
             where_conditions = {}
@@ -304,7 +305,7 @@ class CategoryModel:
         self, 
         category_id: int, 
         category_data: CategoryUpdateSchema
-    ) -> Optional[Category]:
+    ) -> Category | None:
         """Update category."""
         try:
             data = category_data.model_dump(exclude_unset=True)

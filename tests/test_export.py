@@ -3,11 +3,11 @@
 Simple export test script to test the financial report export functionality.
 """
 
-import requests
 import json
-from datetime import date
 import os
+
 import pytest
+import requests
 
 # Skip this script-style test unless a live server is running locally
 pytestmark = pytest.mark.skipif(
@@ -22,7 +22,7 @@ TOKEN_FILE = "working_token.txt"
 def get_token():
     """Read the authentication token from file."""
     try:
-        with open(TOKEN_FILE, 'r') as f:
+        with open(TOKEN_FILE) as f:
             return f.read().strip()
     except FileNotFoundError:
         print(f"Token file {TOKEN_FILE} not found!")

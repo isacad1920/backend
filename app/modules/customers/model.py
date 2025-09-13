@@ -4,14 +4,15 @@ Customer database model for POS system.
 import logging
 from datetime import datetime, timedelta
 from decimal import Decimal
-from typing import Optional, List, Dict, Any, Tuple
-from generated.prisma import Prisma
+from typing import Any
+
 from app.modules.customers.schema import (
     CustomerCreateSchema,
-    CustomerUpdateSchema,
     CustomerStatus,
-    CustomerType
+    CustomerType,
+    CustomerUpdateSchema,
 )
+from generated.prisma import Prisma
 
 logger = logging.getLogger(__name__)
 
@@ -26,7 +27,7 @@ class CustomerModel:
         """
         self.db = db
     
-    def _convert_customer_fields(self, customer_data: Dict[str, Any]) -> Dict[str, Any]:
+    def _convert_customer_fields(self, customer_data: dict[str, Any]) -> dict[str, Any]:
         """Convert camelCase Prisma fields to snake_case for Pydantic schemas.
         
         Args:
@@ -57,7 +58,7 @@ class CustomerModel:
         
         return converted
     
-    async def create_customer(self, customer_data: CustomerCreateSchema) -> Dict[str, Any]:
+    async def create_customer(self, customer_data: CustomerCreateSchema) -> dict[str, Any]:
         """Create a new customer.
         
         Args:
@@ -92,7 +93,7 @@ class CustomerModel:
             logger.error(f"Error creating customer: {str(e)}")
             raise Exception(f"Failed to create customer: {str(e)}")
     
-    async def get_customer_by_id(self, customer_id: int) -> Optional[Dict[str, Any]]:
+    async def get_customer_by_id(self, customer_id: int) -> dict[str, Any] | None:
         """Get customer by ID with detailed information.
         
         Args:
@@ -158,7 +159,7 @@ class CustomerModel:
             logger.error(f"Error getting customer {customer_id}: {str(e)}")
             raise Exception(f"Failed to get customer: {str(e)}")
     
-    async def get_customer_by_email(self, email: str) -> Optional[Dict[str, Any]]:
+    async def get_customer_by_email(self, email: str) -> dict[str, Any] | None:
         """Get customer by email.
         
         Args:
@@ -178,7 +179,7 @@ class CustomerModel:
             logger.error(f"Error getting customer by email {email}: {str(e)}")
             raise Exception(f"Failed to get customer by email: {str(e)}")
     
-    async def get_customer_by_phone(self, phone: str) -> Optional[Dict[str, Any]]:
+    async def get_customer_by_phone(self, phone: str) -> dict[str, Any] | None:
         """Get customer by phone number.
         
         Args:
@@ -202,10 +203,10 @@ class CustomerModel:
         self, 
         skip: int = 0, 
         limit: int = 10,
-        status: Optional[CustomerStatus] = None,
-        customer_type: Optional[CustomerType] = None,
-        search: Optional[str] = None
-    ) -> Tuple[List[Dict[str, Any]], int]:
+        status: CustomerStatus | None = None,
+        customer_type: CustomerType | None = None,
+        search: str | None = None
+    ) -> tuple[list[dict[str, Any]], int]:
         """Get paginated list of customers with filtering.
         
         Args:
@@ -273,7 +274,7 @@ class CustomerModel:
             logger.error(f"Error getting customers: {str(e)}")
             raise Exception(f"Failed to get customers: {str(e)}")
     
-    async def update_customer(self, customer_id: int, update_data: CustomerUpdateSchema) -> Optional[Dict[str, Any]]:
+    async def update_customer(self, customer_id: int, update_data: CustomerUpdateSchema) -> dict[str, Any] | None:
         """Update customer information.
         
         Args:
@@ -408,7 +409,7 @@ class CustomerModel:
         customer_id: int, 
         skip: int = 0, 
         limit: int = 10
-    ) -> Tuple[List[Dict[str, Any]], int]:
+    ) -> tuple[list[dict[str, Any]], int]:
         """Get customer purchase history.
         
         Args:
@@ -453,7 +454,7 @@ class CustomerModel:
             logger.error(f"Error getting customer purchase history {customer_id}: {str(e)}")
             raise Exception(f"Failed to get customer purchase history: {str(e)}")
     
-    async def get_customer_statistics(self) -> Dict[str, Any]:
+    async def get_customer_statistics(self) -> dict[str, Any]:
         """Get customer statistics.
         
         Returns:
@@ -509,7 +510,7 @@ class CustomerModel:
             logger.error(f"Error getting customer statistics: {str(e)}")
             raise Exception(f"Failed to get customer statistics: {str(e)}")
     
-    async def bulk_update_customers(self, customer_ids: List[int], update_data: CustomerUpdateSchema) -> Dict[str, Any]:
+    async def bulk_update_customers(self, customer_ids: list[int], update_data: CustomerUpdateSchema) -> dict[str, Any]:
         """Bulk update multiple customers.
         
         Args:
@@ -575,7 +576,7 @@ class CustomerModel:
                 'errors': [{'error': str(e)}]
             }
     
-    async def bulk_update_customer_status(self, customer_ids: List[int], status: CustomerStatus) -> Dict[str, Any]:
+    async def bulk_update_customer_status(self, customer_ids: list[int], status: CustomerStatus) -> dict[str, Any]:
         """Bulk update customer status.
         
         Args:

@@ -3,12 +3,12 @@
 Comprehensive test script to check all endpoints and HTTP methods for 500 errors.
 This covers GET, POST, PUT, DELETE methods as requested by the user.
 """
-import requests
-import json
-import sys
-from typing import Dict, Any
 import os
+import sys
+from typing import Any
+
 import pytest
+import requests
 
 # Skip this script-style test unless a live server is running locally
 pytestmark = pytest.mark.skipif(
@@ -32,7 +32,7 @@ def authenticate() -> str:
         print(f"❌ Authentication failed: {e}")
         sys.exit(1)
 
-def test_endpoint(method: str, url: str, headers: Dict[str, str], data: Any = None, expected_codes=None):
+def test_endpoint(method: str, url: str, headers: dict[str, str], data: Any = None, expected_codes=None):
     """Test an endpoint with specified method."""
     if expected_codes is None:
         expected_codes = [200, 201, 422, 404]  # Allow these as non-500 responses
@@ -57,7 +57,7 @@ def test_endpoint(method: str, url: str, headers: Dict[str, str], data: Any = No
             try:
                 error_detail = response.json()
                 print(f"   Error details: {error_detail}")
-            except:
+            except Exception:
                 print(f"   Error text: {response.text[:200]}")
             return False
         elif status_code in expected_codes:

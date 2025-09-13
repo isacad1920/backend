@@ -87,7 +87,7 @@ def test_no_direct_resp_body_mutation():
         ast_hits = _ast_offenders(file_path)
         regex_hits = _regex_offenders(file_path)
         # Combine unique by line number
-        combined = {ln: text for ln, text in ast_hits + regex_hits}
+        combined = dict(ast_hits + regex_hits)
         if combined:
             all_offenders[str(file_path.relative_to(PROJECT_ROOT))] = sorted((ln, txt) for ln, txt in combined.items())
     if all_offenders:

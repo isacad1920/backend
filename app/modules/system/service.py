@@ -2,18 +2,17 @@
 SystemInfo service layer for business logic.
 """
 import logging
-from typing import Optional, Dict, Any
 from datetime import datetime
 
+from app.core.exceptions import AuthorizationError, DatabaseError, NotFoundError, ValidationError
+from app.db import prisma
+from app.modules.system.schema import (
+    SystemInfoResponseSchema,
+    SystemInfoSchema,
+    SystemInfoUpdateSchema,
+)
 from generated.prisma import Prisma
 from generated.prisma.models import SystemInfo
-from app.db import prisma
-from app.core.exceptions import (
-    ValidationError, NotFoundError, DatabaseError, AuthorizationError
-)
-from app.modules.system.schema import (
-    SystemInfoSchema, SystemInfoUpdateSchema, SystemInfoResponseSchema
-)
 
 logger = logging.getLogger(__name__)
 
@@ -27,7 +26,7 @@ class SystemService:
     async def get_system_info(
         self, 
         current_user = None
-    ) -> Optional[SystemInfoResponseSchema]:
+    ) -> SystemInfoResponseSchema | None:
         """Get current system information."""
         try:
             # Check permissions
@@ -186,7 +185,7 @@ class SystemService:
 
 
 # Utility function for main.py usage
-async def get_system_info() -> Optional[SystemInfo]:
+async def get_system_info() -> SystemInfo | None:
     """
     Fetch the first SystemInfo record from the database for main.py usage.
     Returns None if no record exists.

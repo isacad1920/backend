@@ -1,30 +1,33 @@
 """
 Branches API routes and endpoints.
 """
-from typing import List, Optional, Dict, Any
-from fastapi import APIRouter, Depends, HTTPException, Query, Path, status, Request, Response
-import time, hashlib, json
-from fastapi.security import HTTPBearer
+import hashlib
+import json
 import logging
+import time
+from typing import Any
 
-from app.core.dependencies import get_current_user, get_current_active_user
-from app.core.security import PermissionManager, UserRole
+from fastapi import APIRouter, Depends, HTTPException, Path, Query, Request, Response, status
+from fastapi.security import HTTPBearer
+
 from app.core.authorization import require_permissions
-from app.core.response import success_response, error_response
+from app.core.dependencies import get_current_active_user
+from app.core.exceptions import (
+    AlreadyExistsError,
+    AuthorizationError,
+    BusinessRuleError,
+    NotFoundError,
+    ValidationError,
+)
+from app.core.response import error_response, success_response
 from app.db.prisma import get_db
-from app.modules.branches.service import BranchService
-from app.core.exceptions import AlreadyExistsError, NotFoundError, AuthorizationError, BusinessRuleError, ValidationError
 from app.modules.branches.schema import (
     BranchCreateSchema,
     BranchUpdateSchema,
-    BranchResponseSchema,
-    BranchDetailResponseSchema,
-    BranchListResponseSchema,
-    BranchStatsSchema,
-    BulkBranchUpdateSchema,
     BulkBranchStatusUpdateSchema,
-    BulkOperationResponseSchema
+    BulkBranchUpdateSchema,
 )
+from app.modules.branches.service import BranchService
 
 security = HTTPBearer()
 logger = logging.getLogger(__name__)
@@ -34,7 +37,7 @@ router = APIRouter(prefix="/branches", tags=["Branches"])
 # ------------------------------------------------------------
 # Lightweight cached summary endpoint infrastructure
 # ------------------------------------------------------------
-_BRANCH_LIGHT_CACHE: Dict[str, Any] = {
+_BRANCH_LIGHT_CACHE: dict[str, Any] = {
     "etag": None,
     "expires": 0,
     "data": None,
@@ -181,8 +184,8 @@ async def create_branch(
 async def list_branches(
     page: int = Query(1, description="Page number"),
     size: int = Query(50, description="Number of branches to return"),
-    search: Optional[str] = Query(None, description="Search term"),
-    status: Optional[str] = Query(None, description="Status filter (ACTIVE/INACTIVE)"),
+    search: str | None = Query(None, description="Search term"),
+    status: str | None = Query(None, description="Status filter (ACTIVE/INACTIVE)"),
     # Make optional to allow public listing (tests expect 200 without auth)
     current_user = Depends(lambda: None),
     db = Depends(get_db),
@@ -195,7 +198,7 @@ async def list_branches(
     try:
         branch_service = BranchService(db)
         # Build filters
-        filters: Dict[str, Any] = {}
+        filters: dict[str, Any] = {}
         if search:
             filters["search"] = search
         if status:

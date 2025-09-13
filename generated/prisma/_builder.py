@@ -1,26 +1,26 @@
 from __future__ import annotations
 
-import json
+import datetime
 import decimal
 import inspect
+import json
 import logging
-import datetime
 from abc import ABC, abstractmethod
-from typing import TYPE_CHECKING, Any, Union, Mapping, Iterable, ForwardRef, cast
-from datetime import timezone
-from textwrap import indent
+from collections.abc import Iterable, Mapping
 from functools import singledispatch
-from typing_extensions import Literal, TypeGuard, override
+from textwrap import indent
+from typing import TYPE_CHECKING, Any, ForwardRef, Literal, TypeGuard, Union, cast
 
 from pydantic import BaseModel
 from pydantic.fields import FieldInfo
+from typing_extensions import override
 
 from . import fields
-from ._types import PrismaMethod
-from .errors import InvalidModelError, UnknownModelError, UnknownRelationalFieldError
-from ._compat import get_args, is_union, get_origin, model_fields, model_field_type
-from ._typing import is_list_type
+from ._compat import get_args, get_origin, is_union, model_field_type, model_fields
 from ._constants import QUERY_BUILDER_ALIASES
+from ._types import PrismaMethod
+from ._typing import is_list_type
+from .errors import InvalidModelError, UnknownModelError, UnknownRelationalFieldError
 
 if TYPE_CHECKING:
     from .bases import _PrismaModel as PrismaModel  # noqa: TID251
@@ -189,7 +189,7 @@ class QueryBuilder:
         log.debug('Generated query: \n%s', query)
         return query
 
-    def _create_root_node(self) -> 'RootNode':
+    def _create_root_node(self) -> RootNode:
         root = RootNode(builder=self)
         root.add(ResultNode.create(self))
         root.add(
@@ -432,7 +432,7 @@ class Node(AbstractNode):
         return []
 
     @classmethod
-    def create(cls, builder: QueryBuilder | None = None, **kwargs: Any) -> 'Node':
+    def create(cls, builder: QueryBuilder | None = None, **kwargs: Any) -> Node:
         """Create the node and its children
 
         This is useful for subclasses that add extra attributes in __init__
@@ -833,9 +833,9 @@ def serialize_datetime(dt: datetime.datetime) -> str:
     This assumes naive datetime objects are in UTC.
     """
     if dt.tzinfo is None:
-        dt = dt.replace(tzinfo=timezone.utc)
-    elif dt.tzinfo != timezone.utc:
-        dt = dt.astimezone(timezone.utc)
+        dt = dt.replace(tzinfo=datetime.UTC)
+    elif dt.tzinfo != datetime.UTC:
+        dt = dt.astimezone(datetime.UTC)
 
     # truncate microseconds to 3 decimal places
     # https://github.com/RobertCraigie/prisma-client-py/issues/129

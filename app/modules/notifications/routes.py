@@ -1,20 +1,28 @@
 """
 Notifications API routes and endpoints.
 """
-from typing import List, Optional
-from fastapi import APIRouter, Depends, HTTPException, Query, Path, status, WebSocket, WebSocketDisconnect
-import uuid
-from fastapi.security import HTTPBearer
 import logging
+import uuid
 
-from app.core.dependencies import get_current_user, get_current_active_user
-from app.core.response import ResponseBuilder, SuccessResponse, ErrorResponse, success_response
+from fastapi import (
+    APIRouter,
+    Depends,
+    HTTPException,
+    Path,
+    Query,
+    WebSocket,
+    WebSocketDisconnect,
+    status,
+)
+from fastapi.security import HTTPBearer
+
+from app.core.authorization import require_permissions
+from app.core.dependencies import get_current_active_user
+from app.core.notifications import connection_manager
+from app.core.response import success_response
+from app.core.security import JWTManager
 from app.db.prisma import get_db
 from app.modules.notifications.service import NotificationService
-from app.core.pagination import to_page_size
-from app.core.security import JWTManager
-from app.core.authorization import require_permissions
-from app.core.notifications import connection_manager
 
 security = HTTPBearer()
 logger = logging.getLogger(__name__)
@@ -28,7 +36,7 @@ async def get_user_notifications(
     unread_only: bool = Query(False, description="Show only unread notifications"),
     limit: int = Query(20, ge=1, le=100, description="Number of notifications to return"),
     offset: int = Query(0, ge=0, description="Notifications offset for pagination"),
-    cursor: Optional[str] = Query(None, description="Cursor (notification id) for pagination"),
+    cursor: str | None = Query(None, description="Cursor (notification id) for pagination"),
     current_user = Depends(get_current_active_user),
     db = Depends(get_db),
 ):
@@ -250,7 +258,7 @@ async def mark_all_read(
 # WebSocket: Real-time channel
 # =============================
 @router.websocket("/ws")
-async def notifications_ws(websocket: WebSocket, token: Optional[str] = Query(None)):
+async def notifications_ws(websocket: WebSocket, token: str | None = Query(None)):
     """
     WebSocket endpoint for real-time notifications.
 

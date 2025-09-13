@@ -10,12 +10,13 @@ model bar {
 
 from __future__ import annotations
 
-from typing import Union
-from typing_extensions import Literal, TypedDict
+from typing import Literal, Union
 
-from .transformer import TransformResult, DefinitionTransformer
+from typing_extensions import TypedDict
+
 from ..._vendor.lark_schema_parser import Lark_StandAlone as LarkParser, UnexpectedInput
 from ..._vendor.lark_schema_scan_parser import Lark_StandAlone as LarkScanner
+from .transformer import DefinitionTransformer, TransformResult
 
 scanner = LarkScanner()  # type: ignore[no-untyped-call]
 schema_extension_parser = LarkParser()  # type: ignore[no-untyped-call]
@@ -43,7 +44,7 @@ def parse_schema_dsl(text: str) -> ParseResult:
 
     if len(parts) > 1:
         # TODO: include context in error message
-        return {'type': 'invalid', 'error': f'Encountered multiple `@Python` declarations'}
+        return {'type': 'invalid', 'error': 'Encountered multiple `@Python` declarations'}
 
     start, end = parts[0]
 

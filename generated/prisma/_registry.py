@@ -1,8 +1,9 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Union, Callable
+from collections.abc import Callable
+from typing import TYPE_CHECKING, Union
 
-from .errors import ClientNotRegisteredError, ClientAlreadyRegisteredError
+from .errors import ClientAlreadyRegisteredError, ClientNotRegisteredError
 
 if TYPE_CHECKING:
     from .client import Prisma  # noqa: TID251

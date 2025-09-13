@@ -1,25 +1,16 @@
 """
 Stock Requests API routes and endpoints.
 """
-from typing import List, Optional, Dict, Any
-from fastapi import APIRouter, Depends, HTTPException, Query, Path, status
-from fastapi.security import HTTPBearer
 import logging
 
-from app.core.dependencies import get_current_user, get_current_active_user
-from app.core.security import PermissionManager, UserRole
+from fastapi import APIRouter, Depends, HTTPException, Path, Query, status
+from fastapi.security import HTTPBearer
+
 from app.core.authorization import require_permissions
-from app.core.response import success_response, paginated_response
+from app.core.dependencies import get_current_active_user
+from app.core.response import paginated_response, success_response
 from app.db.prisma import get_db
 from app.modules.stock_requests.service import StockRequestService
-from app.modules.stock_requests.schema import (
-    StockRequestItemSchema,
-    CreateStockRequestSchema,
-    ApproveStockRequestSchema,
-    ShipStockRequestSchema,
-    ReceiveStockRequestSchema,
-    StockRequestResponseSchema
-)
 
 security = HTTPBearer()
 logger = logging.getLogger(__name__)
@@ -77,9 +68,9 @@ async def create_stock_request(
 @router.get("")
 @router.get("/")
 async def list_stock_requests(
-    status_filter: Optional[str] = Query(None, description="Filter by request status"),
-    from_branch_id: Optional[int] = Query(None, description="Filter by source branch"),
-    to_branch_id: Optional[int] = Query(None, description="Filter by destination branch"),
+    status_filter: str | None = Query(None, description="Filter by request status"),
+    from_branch_id: int | None = Query(None, description="Filter by source branch"),
+    to_branch_id: int | None = Query(None, description="Filter by destination branch"),
     limit: int = Query(20, description="Number of requests to return"),
     offset: int = Query(0, description="Number of requests to skip"),
     current_user = Depends(get_current_active_user),
@@ -106,8 +97,8 @@ async def list_stock_requests(
         else:
             # Expect object with attributes/items or dict-like
             if hasattr(stock_requests, "items") and hasattr(stock_requests, "total"):
-                items = getattr(stock_requests, "items")
-                total = getattr(stock_requests, "total")
+                items = stock_requests.items
+                total = stock_requests.total
             elif isinstance(stock_requests, dict) and "items" in stock_requests and "total" in stock_requests:
                 items = stock_requests["items"]
                 total = stock_requests["total"]
@@ -195,7 +186,7 @@ async def approve_stock_request(
 @router.put("/{request_id}/fulfill", dependencies=[Depends(require_permissions('stock:write'))])
 async def fulfill_stock_request(
     request_id: int = Path(..., description="Stock request ID"),
-    fulfillment_notes: Optional[str] = Query(None, description="Fulfillment notes"),
+    fulfillment_notes: str | None = Query(None, description="Fulfillment notes"),
     current_user = Depends(get_current_active_user),
     db = Depends(get_db),
 ):
@@ -274,7 +265,7 @@ async def reject_stock_request(
 # Status tracking endpoints
 @router.get("/status/pending")
 async def get_pending_requests(
-    branch_id: Optional[int] = Query(None, description="Filter by branch ID"),
+    branch_id: int | None = Query(None, description="Filter by branch ID"),
     current_user = Depends(get_current_active_user),
     db = Depends(get_db),
 ):
@@ -299,7 +290,7 @@ async def get_pending_requests(
 
 @router.get("/status/approved")
 async def get_approved_requests(
-    branch_id: Optional[int] = Query(None, description="Filter by branch ID"),
+    branch_id: int | None = Query(None, description="Filter by branch ID"),
     current_user = Depends(get_current_active_user),
     db = Depends(get_db),
 ):

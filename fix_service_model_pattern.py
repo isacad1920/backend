@@ -4,16 +4,16 @@ Script to fix service-model pattern in all modules.
 This ensures services get proper model instances instead of raw database clients.
 """
 
-import os
 import re
+
 
 def fix_customer_routes():
     """Fix customer routes to use proper model pattern."""
     routes_file = "app/modules/customers/routes.py"
     
-    print(f"🔧 Fixing customers service-model pattern...")
+    print("🔧 Fixing customers service-model pattern...")
     
-    with open(routes_file, 'r') as f:
+    with open(routes_file) as f:
         content = f.read()
     
     # Add the import if it doesn't exist
@@ -37,9 +37,9 @@ def fix_customer_routes():
     if new_content != content:
         with open(routes_file, 'w') as f:
             f.write(new_content)
-        print(f"✅ Fixed customers module - updated service-model pattern")
+        print("✅ Fixed customers module - updated service-model pattern")
     else:
-        print(f"ℹ️  Customers module already has correct pattern")
+        print("ℹ️  Customers module already has correct pattern")
 
 def main():
     """Main function to fix service-model patterns."""

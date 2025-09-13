@@ -1,44 +1,39 @@
-import re
+import builtins
 import copy
 import logging
-import builtins
 import operator
+import re
+from collections.abc import Callable
 from configparser import ConfigParser
 from typing import (
-    Optional,
-    Callable,
-    Dict,
     Any,
-    Union,
-    Type as TypingType,
     cast,
 )
 
-from mypy.options import Options
 from mypy.errorcodes import ErrorCode
-from mypy.types import (
-    UnionType,
-    NoneType,
-    Type,
-    Instance,
-)
 from mypy.nodes import (
-    Node,
-    Expression,
-    DictExpr,
-    StrExpr,
-    NameExpr,
-    Var,
     BytesExpr,
     CallExpr,
-    IntExpr,
     Context,
-    TypeInfo,
+    DictExpr,
+    Expression,
+    IntExpr,
+    NameExpr,
+    Node,
+    StrExpr,
     SymbolTable,
     SymbolTableNode,
+    TypeInfo,
+    Var,
 )
-from mypy.plugin import Plugin, MethodContext, CheckerPluginInterface
-
+from mypy.options import Options
+from mypy.plugin import CheckerPluginInterface, MethodContext, Plugin
+from mypy.types import (
+    Instance,
+    NoneType,
+    Type,
+    UnionType,
+)
 
 # match any direct children of an actions class
 CLIENT_ACTION_CHILD = re.compile(
@@ -68,7 +63,7 @@ log: logging.Logger = logging.getLogger(__name__)
 # pyright: reportGeneralTypeIssues=false, reportUnnecessaryComparison=false
 
 
-def plugin(version: str) -> TypingType[Plugin]:
+def plugin(version: str) -> type[Plugin]:
     return PrismaPlugin
 
 
@@ -98,7 +93,7 @@ class PrismaPlugin(Plugin):
 
     def get_method_hook(
         self, fullname: str
-    ) -> Optional[Callable[[MethodContext], Type]]:
+    ) -> Callable[[MethodContext], Type] | None:
         match = CLIENT_ACTION_CHILD.match(fullname)
         if not match:
             return None
@@ -194,7 +189,7 @@ class PrismaPlugin(Plugin):
         return modified_ret
 
     def modify_model_from_include(
-        self, model: Instance, data: Dict[Any, Any]
+        self, model: Instance, data: dict[Any, Any]
     ) -> Instance:
         names = model.type.names.copy()
         for key, node in model.type.names.items():
@@ -204,9 +199,9 @@ class PrismaPlugin(Plugin):
 
     def maybe_modify_included_field(
         self,
-        key: Union[str, Expression, Node],
+        key: str | Expression | Node,
         node: SymbolTableNode,
-        data: Dict[Any, Any],
+        data: dict[Any, Any],
     ) -> SymbolTableNode:
         value = data.get(key)
         if value is False or value is None:
@@ -251,7 +246,7 @@ class PrismaPlugin(Plugin):
 
     def get_arg_named(
         self, name: str, ctx: MethodContext
-    ) -> Optional[Expression]:
+    ) -> Expression | None:
         """Return the expression for an argument."""
         # keyword arguments
         for i, names in enumerate(ctx.arg_names):
@@ -313,7 +308,7 @@ class PrismaPlugin(Plugin):
 
     def parse_expression_to_dict(
         self, expression: Expression
-    ) -> Dict[Any, Any]:
+    ) -> dict[Any, Any]:
         if isinstance(expression, DictExpr):
             return self._dictexpr_to_dict(expression)
 
@@ -324,7 +319,7 @@ class PrismaPlugin(Plugin):
             f'Cannot parse expression of type={type(expression).__name__} to a dictionary.'
         )
 
-    def _dictexpr_to_dict(self, expr: DictExpr) -> Dict[Any, Any]:
+    def _dictexpr_to_dict(self, expr: DictExpr) -> dict[Any, Any]:
         parsed = {}
         for key_expr, value_expr in expr.items:
             if key_expr is None:
@@ -339,7 +334,7 @@ class PrismaPlugin(Plugin):
 
     def _callexpr_to_dict(
         self, expr: CallExpr, strict: bool = True
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         if not isinstance(expr.callee, NameExpr):
             raise TypeError(
                 f'Expected CallExpr.callee to be a NameExpr but got {type(expr.callee)} instead.'
@@ -351,7 +346,7 @@ class PrismaPlugin(Plugin):
             )
 
         parsed = {}
-        for arg_name, value_expr in zip(expr.arg_names, expr.args):
+        for arg_name, value_expr in zip(expr.arg_names, expr.args, strict=False):
             if arg_name is None:
                 continue
 
@@ -395,9 +390,9 @@ class PrismaPlugin(Plugin):
 
 
 class UnparsedExpression(Exception):
-    context: Union[Expression, Node]
+    context: Expression | Node
 
-    def __init__(self, context: Union[Expression, Node]) -> None:
+    def __init__(self, context: Expression | Node) -> None:
         self.context = context
         super().__init__(
             f'Tried to access a ({type(context).__name__}) expression that was not parsed.'

@@ -1,10 +1,11 @@
 """
 Application entry point for running the SOFinance POS System.
 """
-import uvicorn
 import os
 import sys
 from pathlib import Path
+
+import uvicorn
 
 # Add the project root to the Python path
 project_root = Path(__file__).parent
@@ -12,6 +13,7 @@ sys.path.insert(0, str(project_root))
 
 # Import environment variables
 from dotenv import load_dotenv
+
 load_dotenv()
 
 def main():

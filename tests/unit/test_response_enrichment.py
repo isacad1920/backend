@@ -1,7 +1,4 @@
-import json
-from fastapi.responses import JSONResponse
-from app.core.response import build_success_payload, success_response
-from app.core.config import settings
+from app.core.response import build_success_payload
 
 
 def test_build_success_payload_infers_error_object_from_detail():

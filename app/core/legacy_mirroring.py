@@ -10,11 +10,14 @@ Refactoring into a standalone module makes it easier to locate, audit,
 and eventually remove or simplify in a future major release.
 """
 from __future__ import annotations
-from typing import Any, Optional
-from fastapi.responses import JSONResponse
+
 import json
+from typing import Any
+
+from fastapi.responses import JSONResponse
 
 from app.core.response import success_response
+
 
 def mirror_and_wrap_response(
     data_obj: Any,
@@ -66,20 +69,7 @@ def mirror_and_wrap_response(
         # Pagination mirroring removed per new envelope standard
 
         if isinstance(data_part, dict):
-            for k, v in data_part.items():
-                if k not in data_obj and (k.startswith('total_') or k.endswith('_count') or k.endswith('_total')):
-                    data_obj[k] = v; mutated = True
-            common_keys = {
-                'id','status','version','revenue','expenses','assets','liabilities','equity','alerts','notifications','routes','summary',
-                'report_date','email','username','first_name','last_name','role','total','name','features','contact','api_version',
-                'low_stock_alerts','recent_adjustments','key_metrics','period_start','period_end','productsByCategory','categoriesCount','stock_levels','recommendations',
-                'profit_margin','gross_profit','current_ratio','quick_ratio','revenue_growth','operating_activities','total_tax','budget','actual','total_revenue','total_expenses','total_value',
-                'permissions','grouped_permissions','logs','totalProducts','categories','products','items','sku','address','average_purchase','reorder_level','price','stockQuantity','stock_quantity',
-                'max_stock_level','lead_time_days','safety_stock','auto_reorder_enabled','firstName','lastName'
-            }
-            for ck in common_keys:
-                if ck in data_part and ck not in data_obj:
-                    data_obj[ck] = data_part[ck]; mutated = True
+            # Legacy promotion removed: keep envelope strict.
             if 'detail' in data_part and 'detail' not in data_obj:
                 data_obj['detail'] = data_part['detail']; mutated = True
         if mutated:

@@ -30,7 +30,7 @@ def fix_module_routes(module_name, service_name):
     
     print(f"🔧 Fixing {module_name} module...")
     
-    with open(routes_file, 'r') as f:
+    with open(routes_file) as f:
         content = f.read()
     
     # Different patterns for service initialization without database

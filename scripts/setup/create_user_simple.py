@@ -10,6 +10,7 @@ from datetime import datetime
 # Simple database connection without importing the app
 import asyncpg
 
+
 async def create_demo_user_direct():
     """Create demo user directly in database."""
     print("🚀 Creating demo user directly in database...")
@@ -56,8 +57,8 @@ async def create_demo_user_direct():
             print(f"✅ Demo user created with ID: {user_id}")
         
         print("\n🔑 Login credentials:")
-        print(f"   Email: demo@sofinance.com")
-        print(f"   Password: demo123")
+        print("   Email: demo@sofinance.com")
+        print("   Password: demo123")
         
         print("\n🌐 To test login:")
         print("1. Go to http://localhost:8000/docs")

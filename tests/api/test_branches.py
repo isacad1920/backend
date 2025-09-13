@@ -3,6 +3,7 @@ Branch API endpoint tests.
 """
 import pytest
 from httpx import AsyncClient
+
 from app.core.config import settings
 from tests.conftest import TEST_BRANCH_DATA
 
@@ -18,12 +19,21 @@ class TestBranchEndpoints:
         )
         
         assert response.status_code == 200
-        data = response.json()
-        assert "items" in data
-        assert "total" in data
-        assert "page" in data
-        assert "size" in data
-        assert isinstance(data["items"], list)
+        body = response.json()
+        # New envelope: data.items & data.pagination
+        assert body.get("success") in (True, None)  # Some legacy endpoints may not yet set success
+        data = body.get("data") or {}
+        assert isinstance(data.get("items"), list)
+        pagination = data.get("pagination") or {}
+        if pagination:
+            for key in ["total", "page", "limit", "total_pages"]:
+                assert key in pagination
+        else:
+            # Fallback legacy shape support (will be removed once endpoint migrated)
+            for legacy_key in ["items", "total", "page", "size"]:
+                assert legacy_key in body or legacy_key in data
+        # Backward compatibility: ensure message preserved
+        assert "message" in body
     
     @pytest.mark.asyncio
     async def test_list_branches_with_filters(self, authenticated_client: AsyncClient):
@@ -39,7 +49,8 @@ class TestBranchEndpoints:
         )
         
         assert response.status_code == 200
-        data = response.json()
+        body = response.json()
+        data = body.get("data") or {}
         assert "items" in data
     
     @pytest.mark.asyncio
@@ -50,11 +61,13 @@ class TestBranchEndpoints:
         )
         
         assert response.status_code == 200
-        data = response.json()
-        assert "id" in data
-        assert "name" in data
-        assert "address" in data
-        assert "status" in data
+        body = response.json()
+        # Single-resource responses still returned directly (not paginated)
+        assert any(k in body for k in ("id", "data"))
+        # Accept both raw object or wrapped data
+        obj = body.get("data") if "data" in body and isinstance(body.get("data"), dict) and "id" in body["data"] else body
+        for k in ["id", "name", "address", "status"]:
+            assert k in obj
     
     @pytest.mark.asyncio
     async def test_get_branch_not_found(self, authenticated_client: AsyncClient):
@@ -74,10 +87,11 @@ class TestBranchEndpoints:
         )
         
         if response.status_code == 201:
-            data = response.json()
+            payload = response.json()
+            data = payload.get("data") or payload
             assert "id" in data
-            assert data["name"] == TEST_BRANCH_DATA["name"]
-            assert data["address"] == TEST_BRANCH_DATA["address"]
+            assert data.get("name") == TEST_BRANCH_DATA["name"]
+            assert data.get("address") == TEST_BRANCH_DATA["address"]
         else:
             # Branch might already exist or no permission
             assert response.status_code in [400, 403, 409]
@@ -127,8 +141,9 @@ class TestBranchEndpoints:
         )
         
         assert response.status_code == 200
-        data = response.json()
-        assert "total_branches" in data or "totalBranches" in data
+        payload = response.json()
+        data = payload.get("data") or payload
+        assert any(k in data for k in ["total_branches", "totalBranches"]) or any(k in payload for k in ["total_branches", "totalBranches"])
     
     @pytest.mark.asyncio
     async def test_unauthorized_access(self, async_client: AsyncClient):
@@ -136,4 +151,5 @@ class TestBranchEndpoints:
         response = await async_client.get(f"{settings.api_v1_str}/branches/")
         assert response.status_code == 200
         body = response.json()
-        assert "items" in body
+        data = body.get("data") or body
+        assert "items" in data

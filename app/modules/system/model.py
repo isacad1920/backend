@@ -5,8 +5,7 @@ This module contains the data models used by the system module for
 handling system information and backup records.
 """
 
-from generated.prisma.models import SystemInfo, Backup
-
+from generated.prisma.models import Backup, SystemInfo
 
 # Re-export models for convenience
 __all__ = [

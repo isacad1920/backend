@@ -1,6 +1,6 @@
-from typing import Mapping, Optional
-from .._types import TypedDict
+from collections.abc import Mapping
 
+from .._types import TypedDict
 
 __all__ = (
     'PartialModel',
@@ -13,7 +13,7 @@ class PartialModelField(TypedDict):
     is_list: bool
     optional: bool
     type: str
-    documentation: Optional[str]
+    documentation: str | None
     is_relational: bool
 
 

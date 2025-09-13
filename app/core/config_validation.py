@@ -5,9 +5,9 @@ are present and appear valid. This is intentionally minimal so as not to
 block startup for non-critical warnings.
 """
 from __future__ import annotations
-from typing import List, Tuple
-import os
+
 import logging
+import os
 
 logger = logging.getLogger(__name__)
 
@@ -21,13 +21,13 @@ RECOMMENDED_VARS = [
     "REDIS_URL",
 ]
 
-def validate_env(strict: bool = False) -> Tuple[bool, List[str]]:
+def validate_env(strict: bool = False) -> tuple[bool, list[str]]:
     """Validate required environment variables.
 
     Returns (ok, messages). If strict and a required var is missing, raises
     an exception.
     """
-    messages: List[str] = []
+    messages: list[str] = []
     ok = True
     for var in REQUIRED_VARS:
         if not os.getenv(var):

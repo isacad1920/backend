@@ -3,6 +3,7 @@ Customer API endpoint tests.
 """
 import pytest
 from httpx import AsyncClient
+
 from app.core.config import settings
 from tests.conftest import TEST_CUSTOMER_DATA
 
@@ -16,14 +17,14 @@ class TestCustomerEndpoints:
         response = await authenticated_client.get(
             f"{settings.api_v1_str}/customers/"
         )
-        
         assert response.status_code == 200
-        data = response.json()
-        assert "items" in data
-        assert "total" in data
-        assert "page" in data
-        assert "size" in data
-        assert isinstance(data["items"], list)
+        payload = response.json()
+        assert payload.get("success") is True
+        data = payload["data"]
+        assert "items" in data and isinstance(data["items"], list)
+        assert "pagination" in data
+        pg = data["pagination"]
+        assert all(k in pg for k in ["total", "page", "limit", "total_pages"]) or all(k in pg for k in ["total", "page", "limit"])  # transitional
     
     @pytest.mark.asyncio
     async def test_list_customers_with_filters(self, authenticated_client: AsyncClient):
@@ -38,9 +39,10 @@ class TestCustomerEndpoints:
                 "status": "ACTIVE"
             }
         )
-        
         assert response.status_code == 200
-        data = response.json()
+        payload = response.json()
+        assert payload.get("success") is True
+        data = payload["data"]
         assert "items" in data
     
     @pytest.mark.asyncio
@@ -51,12 +53,12 @@ class TestCustomerEndpoints:
         )
         
         assert response.status_code == 200
-        data = response.json()
-        assert "id" in data
-        assert "firstName" in data or "first_name" in data
-        assert "lastName" in data or "last_name" in data
-        assert "email" in data
-        assert "status" in data
+        payload = response.json()
+        data = payload.get("data") or payload
+        for k in ["id", "email", "status"]:
+            assert k in data
+        assert ("firstName" in data or "first_name" in data)
+        assert ("lastName" in data or "last_name" in data)
     
     @pytest.mark.asyncio
     async def test_get_customer_not_found(self, authenticated_client: AsyncClient):
@@ -76,9 +78,11 @@ class TestCustomerEndpoints:
         )
         
         if response.status_code == 201:
-            data = response.json()
+            payload = response.json()
+            data = payload.get("data") or payload
             assert "id" in data
-            assert data["firstName"] == TEST_CUSTOMER_DATA["firstName"] or data["first_name"] == TEST_CUSTOMER_DATA["firstName"]
+            fn = data.get("firstName") or data.get("first_name")
+            assert fn == TEST_CUSTOMER_DATA["firstName"]
             assert data["email"] == TEST_CUSTOMER_DATA["email"]
         else:
             # Customer might already exist
@@ -129,8 +133,9 @@ class TestCustomerEndpoints:
         )
         
         assert response.status_code == 200
-        data = response.json()
-        assert "total_customers" in data or "totalCustomers" in data
+        payload = response.json()
+        data = payload.get("data") or payload
+        assert any(k in data for k in ["total_customers", "totalCustomers"]) or any(k in payload for k in ["total_customers", "totalCustomers"])
     
     @pytest.mark.asyncio
     async def test_get_customer_purchase_history(self, authenticated_client: AsyncClient, test_customer: dict):
@@ -140,9 +145,12 @@ class TestCustomerEndpoints:
         )
         
         assert response.status_code == 200
-        data = response.json()
-        assert "items" in data
-        assert "total" in data
+        body = response.json()
+        data_wrapper = body.get("data") or {}
+        assert "items" in data_wrapper
+        pagination = data_wrapper.get("pagination") or {}
+        for key in ["total", "page", "limit", "total_pages"]:
+            assert key in pagination
     
     @pytest.mark.asyncio
     async def test_bulk_update_customers(self, authenticated_client: AsyncClient):

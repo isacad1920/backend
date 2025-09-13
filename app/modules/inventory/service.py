@@ -1,26 +1,23 @@
 """
 Inventory management service layer with comprehensive business logic.
 """
-from datetime import datetime, date, timedelta
-from decimal import Decimal
-from typing import List, Optional, Dict, Any, Tuple
 import logging
+from datetime import datetime, timedelta
+from decimal import Decimal
+from typing import Any
 
-from generated.prisma import Prisma
 from app.modules.inventory.schema import (
-    StockLevelSchema,
+    AdjustmentType,
+    DeadStockAnalysisSchema,
+    InventoryDashboardSchema,
+    InventoryValuationSchema,
+    LowStockAlertSchema,
     StockAdjustmentCreateSchema,
     StockAdjustmentSchema,
-    LowStockAlertSchema,
-    InventoryValuationSchema,
-    InventoryReportSchema,
-    DeadStockAnalysisSchema,
-    ReorderPointSchema,
-    InventoryDashboardSchema,
-    InventoryTurnoverSchema,
+    StockLevelSchema,
     StockStatus,
-    AdjustmentType
 )
+from generated.prisma import Prisma
 
 logger = logging.getLogger(__name__)
 
@@ -32,11 +29,11 @@ class InventoryService:
 
     async def get_stock_levels(
         self,
-        product_ids: Optional[List[int]] = None,
-        status_filter: Optional[StockStatus] = None,
-        category_id: Optional[int] = None,
+        product_ids: list[int] | None = None,
+        status_filter: StockStatus | None = None,
+        category_id: int | None = None,
         low_stock_only: bool = False
-    ) -> List[StockLevelSchema]:
+    ) -> list[StockLevelSchema]:
         """Get current stock levels with filtering options."""
         try:
             where_conditions = {}
@@ -192,10 +189,10 @@ class InventoryService:
 
     async def get_low_stock_alerts(
         self,
-        threshold: Optional[int] = None,
-        search: Optional[str] = None,
-        category_id: Optional[int] = None
-    ) -> List[LowStockAlertSchema]:
+        threshold: int | None = None,
+        search: str | None = None,
+        category_id: int | None = None
+    ) -> list[LowStockAlertSchema]:
         """Get products that are below (<=) the provided threshold.
 
         If a threshold is not provided the system default from settings is used.
@@ -203,7 +200,7 @@ class InventoryService:
         try:
             from app.core.config import settings  # Local import to avoid circulars
             effective_threshold = threshold if threshold is not None else settings.default_low_stock_threshold
-            where: Dict[str, Any] = {
+            where: dict[str, Any] = {
                 'quantity': {'lte': effective_threshold}
             }
             # Category relation filter
@@ -236,7 +233,7 @@ class InventoryService:
                 order={'quantity': 'asc'}
             )
 
-            alerts: List[LowStockAlertSchema] = []
+            alerts: list[LowStockAlertSchema] = []
             for stock in stocks:
                 suggested_qty = await self._calculate_suggested_order_quantity(stock.productId)
                 avg_daily_sales = await self._get_average_daily_sales(stock.productId)
@@ -260,9 +257,9 @@ class InventoryService:
 
     async def get_inventory_valuation(
         self,
-        category_id: Optional[int] = None,
-        product_ids: Optional[List[int]] = None
-    ) -> List[InventoryValuationSchema]:
+        category_id: int | None = None,
+        product_ids: list[int] | None = None
+    ) -> list[InventoryValuationSchema]:
         """Get inventory valuation with cost and retail values."""
         try:
             where_conditions = {}
@@ -318,7 +315,7 @@ class InventoryService:
     async def get_dead_stock_analysis(
         self,
         days_threshold: int = 90
-    ) -> List[DeadStockAnalysisSchema]:
+    ) -> list[DeadStockAnalysisSchema]:
         """Identify dead stock items (no sales in specified days)."""
         try:
             # Get all products with stock
@@ -419,7 +416,7 @@ class InventoryService:
                 )
             except Exception:
                 recent_adj_rows = []
-            recent_adjustments: List[StockAdjustmentSchema] = []
+            recent_adjustments: list[StockAdjustmentSchema] = []
             for r in recent_adj_rows:
                 try:
                     recent_adjustments.append(StockAdjustmentSchema(
@@ -458,7 +455,7 @@ class InventoryService:
         self,
         product_id: int,
         days: int = 14
-    ) -> List[Dict[str, Any]]:
+    ) -> list[dict[str, Any]]:
         """Return daily sales quantity for a product over the past N days (inclusive).
 
         Sparse days (no sales) are returned with quantity 0 for consistent sparkline plotting.
@@ -472,11 +469,11 @@ class InventoryService:
                 },
                 include={'sale': True}
             )
-            buckets: Dict[str, int] = {}
+            buckets: dict[str, int] = {}
             for s in sales:
                 day = s.sale.createdAt.date().isoformat()
                 buckets[day] = buckets.get(day, 0) + s.quantity
-            out: List[Dict[str, Any]] = []
+            out: list[dict[str, Any]] = []
             for i in range(days):
                 d = (datetime.utcnow() - timedelta(days=days - 1 - i)).date().isoformat()
                 out.append({'date': d, 'quantity': buckets.get(d, 0)})
@@ -503,7 +500,7 @@ class InventoryService:
         # For now, return 0
         return 0
 
-    async def _calculate_days_of_stock(self, product_id: int, available_qty: int) -> Optional[int]:
+    async def _calculate_days_of_stock(self, product_id: int, available_qty: int) -> int | None:
         """Calculate estimated days of stock remaining based on sales velocity."""
         avg_daily_sales = await self._get_average_daily_sales(product_id)
         
@@ -512,7 +509,7 @@ class InventoryService:
         
         return None
 
-    async def _get_average_daily_sales(self, product_id: int, days: int = 30) -> Optional[Decimal]:
+    async def _get_average_daily_sales(self, product_id: int, days: int = 30) -> Decimal | None:
         """Calculate average daily sales for a product."""
         try:
             cutoff_date = datetime.utcnow() - timedelta(days=days)
@@ -544,7 +541,7 @@ class InventoryService:
         
         return 20  # Default order quantity
 
-    async def _calculate_days_until_out_of_stock(self, product_id: int, current_qty: int) -> Optional[int]:
+    async def _calculate_days_until_out_of_stock(self, product_id: int, current_qty: int) -> int | None:
         """Calculate estimated days until product runs out of stock."""
         avg_daily_sales = await self._get_average_daily_sales(product_id)
         
@@ -553,7 +550,7 @@ class InventoryService:
         
         return None
 
-    async def _get_last_sale_date(self, product_id: int) -> Optional[datetime]:
+    async def _get_last_sale_date(self, product_id: int) -> datetime | None:
         """Get the date of the last sale for a product."""
         try:
             last_sale = await self.db.saleitem.find_first(
@@ -569,9 +566,9 @@ class InventoryService:
 
     def _get_dead_stock_recommendations(
         self, 
-        days_since_last_sale: Optional[int], 
+        days_since_last_sale: int | None, 
         cost_value: Decimal
-    ) -> Tuple[str, str]:
+    ) -> tuple[str, str]:
         """Get recommendations for dead stock items."""
         if not days_since_last_sale:
             return "Monitor closely", "LOW"
@@ -615,7 +612,7 @@ class InventoryService:
             logger.warning(f"Turnover calc fallback due to error: {e}")
             return 0.0
 
-    async def _get_top_selling_products(self, limit: int = 5) -> List[Dict[str, Any]]:
+    async def _get_top_selling_products(self, limit: int = 5) -> list[dict[str, Any]]:
         """Get top selling products by quantity."""
         try:
             # Get sales data for the last 30 days
@@ -668,7 +665,7 @@ class InventoryService:
         except Exception:
             return []
 
-    async def _get_inventory_trends(self) -> Dict[str, Any]:
+    async def _get_inventory_trends(self) -> dict[str, Any]:
         """Get lightweight inventory trend indicators based on last 30 vs previous 30 day windows."""
         try:
             now = datetime.utcnow()

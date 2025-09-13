@@ -1,7 +1,9 @@
 #!/usr/bin/env python3
 
-import requests
 import json
+
+import requests
+
 
 def test_stock_requests():
     """Test stock requests endpoint with detailed error reporting."""
@@ -48,7 +50,7 @@ def test_stock_requests():
         if stock_response.status_code == 500:
             try:
                 error_data = stock_response.json()
-                print(f"\n🔍 Error Details:")
+                print("\n🔍 Error Details:")
                 print(json.dumps(error_data, indent=2))
             except:
                 print("Could not parse error JSON")

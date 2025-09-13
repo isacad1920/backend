@@ -1,7 +1,6 @@
 from __future__ import annotations
 
-from typing import Any, Optional
-
+from typing import Any
 
 __all__ = (
     'PrismaError',
@@ -63,7 +62,7 @@ class DataError(PrismaError):
     code: Any
     meta: Any
 
-    def __init__(self, data: Any, *, message: Optional[str] = None) -> None:
+    def __init__(self, data: Any, *, message: str | None = None) -> None:
         self.data = data
 
         user_facing_error = data.get('user_facing_error', {})
@@ -99,7 +98,7 @@ class RawQueryError(DataError):
 class TableNotFoundError(DataError):
     def __init__(self, data: Any) -> None:
         super().__init__(data)
-        self.table: Optional[str] = self.meta.get('table')
+        self.table: str | None = self.meta.get('table')
 
 
 class FieldNotFoundError(DataError):

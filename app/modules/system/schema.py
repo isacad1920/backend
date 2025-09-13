@@ -1,11 +1,12 @@
 """
 SystemInfo Pydantic schemas for request/response validation.
 """
-from typing import Optional
 from datetime import datetime
-from pydantic import BaseModel, Field, validator
-from app.core.base_schema import ApiBaseModel
 from enum import Enum
+
+from pydantic import Field, validator
+
+from app.core.base_schema import ApiBaseModel
 
 
 class Environment(str, Enum):
@@ -27,14 +28,14 @@ class Currency(str, Enum):
 class SystemInfoSchema(ApiBaseModel):
     """Base schema for system info."""
     system_name: str = Field(..., min_length=1, max_length=100, description="System name")
-    version: Optional[str] = Field(None, max_length=20, description="System version")
+    version: str | None = Field(None, max_length=20, description="System version")
     environment: Environment = Field(..., description="System environment")
-    company_name: Optional[str] = Field(None, max_length=200, description="Company name") 
-    company_email: Optional[str] = Field(None, max_length=100, description="Company email")
-    company_phone: Optional[str] = Field(None, max_length=20, description="Company phone")
-    company_address: Optional[str] = Field(None, max_length=500, description="Company address")
+    company_name: str | None = Field(None, max_length=200, description="Company name") 
+    company_email: str | None = Field(None, max_length=100, description="Company email")
+    company_phone: str | None = Field(None, max_length=20, description="Company phone")
+    company_address: str | None = Field(None, max_length=500, description="Company address")
     base_currency: Currency = Field(..., description="Base currency")
-    timezone: Optional[str] = Field(None, max_length=50, description="System timezone")
+    timezone: str | None = Field(None, max_length=50, description="System timezone")
     
     @validator('company_email')
     def validate_email(cls, v):
@@ -60,15 +61,15 @@ class SystemInfoSchema(ApiBaseModel):
 
 class SystemInfoUpdateSchema(ApiBaseModel):
     """Schema for updating system info."""
-    system_name: Optional[str] = Field(None, min_length=1, max_length=100)
-    version: Optional[str] = Field(None, max_length=20)
-    environment: Optional[Environment] = None
-    company_name: Optional[str] = Field(None, max_length=200)
-    company_email: Optional[str] = Field(None, max_length=100)
-    company_phone: Optional[str] = Field(None, max_length=20) 
-    company_address: Optional[str] = Field(None, max_length=500)
-    base_currency: Optional[Currency] = None
-    timezone: Optional[str] = Field(None, max_length=50)
+    system_name: str | None = Field(None, min_length=1, max_length=100)
+    version: str | None = Field(None, max_length=20)
+    environment: Environment | None = None
+    company_name: str | None = Field(None, max_length=200)
+    company_email: str | None = Field(None, max_length=100)
+    company_phone: str | None = Field(None, max_length=20) 
+    company_address: str | None = Field(None, max_length=500)
+    base_currency: Currency | None = None
+    timezone: str | None = Field(None, max_length=50)
     
     @validator('company_email')
     def validate_email(cls, v):
@@ -84,14 +85,14 @@ class SystemInfoResponseSchema(ApiBaseModel):
     """Schema for system info response."""
     id: int
     system_name: str = Field(alias="systemName")
-    version: Optional[str] = Field(None, alias="version")
+    version: str | None = Field(None, alias="version")
     environment: Environment = Field(alias="environment")
-    company_name: Optional[str] = Field(None, alias="companyName")
-    company_email: Optional[str] = Field(None, alias="companyEmail")
-    company_phone: Optional[str] = Field(None, alias="companyPhone")
-    company_address: Optional[str] = Field(None, alias="companyAddress")
+    company_name: str | None = Field(None, alias="companyName")
+    company_email: str | None = Field(None, alias="companyEmail")
+    company_phone: str | None = Field(None, alias="companyPhone")
+    company_address: str | None = Field(None, alias="companyAddress")
     base_currency: Currency = Field(alias="baseCurrency")
-    timezone: Optional[str] = Field(None, alias="timezone")
+    timezone: str | None = Field(None, alias="timezone")
     created_at: datetime = Field(alias="createdAt")
     updated_at: datetime = Field(alias="updatedAt")
     
@@ -118,7 +119,7 @@ class BackupStatus(str, Enum):
 class BackupSchema(ApiBaseModel):
     """Schema for creating a backup via API (request body)."""
     type: BackupType = Field(..., description="Type of backup: FULL, INCREMENTAL, FILES, DB")
-    location: Optional[str] = Field(None, max_length=500, description="Target path or storage URI")
+    location: str | None = Field(None, max_length=500, description="Target path or storage URI")
 
     class Config:
         from_attributes = True
@@ -129,13 +130,13 @@ class BackupResponseSchema(ApiBaseModel):
     id: int
     type: BackupType
     location: str
-    file_name: Optional[str] = Field(None, alias="fileName")
-    size_mb: Optional[float] = Field(None, alias="sizeMB")
+    file_name: str | None = Field(None, alias="fileName")
+    size_mb: float | None = Field(None, alias="sizeMB")
     status: BackupStatus
-    error_log: Optional[str] = Field(None, alias="errorLog")
-    created_by_id: Optional[int] = Field(None, alias="createdById")
+    error_log: str | None = Field(None, alias="errorLog")
+    created_by_id: int | None = Field(None, alias="createdById")
     created_at: datetime = Field(alias="createdAt")
-    completed_at: Optional[datetime] = Field(None, alias="completedAt")
+    completed_at: datetime | None = Field(None, alias="completedAt")
 
     class Config:
         from_attributes = True
@@ -148,7 +149,7 @@ class BackupStatsSchema(ApiBaseModel):
     failed: int
     pending: int
     total_size_mb: float
-    last_backup_at: Optional[datetime]
+    last_backup_at: datetime | None
 
 
 class BackupRestoreResultSchema(ApiBaseModel):

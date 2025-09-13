@@ -4,15 +4,10 @@ Real-time Stock Request Demo
 Shows how cashiers order stock and inventory clerks get notified in real-time.
 """
 import asyncio
-import json
-from typing import Dict, List
-from datetime import datetime
 
-from app.core.stock_requests import (
-    stock_request_service, StockRequestPriority, StockRequestStatus
-)
-from app.core.notifications import connection_manager, NotificationType
 from app.core.config import UserRole
+from app.core.notifications import NotificationType, connection_manager
+from app.core.stock_requests import StockRequestPriority, stock_request_service
 
 
 class MockUser:
@@ -47,13 +42,13 @@ async def simulate_stock_request_workflow():
     inventory_clerk = MockUser(201, "Mike (Inventory)", UserRole.INVENTORY_CLERK, "warehouse")
     manager = MockUser(301, "Lisa (Manager)", UserRole.MANAGER, "headquarters")
     
-    print(f"\n👥 Demo Users:")
+    print("\n👥 Demo Users:")
     print(f"   🛒 {cashier.name} - {cashier.role.value} at {cashier.branch_name}")
     print(f"   📦 {inventory_clerk.name} - {inventory_clerk.role.value} at Warehouse")
     print(f"   👔 {manager.name} - {manager.role.value} at Headquarters")
     
     # Simulate WebSocket connections (in real app, these would be actual WebSocket clients)
-    print(f"\n🔌 Connecting users to real-time notification system...")
+    print("\n🔌 Connecting users to real-time notification system...")
     
     # Mock connection manager setup
     connection_manager.user_metadata[cashier.id] = {
@@ -72,10 +67,10 @@ async def simulate_stock_request_workflow():
         "username": manager.name
     }
     
-    print(f"   ✅ All users connected to real-time system")
+    print("   ✅ All users connected to real-time system")
     
     # Step 1: Cashier creates stock request
-    print(f"\n📋 Step 1: Cashier creates urgent stock request")
+    print("\n📋 Step 1: Cashier creates urgent stock request")
     print(f"   👤 {cashier.name} notices low stock and creates request...")
     
     items = [
@@ -113,7 +108,7 @@ async def simulate_stock_request_workflow():
     )
     
     print(f"   📤 Stock request created: {request_id}")
-    print(f"   🔔 Real-time notification sent to inventory team!")
+    print("   🔔 Real-time notification sent to inventory team!")
     
     # Show notifications received by inventory team
     await asyncio.sleep(0.1)  # Small delay to simulate real-time
@@ -121,7 +116,7 @@ async def simulate_stock_request_workflow():
     inventory_notifications = connection_manager.get_user_notifications(inventory_clerk.id, unread_only=True)
     manager_notifications = connection_manager.get_user_notifications(manager.id, unread_only=True)
     
-    print(f"\n📢 Real-time notifications received:")
+    print("\n📢 Real-time notifications received:")
     if inventory_notifications:
         notif = inventory_notifications[-1]  # Latest notification
         print(f"   📦 {inventory_clerk.name} received: \"{notif['title']}\"")
@@ -133,7 +128,7 @@ async def simulate_stock_request_workflow():
         print(f"   👔 {manager.name} received: \"{notif['title']}\"")
     
     # Step 2: Inventory clerk approves request
-    print(f"\n✅ Step 2: Inventory clerk approves stock request")
+    print("\n✅ Step 2: Inventory clerk approves stock request")
     print(f"   👤 {inventory_clerk.name} reviews and approves request...")
     
     approved_items = {
@@ -149,7 +144,7 @@ async def simulate_stock_request_workflow():
         approved_items=approved_items
     )
     
-    print(f"   ✅ Request approved with adjusted quantities")
+    print("   ✅ Request approved with adjusted quantities")
     print(f"   🔔 Real-time notification sent to {cashier.name}!")
     
     # Show approval notification
@@ -161,7 +156,7 @@ async def simulate_stock_request_workflow():
         print(f"      💬 {notif['message']}")
     
     # Step 3: Items are shipped
-    print(f"\n🚚 Step 3: Stock request is shipped")
+    print("\n🚚 Step 3: Stock request is shipped")
     print(f"   👤 {inventory_clerk.name} ships approved items...")
     
     await stock_request_service.ship_request(
@@ -171,8 +166,8 @@ async def simulate_stock_request_workflow():
         tracking_number="TRK123456789"
     )
     
-    print(f"   📦 Items shipped with tracking: TRK123456789")
-    print(f"   🔔 Real-time notification sent to branch!")
+    print("   📦 Items shipped with tracking: TRK123456789")
+    print("   🔔 Real-time notification sent to branch!")
     
     # Show shipping notification
     await asyncio.sleep(0.1)
@@ -185,7 +180,7 @@ async def simulate_stock_request_workflow():
         print(f"      📋 Tracking: {tracking}")
     
     # Step 4: Items are received
-    print(f"\n📥 Step 4: Stock is received at branch")
+    print("\n📥 Step 4: Stock is received at branch")
     print(f"   👤 {cashier.name} receives the shipment...")
     
     received_items = {
@@ -201,8 +196,8 @@ async def simulate_stock_request_workflow():
         received_items=received_items
     )
     
-    print(f"   ✅ Stock received and updated in inventory")
-    print(f"   🔔 Completion notification sent to inventory team!")
+    print("   ✅ Stock received and updated in inventory")
+    print("   🔔 Completion notification sent to inventory team!")
     
     # Show completion notification
     await asyncio.sleep(0.1)
@@ -213,21 +208,21 @@ async def simulate_stock_request_workflow():
         print(f"      💬 {notif['message']}")
     
     # Final status
-    print(f"\n🎯 Stock Request Workflow Complete!")
+    print("\n🎯 Stock Request Workflow Complete!")
     
     final_request = stock_request_service.get_request(request_id)
     if final_request:
-        print(f"\n📊 Final Status:")
+        print("\n📊 Final Status:")
         print(f"   🆔 Request ID: {final_request.id}")
         print(f"   📈 Status: {final_request.status.value.upper()}")
         print(f"   👤 Requester: {final_request.requester_name}")
         print(f"   👤 Approved by: {inventory_clerk.name}")
-        print(f"   ⏱️  Total time: ~5 minutes (demo)")
+        print("   ⏱️  Total time: ~5 minutes (demo)")
         print(f"   📦 Items processed: {len(final_request.items)}")
-        print(f"   🔔 Notifications sent: 4 (Create → Approve → Ship → Receive)")
+        print("   🔔 Notifications sent: 4 (Create → Approve → Ship → Receive)")
     
     # Show notification summary
-    print(f"\n📈 Notification Summary:")
+    print("\n📈 Notification Summary:")
     total_notifications = len(connection_manager.notifications)
     print(f"   📧 Total notifications sent: {total_notifications}")
     
@@ -235,22 +230,23 @@ async def simulate_stock_request_workflow():
         user_notifs = connection_manager.get_user_notifications(user_id)
         print(f"   👤 {username}: {len(user_notifs)} notifications received")
     
-    print(f"\n✨ Real-time Inventory Management System Benefits:")
-    print(f"   🚀 Instant notifications - no email delays")
-    print(f"   👥 Role-based delivery - right person gets right info")
-    print(f"   📱 Real-time status updates - everyone stays informed")
-    print(f"   📊 Complete audit trail - full workflow tracking")
-    print(f"   🔄 Automatic workflows - reduce manual coordination")
+    print("\n✨ Real-time Inventory Management System Benefits:")
+    print("   🚀 Instant notifications - no email delays")
+    print("   👥 Role-based delivery - right person gets right info")
+    print("   📱 Real-time status updates - everyone stays informed")
+    print("   📊 Complete audit trail - full workflow tracking")
+    print("   🔄 Automatic workflows - reduce manual coordination")
 
 
 async def demonstrate_low_stock_alert():
     """Demonstrate automatic low stock alerts."""
     
-    print(f"\n🔔 Bonus: Automatic Low Stock Alert Demo")
+    print("\n🔔 Bonus: Automatic Low Stock Alert Demo")
     print("-" * 40)
     
-    from app.core.notifications import Notification, NotificationPriority
     import uuid
+
+    from app.core.notifications import Notification, NotificationPriority
     
     # Simulate low stock detection
     low_stock_notification = Notification(
@@ -274,9 +270,9 @@ async def demonstrate_low_stock_alert():
     
     await connection_manager.send_notification(low_stock_notification)
     
-    print(f"   📤 Automatic low stock alert sent to all relevant staff")
-    print(f"   🎯 Recipients: Cashiers, Managers, Inventory Clerks")
-    print(f"   ⚡ Triggered automatically by inventory monitoring")
+    print("   📤 Automatic low stock alert sent to all relevant staff")
+    print("   🎯 Recipients: Cashiers, Managers, Inventory Clerks")
+    print("   ⚡ Triggered automatically by inventory monitoring")
 
 
 if __name__ == "__main__":

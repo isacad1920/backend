@@ -1,7 +1,7 @@
 """
 Utilities for working with SystemSetting key-value store.
 """
-from typing import Dict, Optional
+
 from generated.prisma import Prisma
 
 
@@ -9,11 +9,11 @@ class SettingsKV:
     def __init__(self, db: Prisma):
         self.db = db
 
-    async def get_all(self) -> Dict[str, str]:
+    async def get_all(self) -> dict[str, str]:
         rows = await self.db.systemsetting.find_many()
         return {r.key: r.value for r in rows}
 
-    async def get(self, key: str) -> Optional[str]:
+    async def get(self, key: str) -> str | None:
         rec = await self.db.systemsetting.find_unique(where={"key": key})
         return rec.value if rec else None
 

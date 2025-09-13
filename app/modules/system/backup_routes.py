@@ -2,18 +2,19 @@
 Backup API routes.
 """
 import logging
-from typing import Optional, List
-from fastapi import APIRouter, Depends, Query, Path, status, Body
+
+from fastapi import APIRouter, Body, Depends, Path, Query, status
 from fastapi.encoders import jsonable_encoder
-from fastapi.responses import JSONResponse, FileResponse
-from app.core.response import set_json_body
 
 from app.core.dependencies import get_current_user, get_db
-from app.core.exceptions import ValidationError, AuthorizationError, NotFoundError, DatabaseError
+from app.core.exceptions import AuthorizationError, DatabaseError, NotFoundError, ValidationError
+from app.core.response import set_json_body
 from app.modules.system.backup_service import BackupService
 from app.modules.system.schema import (
-    BackupSchema, BackupResponseSchema, BackupType, BackupStatus,
-    BackupStatsSchema, BackupRestoreResultSchema
+    BackupResponseSchema,
+    BackupRestoreResultSchema,
+    BackupSchema,
+    BackupStatsSchema,
 )
 
 logger = logging.getLogger(__name__)
@@ -28,7 +29,7 @@ def get_backup_service(db=Depends(get_db)) -> BackupService:
 
 @backup_router.get(
     "/backups",
-    response_model=List[BackupResponseSchema],
+    response_model=list[BackupResponseSchema],
     summary="List backups",
     description="Get list of all backups with pagination and filtering."
 )
@@ -191,8 +192,9 @@ async def get_backup(
     """Get backup details by ID."""
     try:
         backup = await backup_service.get_backup(backup_id, current_user)
-        from app.core.response import success_response
         from fastapi.encoders import jsonable_encoder
+
+        from app.core.response import success_response
         data = jsonable_encoder(backup)
         resp = success_response(data=data, message="Backup retrieved")
         # Mirror id & backup_id for compatibility
@@ -259,7 +261,7 @@ async def delete_backup(
 async def restore_backup(
     backup_id: int = Path(..., description="Backup ID"),
     dry_run: bool = Query(True, description="If true, only simulate restoration"),
-    tables: Optional[str] = Query(None, description="Comma separated table names to limit restore"),
+    tables: str | None = Query(None, description="Comma separated table names to limit restore"),
     current_user: dict = Depends(get_current_user),
     backup_service: BackupService = Depends(get_backup_service)
 ):
@@ -296,9 +298,10 @@ async def restore_backup(
     table_list = [t.strip() for t in tables.split(',')] if tables else None
     # Fast synthetic path for dry-run to avoid race with backup persistence/FS
     if dry_run:
-        from app.modules.system.schema import BackupRestoreResultSchema
-        from app.core.response import success_response
         from fastapi.encoders import jsonable_encoder
+
+        from app.core.response import success_response
+        from app.modules.system.schema import BackupRestoreResultSchema
         synthetic = BackupRestoreResultSchema(
             backupId=backup_id,
             mode="DRY_RUN",
@@ -336,8 +339,9 @@ async def restore_backup(
             tables=table_list,
             current_user=current_user
         )
-        from app.core.response import success_response
         from fastapi.encoders import jsonable_encoder
+
+        from app.core.response import success_response
         resp = success_response(data=jsonable_encoder(result), message="Backup restore applied")
         resp.status_code = 200
         try:
@@ -359,11 +363,12 @@ async def restore_backup(
         except Exception:
             pass
         return resp
-    except NotFoundError as nf:
+    except NotFoundError:
         # Synthetic fallback for apply case too
-        from app.modules.system.schema import BackupRestoreResultSchema
-        from app.core.response import success_response
         from fastapi.encoders import jsonable_encoder
+
+        from app.core.response import success_response
+        from app.modules.system.schema import BackupRestoreResultSchema
         fallback = BackupRestoreResultSchema(
             backupId=backup_id,
             mode="APPLY",
