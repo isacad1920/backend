@@ -1,0 +1,28 @@
+{
+  "period_start": "2025-01-01",
+  "period_end": "2025-12-31",
+  "revenue": {
+    "total_sales": "15000",
+    "returns": "500",
+    "net_revenue": "14500"
+  },
+  "cost_of_goods_sold": {
+    "direct_costs": "8700.0",
+    "total_cogs": "8700.0"
+  },
+  "gross_profit": "5800.0",
+  "operating_expenses": {
+    "salaries": "2000.00",
+    "rent": "5000",
+    "utilities": "1000",
+    "other": "800.00"
+  },
+  "operating_income": "-3000.00",
+  "other_income": {
+    "interest": "100"
+  },
+  "other_expenses": {
+    "bank_fees": "50"
+  },
+  "net_income": "-2950.00"
+}

@@ -1,0 +1,13 @@
+Category,Item,Amount
+Revenue,Total Sales,15000
+Revenue,Returns,500
+Revenue,Net Revenue,14500
+Cost of Goods Sold,Direct Costs,8700.0
+Cost of Goods Sold,Total Cogs,8700.0
+Operating Expenses,Salaries,2000.00
+Operating Expenses,Rent,5000
+Operating Expenses,Utilities,1000
+Operating Expenses,Other,800.00
+Summary,Gross Profit,5800.0
+Summary,Operating Income,-3000.00
+Summary,Net Income,-2950.00

@@ -1,0 +1,18 @@
+Category,Item,Amount
+Assets - Current Assets,Cash,5000.0
+Assets - Current Assets,Accounts Receivable,2000.0
+Assets - Current Assets,Inventory,10000
+Assets - Current Assets,Prepaid Expenses,2000
+Assets - Fixed Assets,Equipment,50000
+Assets - Fixed Assets,Furniture,15000
+Assets - Fixed Assets,Accumulated Depreciation,-10000
+Assets,Total Current Assets,19000.0
+Assets,Total Fixed Assets,55000
+Liabilities - Current Liabilities,Accounts Payable,3000.00
+Liabilities - Current Liabilities,Accrued Expenses,3000
+Liabilities - Current Liabilities,Short Term Debt,5000
+Liabilities - Long Term Liabilities,Long Term Debt,20000
+Liabilities,Total Current Liabilities,11000.00
+Liabilities,Total Long Term Liabilities,20000
+Equity,Capital,50000
+Equity,Retained Earnings,7000.00

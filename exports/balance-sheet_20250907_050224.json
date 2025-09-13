@@ -1,0 +1,37 @@
+{
+  "as_of_date": "2025-09-07",
+  "assets": {
+    "current_assets": {
+      "cash": "5000.0",
+      "accounts_receivable": "2000.0",
+      "inventory": "10000",
+      "prepaid_expenses": "2000"
+    },
+    "fixed_assets": {
+      "equipment": "50000",
+      "furniture": "15000",
+      "accumulated_depreciation": "-10000"
+    },
+    "total_current_assets": "19000.0",
+    "total_fixed_assets": "55000"
+  },
+  "liabilities": {
+    "current_liabilities": {
+      "accounts_payable": "3000.00",
+      "accrued_expenses": "3000",
+      "short_term_debt": "5000"
+    },
+    "long_term_liabilities": {
+      "long_term_debt": "20000"
+    },
+    "total_current_liabilities": "11000.00",
+    "total_long_term_liabilities": "20000"
+  },
+  "equity": {
+    "capital": "50000",
+    "retained_earnings": "7000.00"
+  },
+  "total_assets": "74000.0",
+  "total_liabilities": "31000.00",
+  "total_equity": "43000.00"
+}

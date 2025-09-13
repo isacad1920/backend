@@ -1,0 +1,574 @@
+generator client {
+  provider                    = "prisma-client-py"
+  enable_experimental_decimal = "true"
+  interface                   = "asyncio"
+  recursive_type_depth        = "-1"
+  output                      = "../generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id              Int             @id @default(autoincrement())
+  username        String          @unique
+  email           String?          @unique
+  firstName       String          @map("first_name")
+  lastName        String          @map("last_name")
+  hashedPassword  String          @map("hashed_password")
+  role            Role            @default(CASHIER)
+  isActive        Boolean         @default(true) @map("is_active")
+  branchId       Int?            @map("branch_id")
+  branch         Branch?       @relation(fields: [branchId], references: [id])
+  createdAt       DateTime        @default(now()) @map("created_at")
+  updatedAt       DateTime        @updatedAt @map("updated_at")
+  auditLogs       AuditLog[]
+  permissions     UserPermission[]
+  notifications   Notification[]
+  revokedTokens   RevokedToken[]
+  stockAdjustments StockAdjustment[]
+
+ 
+  Sale        Sale[]        @relation("SaleCreator")
+  deletedSales Sale[]       @relation("SaleDeleter")
+  Payment     Payment[]
+  Backup Backup[]
+  requestedOrders BranchOrder[] @relation("RequestedOrders")
+  approvedOrders BranchOrder[] @relation("ApprovedOrders")
+  sentOrders BranchOrder[] @relation("SentOrders")
+  receivedOrders BranchOrder[] @relation("ReceivedOrders")
+
+  @@map("users")
+}
+
+model UserPermission {
+  id        Int             @id @default(autoincrement())
+  user      User     @relation(fields: [userId], references: [id])
+  userId    Int
+  resource  String   // e.g. "sale", "inventory", "stock", "customer", "report"
+  actions   Json     // { "create": true, "read": true, "update": false, "delete": false }
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+}
+
+
+model Branch {
+  id                 Int                 @id @default(autoincrement())
+  name               String              @unique
+  address            String?
+  phone              String?
+  isActive           Boolean             @default(true) @map("is_active")
+  createdAt          DateTime            @default(now()) @map("created_at")
+  updatedAt          DateTime            @updatedAt @map("updated_at")
+  users              User[]
+  Sale Sale[]
+  Account Account[]
+
+  @@map("branches")
+  BranchOrder BranchOrder[]
+}
+
+model Product {
+  id                  Int                 @id @default(autoincrement())
+  sku                 String              @unique
+  name                String
+  barcode             String?             @unique
+  description         String?
+  costPrice     Decimal @db.Decimal(15,2)
+  sellingPrice  Decimal @db.Decimal(15,2)
+  categoryId    Int?
+  category      Category? @relation(fields: [categoryId], references: [id])
+  createdAt           DateTime            @default(now()) @map("created_at")
+  updatedAt           DateTime            @updatedAt @map("updated_at")
+  stocks              Stock[]
+  stockAdjustments    StockAdjustment[]
+
+  @@map("products")
+}
+
+model Category {
+  id          Int      @id @default(autoincrement())
+  name        String    @unique
+  description String?
+  // Test suite expects a status on Category; add simple enum-backed status
+  status      CategoryStatus @default(ACTIVE)
+  createdAt   DateTime  @default(now()) @map("created_at")
+  updatedAt   DateTime  @updatedAt @map("updated_at")
+  products    Product[]
+
+  @@map("categories")
+}
+
+enum CategoryStatus {
+  ACTIVE
+  INACTIVE
+}
+
+model Stock {
+  id            Int         @id @default(autoincrement())
+  productId     Int         @map("product_id")
+  product       Product     @relation(fields: [productId], references: [id])
+  quantity      Int         @default(0)
+  lastRestocked DateTime?   @map("last_restocked")
+  createdAt     DateTime    @default(now()) @map("created_at")
+  updatedAt     DateTime    @updatedAt @map("updated_at")
+  SaleItem SaleItem[]
+  BranchOrderItem BranchOrderItem[]
+
+  @@map("stocks")
+} 
+
+model Customer {
+  id            Int            @id @default(autoincrement())
+  name          String
+  email         String?        @unique
+  phone         String?        @unique
+  address       String?
+  type          CustomerType   @default(INDIVIDUAL)
+  creditLimit   Decimal        @db.Decimal(15,2) @default(0) @map("credit_limit")
+  balance       Decimal        @db.Decimal(15,2) @default(0)
+  totalPurchases Decimal       @db.Decimal(15,2) @default(0) @map("total_purchases")
+  status        CustomerStatus @default(ACTIVE)
+  notes         String?
+  Sale          Sale[]
+  createdAt     DateTime       @default(now()) @map("created_at")
+  updatedAt     DateTime       @updatedAt @map("updated_at")
+
+  @@map("customers")
+}
+
+model Sale {
+  id          Int          @id @default(autoincrement())
+  branchId    Int
+  branch      Branch  @relation(fields: [branchId], references: [id])
+  totalAmount Decimal @db.Decimal(15,2)
+  discount    Decimal @db.Decimal(15,2)      @default(0)
+  paymentType PaymentType @default(FULL)
+  customerId  Int?
+  customer    Customer?   @relation(fields: [customerId], references: [id])
+  userId      Int
+  user        User        @relation("SaleCreator", fields: [userId], references: [id])
+  items       SaleItem[]
+  payments    Payment[]
+  returns     ReturnSale[]
+  createdAt   DateTime     @default(now()) @map("created_at")
+  updatedAt   DateTime     @updatedAt @map("updated_at")
+  deletedAt   DateTime?    @map("deleted_at")
+  deletedById Int?         @map("deleted_by_id")
+  deletedBy   User?        @relation("SaleDeleter", fields: [deletedById], references: [id])
+
+  @@map("sales")
+}
+
+model SaleItem {
+  id        Int             @id @default(autoincrement())
+  saleId    Int
+  sale      Sale     @relation(fields: [saleId], references: [id])
+  stockId   Int
+  stock     Stock    @relation(fields: [stockId], references: [id])
+  quantity  Int
+  price     Decimal @db.Decimal(15,2)    // price at the time of sale
+  subtotal  Decimal @db.Decimal(15,2)
+
+  ReturnItem ReturnItem[]
+}
+
+model ReturnSale {
+  id          Int         @id @default(autoincrement())
+  originalId  Int
+  original    Sale       @relation(fields: [originalId], references: [id])
+  items       ReturnItem[]
+  reason      String?
+  refund      Payment[]    // money refunded
+  createdAt   DateTime     @default(now())  @map("created_at")
+  updatedAt   DateTime     @updatedAt @map("updated_at")
+
+  @@map("return_sales")
+}
+
+model ReturnItem {
+  id         Int       @id @default(autoincrement())
+  returnId   Int
+  returnSale ReturnSale @relation(fields: [returnId], references: [id])
+  saleItemId Int
+  saleItem   SaleItem   @relation(fields: [saleItemId], references: [id])
+  quantity   Int
+  refundAmount Decimal @db.Decimal(15,2)
+
+  @@map("return_items")
+}
+model Payment {
+  id          Int             @id @default(autoincrement())
+  saleId      Int
+  sale        Sale           @relation(fields: [saleId], references: [id])
+  accountId   Int
+  account     Account        @relation(fields: [accountId], references: [id])
+  returnId    Int?        @map("return_id")
+  returnSale ReturnSale?    @relation(fields: [returnId], references: [id])
+  userId      Int
+  user        User           @relation(fields: [userId], references: [id])
+  amount      Decimal @db.Decimal(15,2)
+  currency    Currency       @default(USD)
+  createdAt   DateTime       @default(now()) @map("created_at")
+  updatedAt   DateTime       @updatedAt @map("updated_at")
+
+  @@map("payments")
+}
+model JournalEntry {
+  id          Int             @id @default(autoincrement())
+  referenceType String?           // e.g. "Sale", "Payment", "Transfer"
+  referenceId   Int?              // business record ID
+  lines     JournalEntryLine[]
+  date      DateTime           @default(now()) @map("created_at")
+  updatedAt DateTime           @updatedAt @map("updated_at")
+
+  @@map("journal_entries")
+}
+
+model JournalEntryLine {
+  id          Int          @id @default(autoincrement())
+  entryId     Int
+  entry       JournalEntry @relation(fields: [entryId], references: [id])
+  account     Account      @relation(fields: [accountId], references: [id])
+  accountId   Int
+  debit       Decimal @db.Decimal(15,2)        @default(0)
+  credit      Decimal @db.Decimal(15,2)        @default(0)
+  description String?
+
+  @@map("journal_entry_lines")
+}
+
+
+enum AccountType {
+  ASSET
+  LIABILITY
+  EQUITY
+  REVENUE
+  EXPENSE
+  OTHER
+}
+
+model Account {
+  id             Int               @id @default(autoincrement())
+  name           String
+  type           AccountType
+  currency       Currency          @default(USD)
+  balance        Decimal           @default(0) @db.Decimal(15, 2)
+  branchId       Int?              @map("branch_id")
+  branch         Branch?           @relation(fields: [branchId], references: [id])
+  createdAt      DateTime          @default(now()) @map("created_at")
+  updatedAt      DateTime          @updatedAt @map("updated_at")
+  entries        JournalEntryLine[]
+  payments       Payment[]
+  outgoingTransfers AccountTransfer[] @relation("fromAccount")
+  incomingTransfers AccountTransfer[] @relation("toAccount")
+
+  @@map("accounts")
+}
+model AccountTransfer {
+  id            Int             @id @default(autoincrement())
+  fromAccount   Account  @relation("fromAccount", fields: [fromAccountId], references: [id])
+  fromAccountId Int
+
+  toAccount     Account  @relation("toAccount", fields: [toAccountId], references: [id])
+  toAccountId   Int
+
+  amount        Decimal @db.Decimal(15,2)
+  currency      Currency
+  rateApplied   Decimal? @db.Decimal(15,2)       // if currency conversion happens
+  note          String?
+
+  status        TransferStatus @default(PENDING)
+
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @updatedAt @map("updated_at")
+
+  @@map("account_transfers")
+}
+
+model BranchOrder {
+  id            Int             @id @default(autoincrement())
+  branchId      Int
+  branch        Branch  @relation(fields: [branchId], references: [id])
+
+  requestedById Int         // user who created the request
+  requestedBy   User           @relation("RequestedOrders", fields: [requestedById], references: [id])
+  
+  approvedById  Int?        // stockroom staff who approved
+  approvedBy    User?          @relation("ApprovedOrders", fields: [approvedById], references: [id])
+  
+  sentById      Int?        // stockroom staff who dispatched
+  sentBy        User?          @relation("SentOrders", fields: [sentById], references: [id])
+  
+  receivedById  Int?        // branch staff who confirmed receipt
+  receivedBy    User?          @relation("ReceivedOrders", fields: [receivedById], references: [id])
+  
+  items         BranchOrderItem[]
+  status        BranchOrderStatus @default(PENDING)
+  
+  createdAt     DateTime       @default(now())  @map("created_at")
+  updatedAt     DateTime       @updatedAt @map("updated_at")
+  @@map("branch_orders")
+}
+
+model BranchOrderItem {
+  id             Int         @id @default(autoincrement())
+  branchOrderId  Int
+  branchOrder    BranchOrder  @relation(fields: [branchOrderId], references: [id])
+  
+  stockId        Int
+  stock          Stock        @relation(fields: [stockId], references: [id])
+  
+  requestedQty   Int
+  approvedQty    Int?          @default(0)
+  sentQty        Int?          @default(0)
+  receivedQty    Int?          @default(0)
+
+  @@map("branch_order_items")
+}
+
+enum BranchOrderStatus {
+  PENDING      // branch created order, waiting approval
+  APPROVED     // stockroom manager approved order
+  SENT         // stockroom dispatched items
+  RECEIVED     // branch confirmed receipt
+  CANCELLED
+}
+
+
+model AuditLog {
+  id          Int             @id @default(autoincrement())
+  user        User?    @relation(fields: [userId], references: [id])
+  userId      Int?
+
+  action      AuditAction   // controlled values instead of free text
+  entityType  String?       // e.g., "Sale", "User", "Account"
+  entityId    String?       // ID of the entity affected
+
+  oldValues   Json?         // before change (if applicable)
+  newValues   Json?         // after change (if applicable)
+  severity    AuditSeverity @default(INFO)
+
+  ipAddress   String?       // user’s IP
+  userAgent   String?       // device/browser info
+  createdAt   DateTime @default(now()) @map("created_at")
+}
+
+model SystemInfo {
+  id            Int             @id @default(autoincrement())
+  systemName    String        // e.g. "SOM POS System"
+  version       String?       // e.g. "v1.0.0"
+  environment   Environment   // DEV, STAGING, PROD
+  companyName   String?
+  companyEmail  String?
+  companyPhone  String?
+  companyAddress String?
+  baseCurrency  Currency      // main reporting currency
+  timezone      String?       // e.g. "Africa/Mogadishu"
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @updatedAt @map("updated_at")
+
+  @@map("system_info")
+}
+
+enum Environment {
+  DEV
+  STAGING
+  PROD
+}
+
+
+model Backup {
+  id          Int             @id @default(autoincrement())
+  type        BackupType    // FULL, INCREMENTAL, FILES, DB
+  location    String        // path, S3 bucket, or external storage URI
+  fileName    String?       // name of the backup file
+  sizeMB      Float?        // backup size in MB
+  status      BackupStatus  // SUCCESS, FAILED, PENDING
+  errorLog    String?       // error message if failed
+  createdBy   User?    @relation(fields: [createdById], references: [id])
+  createdById Int?
+  createdAt   DateTime @default(now()) @map("created_at")
+  completedAt DateTime? @map("completed_at")
+
+  @@map("backups")
+}
+
+/// Persistent JWT revocation store (blacklisted tokens by JTI)
+model RevokedToken {
+  id         Int      @id @default(autoincrement())
+  jti        String   @unique
+  token      String
+  reason     String?
+  expiresAt  DateTime
+  revokedBy  Int?
+  createdAt  DateTime @default(now()) @map("created_at")
+  user       User?    @relation(fields: [revokedBy], references: [id])
+  @@map("revoked_tokens")
+}
+
+enum BackupType {
+  FULL
+  INCREMENTAL
+  FILES
+  DB
+}
+
+enum BackupStatus {
+  PENDING
+  SUCCESS
+  FAILED
+}
+
+
+enum Role {
+  ADMIN
+  MANAGER
+  CASHIER
+  INVENTORY_CLERK
+  ACCOUNTANT
+}
+
+enum AuditAction {
+  CREATE
+  UPDATE
+  DELETE
+  LOGIN
+  LOGOUT
+  TRANSFER
+  PAYMENT
+  EXPENSE
+  BACKUP
+  RESTORE
+  CONFIG
+}
+
+
+enum PaymentType {
+  FULL
+  PARTIAL
+  UNPAID
+}
+
+
+enum TransferStatus {
+  PENDING
+  SENT
+  RECEIVED_PARTIAL
+  RECEIVED_FULL
+  CANCELLED
+}
+
+enum ReturnStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  COMPLETED
+}
+
+enum ReturnType {
+  REFUND_ONLY
+  EXCHANGE_ONLY
+  EXCHANGE_WITH_PAYMENT
+  EXCHANGE_WITH_REFUND
+}
+
+enum Currency {
+  USD
+  SLSH
+  ETB
+}
+
+enum CustomerType {
+  INDIVIDUAL 
+  COMPANY
+}
+
+enum CustomerStatus {
+  ACTIVE
+  INACTIVE
+  BLACKLISTED
+}
+
+enum AuditSeverity {
+  INFO
+  WARNING
+  ERROR
+  CRITICAL
+}
+
+enum DebitCredit {
+  DEBIT
+  CREDIT
+}
+
+/// Key-value store for persistent application settings (e.g., branding_*)
+model SystemSetting {
+  id         Int      @id @default(autoincrement())
+  key        String   @unique
+  value      String
+  createdAt  DateTime @default(now()) @map("created_at")
+  updatedAt  DateTime @updatedAt @map("updated_at")
+
+  @@map("system_settings")
+}
+
+
+model Notification {
+  id         Int      @id @default(autoincrement())
+  user       User     @relation(fields: [userId], references: [id])
+  userId     Int
+  type       String   @default("info")
+  title      String
+  message    String
+  data       Json?
+  read       Boolean  @default(false)
+  createdAt  DateTime @default(now()) @map("created_at")
+  updatedAt  DateTime @updatedAt @map("updated_at")
+
+  @@map("notifications")
+}
+
+/// Records of stock adjustments (inventory corrections, damage, recounts, etc.)
+model StockAdjustment {
+  id               Int             @id @default(autoincrement())
+  product          Product         @relation(fields: [productId], references: [id])
+  productId        Int             @map("product_id")
+  adjustmentType   AdjustmentType  @map("adjustment_type")
+  reason           AdjustmentReason @map("reason")
+  quantityBefore   Int             @map("quantity_before")
+  quantityAfter    Int             @map("quantity_after")
+  adjustmentQty    Int             @map("adjustment_qty")
+  notes            String?         @db.Text
+  referenceNumber  String?         @map("reference_number")
+  createdBy        User?           @relation(fields: [createdById], references: [id])
+  createdById      Int?            @map("created_by")
+  createdAt        DateTime        @default(now()) @map("created_at")
+
+  @@map("stock_adjustments")
+  @@index([productId])
+  @@index([createdById])
+}
+
+enum AdjustmentType {
+  INCREASE
+  DECREASE
+  RECOUNT
+  DAMAGED
+  EXPIRED
+  THEFT
+  RETURNED
+}
+
+enum AdjustmentReason {
+  physical_count
+  damage
+  expiry
+  theft
+  supplier_return
+  customer_return
+  correction
+  other
+}
