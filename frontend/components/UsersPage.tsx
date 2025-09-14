@@ -155,6 +155,11 @@ export function UsersPage() {
 
   const [permissionsLoading, setPermissionsLoading] = useState(false);
   const [showAllPermissions, setShowAllPermissions] = useState(false);
+  // Edit user modal state
+  const [showEdit, setShowEdit] = useState(false);
+  const [editSubmitting, setEditSubmitting] = useState(false);
+  const [editError, setEditError] = useState<string | null>(null);
+  const [editData, setEditData] = useState<{ firstName: string; lastName: string; email: string; role: Role; branchId?: number | '' } | null>(null);
 
   const handleCreateUser = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -545,9 +550,23 @@ export function UsersPage() {
                 </CardHeader>
                 <CardContent className="space-y-2">
                   <PermissionGuard anyOf={['users:update']} fallback={null}>
-                    <Button className="w-full bg-white/20 hover:bg-white/30 text-white border border-white/30">
+                    <Button
+                      className="w-full bg-white/20 hover:bg-white/30 text-white border border-white/30"
+                      onClick={() => {
+                        if (!selectedUser) return;
+                        setEditData({
+                          firstName: selectedUser.firstName || '',
+                          lastName: selectedUser.lastName || '',
+                          email: selectedUser.email || '',
+                          role: selectedUser.role as Role,
+                          branchId: (selectedUser as any).branchId ?? ''
+                        });
+                        setEditError(null);
+                        setShowEdit(true);
+                      }}
+                    >
                       <Edit className="w-4 h-4 mr-2" />
-                      Edit User (Soon)
+                      Edit User
                     </Button>
                   </PermissionGuard>
                   <PermissionGuard anyOf={['users:update']} fallback={null}>
@@ -693,6 +712,93 @@ export function UsersPage() {
               >
                 {createSubmitting && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
                 Create User
+              </Button>
+            </div>
+          </form>
+        </div>
+      </div>
+    )}
+    {showEdit && editData && selectedUser && (
+      <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
+        <div className="w-full max-w-lg bg-zinc-900 border border-white/20 rounded-lg shadow-xl overflow-hidden animate-in fade-in zoom-in">
+          <form
+            onSubmit={async (e) => {
+              e.preventDefault();
+              if (!selectedUser) return;
+              setEditSubmitting(true);
+              setEditError(null);
+              const optimistic = { ...selectedUser, ...editData } as EnrichedUser;
+              setUsers(prev => prev.map(u => u.id === selectedUser.id ? optimistic : u));
+              setSelectedUser(optimistic);
+              try {
+                const payload: any = {
+                  firstName: editData.firstName.trim(),
+                  lastName: editData.lastName.trim(),
+                  email: editData.email.trim(),
+                  role: editData.role,
+                  branchId: editData.branchId === '' ? undefined : editData.branchId
+                };
+                const updated = await usersService.updateUser(selectedUser.id, payload);
+                setUsers(prev => prev.map(u => u.id === selectedUser.id ? { ...optimistic, ...updated } : u));
+                setSelectedUser(prev => prev && prev.id === selectedUser.id ? { ...prev, ...updated } as EnrichedUser : prev);
+                setShowEdit(false);
+                push({ type: 'success', title: 'User Updated', message: `${updated.username || updated.email} saved.` });
+              } catch (err: any) {
+                setEditError(err?.message || 'Failed to update user');
+                // rollback
+                setUsers(prev => prev.map(u => u.id === selectedUser.id ? selectedUser : u));
+                setSelectedUser(selectedUser);
+              } finally {
+                setEditSubmitting(false);
+              }
+            }}
+            className="flex flex-col max-h-[90vh]"
+          >
+            <div className="flex items-center justify-between px-5 py-4 border-b border-white/10">
+              <h2 className="text-white text-lg font-medium">Edit User</h2>
+              <button type="button" onClick={() => setShowEdit(false)} className="text-white/60 hover:text-white">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            <div className="px-5 py-4 space-y-4 overflow-y-auto">
+              {editError && (
+                <div className="bg-red-500/10 border border-red-500/30 text-red-300 text-sm p-2 rounded flex items-start">
+                  <AlertTriangle className="w-4 h-4 mr-2 mt-0.5" /> {editError}
+                </div>
+              )}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-xs uppercase tracking-wide text-white/60 mb-1">First Name</label>
+                  <Input value={editData.firstName} onChange={e => setEditData(d => d && ({ ...d, firstName: e.target.value }))} className="bg-white/10 border border-white/20 text-white" />
+                </div>
+                <div>
+                  <label className="block text-xs uppercase tracking-wide text-white/60 mb-1">Last Name</label>
+                  <Input value={editData.lastName} onChange={e => setEditData(d => d && ({ ...d, lastName: e.target.value }))} className="bg-white/10 border border-white/20 text-white" />
+                </div>
+                <div>
+                  <label className="block text-xs uppercase tracking-wide text-white/60 mb-1">Email</label>
+                  <Input value={editData.email} type="email" onChange={e => setEditData(d => d && ({ ...d, email: e.target.value }))} className="bg-white/10 border border-white/20 text-white" />
+                </div>
+                <div>
+                  <label className="block text-xs uppercase tracking-wide text-white/60 mb-1">Role</label>
+                  <select value={editData.role} onChange={e => setEditData(d => d && ({ ...d, role: e.target.value as Role }))} className="w-full bg-white/10 border border-white/20 rounded px-2 py-2 text-white text-sm">
+                    {['ADMIN','MANAGER','CASHIER','ACCOUNTANT','INVENTORY_CLERK'].map(r => <option key={r} value={r}>{r.replace('_',' ')}</option>)}
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-xs uppercase tracking-wide text-white/60 mb-1">Branch</label>
+                  <select value={editData.branchId ?? ''} onChange={e => setEditData(d => d && ({ ...d, branchId: e.target.value === '' ? '' : Number(e.target.value) }))} className="w-full bg-white/10 border border-white/20 rounded px-2 py-2 text-white text-sm">
+                    <option value="">Unassigned</option>
+                    {branches.map(b => <option key={b.id} value={b.id}>{b.name}</option>)}
+                  </select>
+                </div>
+              </div>
+            </div>
+            <div className="px-5 py-4 border-t border-white/10 flex items-center justify-end gap-2 bg-white/5">
+              <Button type="button" variant="ghost" className="text-white/70 hover:text-white" onClick={() => setShowEdit(false)}>Cancel</Button>
+              <Button type="submit" disabled={editSubmitting} className="bg-white/20 hover:bg-white/30 text-white border border-white/30 disabled:opacity-50">
+                {editSubmitting && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
+                Save Changes
               </Button>
             </div>
           </form>

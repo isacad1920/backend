@@ -5,11 +5,14 @@ import { Input } from './ui/input';
 import { Badge } from './ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from './ui/table';
 import { Avatar, AvatarFallback, AvatarImage } from './ui/avatar';
-import { Plus, Search, Users, DollarSign, ShoppingCart, Calendar, Eye, Edit, Mail, Phone, Loader2 } from 'lucide-react';
+import { Plus, Search, Users, DollarSign, ShoppingCart, Calendar, Eye, Edit, Mail, Phone, Loader2, Trash2, AlertTriangle } from 'lucide-react';
 import { customerService } from '../services/customers';
-import type { Customer } from '../types';
+import type { Customer, CreateCustomerRequest, CustomerType, CustomerStatus } from '../types';
+import { Currency, CustomerType as CTEnum } from '../types';
 import { useAuth } from '../context/AuthContext';
 import { PermissionGuard } from '../context/AuthContext';
+import { useToast } from '../context/ToastContext';
+import { useConfirm } from './ConfirmDialog';
 
 interface EnrichedCustomer extends Customer {
   // Backend may not provide these analytics yet; placeholders until endpoints exist
@@ -22,15 +25,30 @@ interface EnrichedCustomer extends Customer {
 
 export function CustomersPage() {
   const { hasPermission } = useAuth();
+  const { push } = useToast();
+  const { confirm, dialog: confirmDialog } = useConfirm();
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
+  const [typeFilter, setTypeFilter] = useState<'all' | CustomerType>('all');
   const [selectedCustomer, setSelectedCustomer] = useState<EnrichedCustomer | null>(null);
   const [customers, setCustomers] = useState<EnrichedCustomer[]>([]);
+  const [createOpen, setCreateOpen] = useState(false);
+  const [editOpen, setEditOpen] = useState(false);
+  const [createSubmitting, setCreateSubmitting] = useState(false);
+  const [editSubmitting, setEditSubmitting] = useState(false);
+  const [deleteSubmitting, setDeleteSubmitting] = useState<number | null>(null);
+  const [createError, setCreateError] = useState<string | null>(null);
+  const [editError, setEditError] = useState<string | null>(null);
+
+  const [newCustomer, setNewCustomer] = useState<CreateCustomerRequest>({ customerNumber: '', name: '', type: CTEnum.INDIVIDUAL, creditLimit: '0', currency: Currency.USD });
+  const [editDraft, setEditDraft] = useState<Partial<Customer> | null>(null);
   const [page, setPage] = useState(1);
   const [size, setSize] = useState(10);
   const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [balanceLoadingId, setBalanceLoadingId] = useState<number | null>(null);
+  const balanceLoadedRef = React.useRef<Set<number>>(new Set());
 
   const debouncedFetchRef = React.useRef<number | null>(null);
 
@@ -44,6 +62,8 @@ export function CustomersPage() {
         page: override?.page ?? page,
         size: override?.size ?? size,
         q: (searchVal ? searchVal : undefined),
+        type: typeFilter === 'all' ? undefined : typeFilter,
+        status: statusFilter === 'all' ? undefined : statusFilter.toUpperCase() as CustomerStatus
       });
       setCustomers(resp.items as EnrichedCustomer[]);
       setTotal(resp.pagination.total);
@@ -52,7 +72,7 @@ export function CustomersPage() {
     } finally {
       setLoading(false);
     }
-  }, [page, size, searchTerm, hasPermission]);
+  }, [page, size, searchTerm, hasPermission, typeFilter, statusFilter]);
 
   // Initial load
   useEffect(() => { fetchCustomers(); }, []); // eslint-disable-line react-hooks/exhaustive-deps
@@ -67,11 +87,28 @@ export function CustomersPage() {
     return () => { if (debouncedFetchRef.current) window.clearTimeout(debouncedFetchRef.current); };
   }, [searchTerm, fetchCustomers]);
 
-  const filteredCustomers = customers.filter(c => {
-    const statusVal = (c as any).status || (c as any).tagStatus || 'active';
-    const matchesStatus = statusFilter === 'all' || statusVal === statusFilter;
-    return matchesStatus;
-  });
+  const filteredCustomers = customers; // server side filters now include status/type
+
+  // Fetch customer balance when a customer is selected and balance not yet loaded
+  useEffect(() => {
+    const target = selectedCustomer;
+    if (!target) return;
+    if (target.balance !== undefined) return; // already has balance
+    if (balanceLoadedRef.current.has(target.id)) return; // fetched before this session
+    (async () => {
+      try {
+        setBalanceLoadingId(target.id);
+        const { balance } = await customerService.getCustomerBalance(target.id);
+        balanceLoadedRef.current.add(target.id);
+        setCustomers(prev => prev.map(c => c.id === target.id ? { ...c, balance } as any : c));
+        setSelectedCustomer(prev => (prev && prev.id === target.id) ? { ...prev, balance } as any : prev);
+      } catch (err) {
+        // silent fail; could add toast if desired
+      } finally {
+        setBalanceLoadingId(null);
+      }
+    })();
+  }, [selectedCustomer]);
 
   const getStatusColor = (status: string): string => {
     switch (status) {
@@ -86,6 +123,62 @@ export function CustomersPage() {
     return name.split(' ').map((n: string) => n[0]).join('').toUpperCase();
   };
 
+  const startCreate = () => { setNewCustomer({ customerNumber: `CUST-${Date.now()}`, name: '', type: CTEnum.INDIVIDUAL, creditLimit: '0', currency: Currency.USD }); setCreateError(null); setCreateOpen(true); };
+  const startEdit = (c: EnrichedCustomer) => { setSelectedCustomer(c); setEditDraft({ name: c.name, email: c.email, phone: (c as any).phone, address: c.address, type: c.type, creditLimit: c.creditLimit, currency: c.currency, isActive: c.isActive }); setEditError(null); setEditOpen(true); };
+
+  const handleCreate = async (e: React.FormEvent) => {
+    e.preventDefault(); if (!newCustomer.name.trim()) { setCreateError('Name required'); return; }
+    setCreateSubmitting(true); setCreateError(null);
+  const optimistic: EnrichedCustomer = { id: Date.now()*-1, customerNumber: newCustomer.customerNumber || `CUST-${Date.now()}`, name: newCustomer.name.trim(), email: newCustomer.email, phone: newCustomer.phone, address: (newCustomer as any).address, type: newCustomer.type, creditLimit: newCustomer.creditLimit || '0', currency: newCustomer.currency, isActive: true, createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() } as any;
+    setCustomers(prev => [optimistic, ...prev]);
+    try {
+      const created = await customerService.createCustomer({ ...newCustomer, name: optimistic.name, customerNumber: optimistic.customerNumber });
+      setCustomers(prev => prev.map(c => c.id === optimistic.id ? ({ ...optimistic, ...created }) : c));
+      push({ type: 'success', title: 'Customer Created', message: created.name });
+  setCreateOpen(false); setNewCustomer({ customerNumber: '', name: '', type: CTEnum.INDIVIDUAL, creditLimit: '0', currency: Currency.USD });
+      fetchCustomers();
+    } catch (err: any) {
+      setCustomers(prev => prev.filter(c => c.id !== optimistic.id));
+      setCreateError(err?.message || 'Create failed');
+    } finally { setCreateSubmitting(false); }
+  };
+
+  const handleEdit = async (e: React.FormEvent) => {
+    e.preventDefault(); if (!selectedCustomer || !editDraft) return; if (!editDraft.name?.trim()) { setEditError('Name required'); return; }
+    setEditSubmitting(true); setEditError(null);
+    const original = selectedCustomer;
+    const optimistic = { ...selectedCustomer, ...editDraft, name: editDraft.name.trim(), updatedAt: new Date().toISOString() } as EnrichedCustomer;
+    setCustomers(prev => prev.map(c => c.id === original.id ? optimistic : c));
+    setSelectedCustomer(optimistic);
+    try {
+      const updated = await customerService.updateCustomer(original.id, { name: optimistic.name, email: optimistic.email, phone: (optimistic as any).phone, address: optimistic.address, type: optimistic.type, creditLimit: optimistic.creditLimit, currency: optimistic.currency });
+      setCustomers(prev => prev.map(c => c.id === original.id ? ({ ...optimistic, ...updated }) : c));
+      setSelectedCustomer(prev => prev && prev.id === original.id ? ({ ...optimistic, ...updated }) : prev);
+      push({ type: 'success', title: 'Customer Updated', message: updated.name });
+      setEditOpen(false);
+    } catch (err: any) {
+      setCustomers(prev => prev.map(c => c.id === original.id ? original : c));
+      setSelectedCustomer(original);
+      setEditError(err?.message || 'Update failed');
+    } finally { setEditSubmitting(false); }
+  };
+
+  const handleDelete = async (c: EnrichedCustomer) => {
+    const ok = await confirm(); if (!ok) return;
+    setDeleteSubmitting(c.id);
+    const prev = customers;
+    setCustomers(list => list.filter(x => x.id !== c.id));
+    if (selectedCustomer?.id === c.id) setSelectedCustomer(null);
+    try {
+      await customerService.deleteCustomer(c.id);
+      push({ type: 'success', message: 'Customer deleted' });
+      fetchCustomers();
+    } catch (err: any) {
+      setCustomers(prev);
+      push({ type: 'error', title: 'Delete Failed', message: err?.message || 'Unable to delete customer' });
+    } finally { setDeleteSubmitting(null); }
+  };
+
   return (
     <div className="p-6 space-y-6">
       {/* Header */}
@@ -96,9 +189,8 @@ export function CustomersPage() {
         </div>
         <div className="flex space-x-2">
           <PermissionGuard anyOf={['customers:create']} fallback={null}>
-            <Button className="bg-white/20 hover:bg-white/30 text-white border border-white/30">
-              <Plus className="w-4 h-4 mr-2" />
-              Add Customer
+            <Button className="bg-white/20 hover:bg-white/30 text-white border border-white/30" onClick={startCreate}>
+              <Plus className="w-4 h-4 mr-2" /> Add Customer
             </Button>
           </PermissionGuard>
           <Button variant="outline" className="border-white/30 text-white hover:bg-white/10">
@@ -176,20 +268,16 @@ export function CustomersPage() {
                   />
                 </div>
                 <div className="flex space-x-2">
-                  {['all', 'active', 'vip', 'inactive'].map(status => (
-                    <Button
-                      key={status}
-                      variant={statusFilter === status ? "default" : "outline"}
-                      size="sm"
-                      className={statusFilter === status 
-                        ? "bg-white/20 text-white border-white/30" 
-                        : "border-white/30 text-white hover:bg-white/10"
-                      }
-                      onClick={() => setStatusFilter(status)}
-                    >
-                      {status.charAt(0).toUpperCase() + status.slice(1)}
-                    </Button>
-                  ))}
+                  <select value={statusFilter} onChange={e=>{ setStatusFilter(e.target.value); setPage(1); fetchCustomers({ page:1 }); }} className="bg-white/10 border-white/20 text-white text-xs rounded px-2 py-2">
+                    <option value="all">All Status</option>
+                    <option value="ACTIVE">Active</option>
+                    <option value="INACTIVE">Inactive</option>
+                  </select>
+                  <select value={typeFilter} onChange={e=> { setTypeFilter(e.target.value as any); setPage(1); fetchCustomers({ page:1 }); }} className="bg-white/10 border-white/20 text-white text-xs rounded px-2 py-2">
+                    <option value="all">All Types</option>
+                    <option value="INDIVIDUAL">Individual</option>
+                    <option value="COMPANY">Company</option>
+                  </select>
                 </div>
               </div>
             </CardContent>
@@ -280,9 +368,16 @@ export function CustomersPage() {
                           <Button size="sm" variant="ghost" className="text-white/70 hover:text-white hover:bg-white/10">
                             <Eye className="w-4 h-4" />
                           </Button>
-                          <Button size="sm" variant="ghost" className="text-white/70 hover:text-white hover:bg-white/10">
-                            <Edit className="w-4 h-4" />
-                          </Button>
+                          <PermissionGuard anyOf={['customers:update']} fallback={null}>
+                            <Button size="sm" variant="ghost" className="text-white/70 hover:text-white hover:bg-white/10" onClick={(e)=>{ e.stopPropagation(); startEdit(customer); }}>
+                              <Edit className="w-4 h-4" />
+                            </Button>
+                          </PermissionGuard>
+                          <PermissionGuard anyOf={['customers:delete']} fallback={null}>
+                            <Button disabled={deleteSubmitting===customer.id} size="sm" variant="ghost" className="text-white/70 hover:text-white hover:bg-white/10" onClick={(e)=>{ e.stopPropagation(); handleDelete(customer); }}>
+                              {deleteSubmitting===customer.id ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
+                            </Button>
+                          </PermissionGuard>
                         </div>
                       </TableCell>
                     </TableRow>
@@ -376,13 +471,33 @@ export function CustomersPage() {
                       <p className="text-white">{selectedCustomer.orders ?? 0}</p>
                     </div>
                   </div>
-                  
                   <div className="space-y-2">
-                    <div className="flex justify-between">
-                      <span className="text-white/70 text-sm">A/R Balance</span>
-                      <span className={(selectedCustomer.arBalance ?? 0) > 0 ? "text-yellow-400" : "text-green-400"}>
-                        ${(selectedCustomer.arBalance ?? 0).toLocaleString()}
+                    <div className="flex justify-between items-center">
+                      <span className="text-white/70 text-sm">Balance</span>
+                      <span className="text-sm font-medium flex items-center gap-2">
+                        {balanceLoadingId === selectedCustomer.id && <Loader2 className="w-3 h-3 animate-spin text-white/50" />}
+                        {selectedCustomer.balance !== undefined ? (
+                          <span className={Number(selectedCustomer.balance) > 0 ? 'text-yellow-400' : 'text-green-400'}>
+                            ${Number(selectedCustomer.balance).toLocaleString()}
+                          </span>
+                        ) : (
+                          <span className="text-white/40">—</span>
+                        )}
                       </span>
+                    </div>
+                    <div className="flex justify-between items-center">
+                      <span className="text-white/70 text-sm">Credit Limit</span>
+                      <span className="text-white text-sm">${Number(selectedCustomer.creditLimit || 0).toLocaleString()} {selectedCustomer.currency}</span>
+                    </div>
+                    <div className="flex justify-between items-center">
+                      <span className="text-white/70 text-sm">Type</span>
+                      <Badge className="bg-white/10 border-white/20 text-white text-xs">{selectedCustomer.type}</Badge>
+                    </div>
+                    <div className="flex justify-between items-center">
+                      <span className="text-white/70 text-sm">Status</span>
+                      <Badge className={getStatusColor((selectedCustomer as any).status || 'active')}>
+                        {(selectedCustomer as any).status || 'active'}
+                      </Badge>
                     </div>
                     <div className="flex justify-between">
                       <span className="text-white/70 text-sm">Last Order</span>
@@ -429,6 +544,109 @@ export function CustomersPage() {
           )}
         </div>
       </div>
+      {createOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4">
+          <div className="bg-zinc-900 border border-white/10 rounded-lg w-full max-w-md">
+            <form onSubmit={handleCreate}>
+              <div className="p-4 border-b border-white/10 flex items-center justify-between">
+                <h2 className="text-white font-medium text-sm">Create Customer</h2>
+                <Button type="button" variant="ghost" size="sm" className="text-white/60 hover:text-white" onClick={()=> setCreateOpen(false)}>×</Button>
+              </div>
+              <div className="p-4 space-y-4">
+                {createError && <div className="text-xs text-red-400">{createError}</div>}
+                <div className="space-y-1">
+                  <label className="text-xs text-white/70">Name *</label>
+                  <Input value={newCustomer.name} onChange={e=> setNewCustomer(c=> ({ ...c, name: e.target.value }))} className="bg-white/10 border-white/20 text-white" placeholder="Customer name" />
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-1">
+                    <label className="text-xs text-white/70">Email</label>
+                    <Input value={newCustomer.email||''} onChange={e=> setNewCustomer(c=> ({ ...c, email: e.target.value }))} className="bg-white/10 border-white/20 text-white" placeholder="Email" />
+                  </div>
+                  <div className="space-y-1">
+                    <label className="text-xs text-white/70">Phone</label>
+                    <Input value={(newCustomer as any).phone||''} onChange={e=> setNewCustomer(c=> ({ ...c, phone: e.target.value } as any))} className="bg-white/10 border-white/20 text-white" placeholder="Phone" />
+                  </div>
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-1">
+                    <label className="text-xs text-white/70">Type</label>
+                    <select value={newCustomer.type} onChange={e=> setNewCustomer(c=> ({ ...c, type: e.target.value as CustomerType }))} className="bg-white/10 border-white/20 text-white text-sm rounded px-2 py-2 w-full">
+                      <option value="INDIVIDUAL">Individual</option>
+                      <option value="COMPANY">Company</option>
+                    </select>
+                  </div>
+                  <div className="space-y-1">
+                    <label className="text-xs text-white/70">Credit Limit</label>
+                    <Input value={newCustomer.creditLimit} onChange={e=> setNewCustomer(c=> ({ ...c, creditLimit: e.target.value }))} className="bg-white/10 border-white/20 text-white" placeholder="0" />
+                  </div>
+                </div>
+                <div className="space-y-1">
+                  <label className="text-xs text-white/70">Address</label>
+                  <Input value={(newCustomer as any).address||''} onChange={e=> setNewCustomer(c=> ({ ...c, address: e.target.value } as any))} className="bg-white/10 border-white/20 text-white" placeholder="Address" />
+                </div>
+              </div>
+              <div className="p-4 border-t border-white/10 flex items-center justify-end gap-2 bg-black/20 rounded-b-lg">
+                <Button type="button" variant="ghost" className="text-white/70 hover:text-white" onClick={()=> setCreateOpen(false)} disabled={createSubmitting}>Cancel</Button>
+                <Button type="submit" className="bg-white/20 hover:bg-white/30 text-white border border-white/30" disabled={createSubmitting}>{createSubmitting ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Create'}</Button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {editOpen && selectedCustomer && editDraft && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4">
+          <div className="bg-zinc-900 border border-white/10 rounded-lg w-full max-w-md">
+            <form onSubmit={handleEdit}>
+              <div className="p-4 border-b border-white/10 flex items-center justify-between">
+                <h2 className="text-white font-medium text-sm">Edit Customer</h2>
+                <Button type="button" variant="ghost" size="sm" className="text-white/60 hover:text-white" onClick={()=> setEditOpen(false)}>×</Button>
+              </div>
+              <div className="p-4 space-y-4">
+                {editError && <div className="text-xs text-red-400">{editError}</div>}
+                <div className="space-y-1">
+                  <label className="text-xs text-white/70">Name *</label>
+                  <Input value={editDraft.name||''} onChange={e=> setEditDraft(d=> ({ ...d!, name: e.target.value }))} className="bg-white/10 border-white/20 text-white" />
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-1">
+                    <label className="text-xs text-white/70">Email</label>
+                    <Input value={editDraft.email||''} onChange={e=> setEditDraft(d=> ({ ...d!, email: e.target.value }))} className="bg-white/10 border-white/20 text-white" />
+                  </div>
+                  <div className="space-y-1">
+                    <label className="text-xs text-white/70">Phone</label>
+                    <Input value={(editDraft as any).phone||''} onChange={e=> setEditDraft(d=> ({ ...d!, phone: e.target.value }))} className="bg-white/10 border-white/20 text-white" />
+                  </div>
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-1">
+                    <label className="text-xs text-white/70">Type</label>
+                    <select value={editDraft.type} onChange={e=> setEditDraft(d=> ({ ...d!, type: e.target.value as CustomerType }))} className="bg-white/10 border-white/20 text-white text-sm rounded px-2 py-2 w-full">
+                      <option value="INDIVIDUAL">Individual</option>
+                      <option value="COMPANY">Company</option>
+                    </select>
+                  </div>
+                  <div className="space-y-1">
+                    <label className="text-xs text-white/70">Credit Limit</label>
+                    <Input value={editDraft.creditLimit as any || ''} onChange={e=> setEditDraft(d=> ({ ...d!, creditLimit: e.target.value }))} className="bg-white/10 border-white/20 text-white" />
+                  </div>
+                </div>
+                <div className="space-y-1">
+                  <label className="text-xs text-white/70">Address</label>
+                  <Input value={editDraft.address||''} onChange={e=> setEditDraft(d=> ({ ...d!, address: e.target.value }))} className="bg-white/10 border-white/20 text-white" />
+                </div>
+              </div>
+              <div className="p-4 border-t border-white/10 flex items-center justify-end gap-2 bg-black/20 rounded-b-lg">
+                <Button type="button" variant="ghost" className="text-white/70 hover:text-white" onClick={()=> setEditOpen(false)} disabled={editSubmitting}>Cancel</Button>
+                <Button type="submit" className="bg-white/20 hover:bg-white/30 text-white border border-white/30" disabled={editSubmitting}>{editSubmitting ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Save'}</Button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {confirmDialog}
     </div>
   );
 }

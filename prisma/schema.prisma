@@ -256,7 +256,6 @@ model Account {
   type           AccountType
   currency       Currency          @default(USD)
   balance        Decimal           @default(0) @db.Decimal(15, 2)
-  active         Boolean           @default(true) @map("is_active")
   branchId       Int?              @map("branch_id")
   branch         Branch?           @relation(fields: [branchId], references: [id])
   createdAt      DateTime          @default(now()) @map("created_at")

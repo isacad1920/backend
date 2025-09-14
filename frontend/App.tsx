@@ -3,6 +3,7 @@ import { LoginPage } from './components/LoginPage';
 import { Dashboard } from './components/Dashboard';
 import { SalesPage } from './components/SalesPage';
 import { InventoryPage } from './components/InventoryPage';
+import { ProductsPage } from './components/ProductsPage';
 import { CustomersPage } from './components/CustomersPage';
 import { BranchesPage } from './components/BranchesPage';
 import { CategoriesPage } from './components/CategoriesPage';
@@ -35,6 +36,8 @@ function AppShell() {
         return <SalesPage />;
       case 'inventory':
         return <InventoryPage />;
+      case 'products':
+        return <ProductsPage />;
       case 'customers':
         return <CustomersPage />;
       case 'branches':

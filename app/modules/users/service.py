@@ -1,31 +1,26 @@
 """
 User service layer for business logic and data operations.
 """
-import logging
+from typing import Optional, List, Dict, Any, Tuple
 from datetime import datetime, timedelta
-from typing import Any
+import logging
+from uuid import uuid4
 
-from app.core.config import UserRole, settings
+from app.db.prisma import prisma
+
+from app.core.security import PasswordManager, JWTManager, SecurityUtils
+from app.core.config import settings, UserRole
 from app.core.exceptions import (
-    AlreadyExistsError,
-    AuthenticationError,
-    DatabaseError,
-    NotFoundError,
-    ValidationError,
+    ValidationError, NotFoundError, AlreadyExistsError, AuthorizationError,
+    DatabaseError, BusinessRuleError, AuthenticationError
 )
-from app.core.security import JWTManager, PasswordManager
 from app.modules.users.schema import (
-    LoginRequestSchema,
-    LoginResponseSchema,
-    UserCreateSchema,
-    UserDetailResponseSchema,
-    UserListResponseSchema,
-    UserPasswordChangeSchema,
-    UserPasswordResetRequestSchema,
-    UserPasswordResetSchema,
-    UserResponseSchema,
-    UserStatsSchema,
-    UserUpdateSchema,
+    UserCreateSchema, UserUpdateSchema, UserResponseSchema, 
+    UserPasswordChangeSchema, UserPasswordResetRequestSchema,
+    UserPasswordResetSchema, LoginRequestSchema, LoginResponseSchema,
+    UserListResponseSchema, UserDetailResponseSchema, UserStatsSchema,
+    UserActivitySchema, BulkUserUpdateSchema, BulkUserStatusUpdateSchema,
+    BulkOperationResponseSchema, UserProfileUpdateSchema, UserStatus
 )
 
 logger = logging.getLogger(__name__)
@@ -39,7 +34,7 @@ class UserService:
     async def create_user(
         self, 
         user_data: UserCreateSchema, 
-        created_by_id: str | None = None
+        created_by_id: Optional[str] = None
     ) -> UserResponseSchema:
         """Create a new user."""
         try:
@@ -207,7 +202,7 @@ class UserService:
             logger.error(f"Login failed: {e}")
             raise AuthenticationError("Login failed")
 
-    async def get_user_by_id(self, user_id: str) -> UserDetailResponseSchema | None:
+    async def get_user_by_id(self, user_id: str) -> Optional[UserDetailResponseSchema]:
         """Get user by ID with detailed information."""
         try:
             user = await self.db.user.find_unique(
@@ -226,7 +221,7 @@ class UserService:
             logger.error(f"Failed to get user by ID {user_id}: {e}")
             return None
     
-    async def get_user_by_email(self, email: str) -> UserResponseSchema | None:
+    async def get_user_by_email(self, email: str) -> Optional[UserResponseSchema]:
         """Get user by email."""
         try:
             user = await self.db.user.find_unique(
@@ -246,8 +241,8 @@ class UserService:
         self, 
         user_id: str, 
         user_data: UserUpdateSchema,
-        updated_by_id: str | None = None
-    ) -> UserResponseSchema | None:
+        updated_by_id: Optional[str] = None
+    ) -> Optional[UserResponseSchema]:
         """Update user information."""
         try:
             # Check if user exists
@@ -306,7 +301,7 @@ class UserService:
     async def delete_user(
         self, 
         user_id: str, 
-        deleted_by_id: str | None = None
+        deleted_by_id: Optional[str] = None
     ) -> bool:
         """Delete user (soft delete by setting is_active to False)."""
         try:
@@ -348,10 +343,10 @@ class UserService:
         self,
         page: int = 1,
         size: int = 20,
-        search_query: str | None = None,
-        role_filter: UserRole | None = None,
-        branch_filter: str | None = None,
-        status_filter: str | None = None,
+        search_query: Optional[str] = None,
+        role_filter: Optional[UserRole] = None,
+        branch_filter: Optional[str] = None,
+        status_filter: Optional[str] = None,
         sort_by: str = "createdAt",
         sort_order: str = "desc"
     ) -> UserListResponseSchema:
@@ -413,9 +408,9 @@ class UserService:
     async def authenticate_user(
         self, 
         login_data: LoginRequestSchema,
-        client_ip: str | None = None,
-        user_agent: str | None = None
-    ) -> LoginResponseSchema | None:
+        client_ip: Optional[str] = None,
+        user_agent: Optional[str] = None
+    ) -> Optional[LoginResponseSchema]:
         """Authenticate user and return login response."""
         try:
             # Get user by email
@@ -501,7 +496,7 @@ class UserService:
             logger.error(f"Authentication failed for {login_data.email}: {e}")
             return None
     
-    async def refresh_token(self, refresh_token: str) -> dict[str, Any] | None:
+    async def refresh_token(self, refresh_token: str) -> Optional[Dict[str, Any]]:
         """Refresh access token using refresh token."""
         try:
             # Verify refresh token
@@ -824,7 +819,7 @@ class UserService:
         self, 
         email: str, 
         reason: str, 
-        client_ip: str | None = None
+        client_ip: Optional[str] = None
     ) -> None:
         """Log failed login attempt."""
         if settings.enable_audit_logging:
@@ -832,12 +827,12 @@ class UserService:
     
     async def _log_user_activity(
         self,
-        user_id: str | None,
+        user_id: Optional[str],
         action: str,
         resource: str,
-        details: dict[str, Any] | None = None,
-        ip_address: str | None = None,
-        user_agent: str | None = None
+        details: Optional[Dict[str, Any]] = None,
+        ip_address: Optional[str] = None,
+        user_agent: Optional[str] = None
     ) -> None:
         """Log user activity for audit purposes."""
         try:

@@ -6,10 +6,12 @@ import { Badge } from './ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from './ui/table';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from './ui/tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
-import { Plus, Search, Download, Eye, Edit, DollarSign, ShoppingCart, TrendingUp, Calendar, Loader2, Filter, RefreshCw } from 'lucide-react';
+import { Plus, Search, Download, Eye, Edit, DollarSign, ShoppingCart, TrendingUp, Calendar, Loader2, Filter, RefreshCw, CreditCard, Banknote } from 'lucide-react';
+import type { Sale, SaleStatus, PaymentMethod, Account, Currency } from '../types';
 import { salesService } from '../services/sales';
-import type { Sale, SaleStatus } from '../types';
 import { useAuth, PermissionGuard } from '../context/AuthContext';
+import { accountsService } from '../services/accounts';
+import { useToast } from '../context/ToastContext';
 
 interface EnrichedSale extends Sale {
   // placeholders for analytics until backend endpoints exist
@@ -30,6 +32,27 @@ export function SalesPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState('sales');
+  // Payment modal state
+  const [paymentOpen, setPaymentOpen] = useState(false);
+  const [paymentSale, setPaymentSale] = useState<EnrichedSale | null>(null);
+  const [accounts, setAccounts] = useState<Account[]>([]);
+  const [accountsLoading, setAccountsLoading] = useState(false);
+  const [paymentAccountId, setPaymentAccountId] = useState<number | ''>('');
+  const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('CASH' as PaymentMethod);
+  const [paymentCurrency, setPaymentCurrency] = useState<Currency | ''>('');
+  const [paymentAmount, setPaymentAmount] = useState('');
+  const [paymentReference, setPaymentReference] = useState('');
+  const [paymentSubmitting, setPaymentSubmitting] = useState(false);
+  const [paymentError, setPaymentError] = useState<string | null>(null);
+  const { push } = useToast();
+  // Return / refund modal state
+  const [returnOpen, setReturnOpen] = useState(false);
+  const [returnSale, setReturnSale] = useState<EnrichedSale | null>(null);
+  const [returnItems, setReturnItems] = useState<Array<{ saleItemId: number; quantity: number; refundAmount: string }>>([]);
+  const [returnType, setReturnType] = useState<'REFUND_ONLY' | 'EXCHANGE'>('REFUND_ONLY');
+  const [returnReason, setReturnReason] = useState('');
+  const [returnSubmitting, setReturnSubmitting] = useState(false);
+  const [returnError, setReturnError] = useState<string | null>(null);
   const debouncedFetchRef = React.useRef<number | null>(null);
 
   const fetchSales = useCallback(async (override?: { page?: number; size?: number; term?: string }) => {
@@ -58,6 +81,106 @@ export function SalesPage() {
       setLoading(false);
     }
   }, [page, size, searchTerm, statusFilter, fromDate, toDate, hasPermission]);
+
+  const openPayment = async (sale: EnrichedSale) => {
+    setPaymentSale(sale);
+    setPaymentOpen(true);
+    setPaymentAmount(sale.dueAmount);
+    setPaymentAccountId('');
+    setPaymentCurrency('');
+  setPaymentMethod('CASH' as PaymentMethod);
+    setPaymentReference('');
+    setPaymentError(null);
+    if (!accounts.length) {
+      try {
+        setAccountsLoading(true);
+        const resp = await accountsService.getAccounts({ size: 100 });
+        setAccounts(resp.items as Account[]);
+        if (resp.items && resp.items.length === 1) {
+          const only = resp.items[0] as Account;
+          setPaymentAccountId(only.id as number);
+          setPaymentCurrency(only.currency as Currency);
+        }
+      } catch (err: any) {
+        push({ type: 'error', title: 'Accounts Load Failed', message: err?.message || 'Unable to load accounts' });
+      } finally { setAccountsLoading(false); }
+    }
+  };
+
+  const handleSubmitPayment = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!paymentSale) return;
+    if (!paymentAccountId) { setPaymentError('Account required'); return; }
+    const amt = Number(paymentAmount);
+    if (!(amt > 0)) { setPaymentError('Amount must be > 0'); return; }
+    const due = Number(paymentSale.dueAmount || 0);
+    if (amt > due) { setPaymentError('Amount exceeds due'); return; }
+    const selectedAccount = accounts.find(a => a.id === paymentAccountId);
+    const currency = paymentCurrency || selectedAccount?.currency || 'USD';
+    setPaymentSubmitting(true); setPaymentError(null);
+    // optimistic update
+    const original = paymentSale;
+    const optimisticPaid = (Number(original.paidAmount || 0) + amt).toString();
+    const optimisticDue = (Number(original.totalAmount || 0) - Number(optimisticPaid)).toString();
+    setSales(prev => prev.map(s => s.id === original.id ? { ...s, paidAmount: optimisticPaid, dueAmount: optimisticDue } : s));
+    try {
+      const resp = await salesService.addPaymentToSale(original.id, { accountId: paymentAccountId as number, amount: amt.toString(), method: paymentMethod, currency });
+      // Optionally adjust due from response.remainingBalance
+      if (resp?.remainingBalance !== undefined) {
+        setSales(prev => prev.map(s => s.id === original.id ? { ...s, paidAmount: (Number(original.paidAmount || 0) + amt).toString(), dueAmount: resp.remainingBalance ?? '0' } : s));
+      }
+      push({ type: 'success', title: 'Payment Added', message: `Sale #${original.saleNumber} updated` });
+      setPaymentOpen(false);
+    } catch (err: any) {
+      // rollback
+      setSales(prev => prev.map(s => s.id === original.id ? original : s));
+      setPaymentError(err?.message || 'Payment failed');
+    } finally { setPaymentSubmitting(false); }
+  };
+
+  const openReturn = (sale: EnrichedSale) => {
+    if (!sale.items || sale.items.length === 0) {
+      push({ type: 'error', title: 'No Items', message: 'Sale has no items to return.' });
+      return;
+    }
+    setReturnSale(sale);
+    setReturnOpen(true);
+    setReturnType('REFUND_ONLY');
+    setReturnReason('');
+    setReturnError(null);
+    // Initialize with zero quantities
+    setReturnItems(sale.items.map(it => ({ saleItemId: it.id, quantity: 0, refundAmount: '0' })));
+  };
+
+  const updateReturnItem = (saleItemId: number, field: 'quantity' | 'refundAmount', value: string) => {
+    setReturnItems(prev => prev.map(it => it.saleItemId === saleItemId ? { ...it, [field]: field === 'quantity' ? Number(value) : value } : it));
+  };
+
+  const totalRefund = returnItems.reduce((acc, it) => acc + Number(it.refundAmount || 0), 0);
+
+  const handleSubmitReturn = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!returnSale) return;
+    const anyQty = returnItems.some(it => it.quantity > 0);
+    if (!anyQty) { setReturnError('Select at least one item with quantity > 0'); return; }
+    setReturnSubmitting(true); setReturnError(null);
+    const original = returnSale;
+    // optimistic: mark status REFUNDED (if refund only) and adjust paid/due minimally; real backend may recalc.
+    const optimistic = { ...original, status: returnType === 'REFUND_ONLY' ? 'REFUNDED' : original.status } as EnrichedSale;
+    setSales(prev => prev.map(s => s.id === original.id ? optimistic : s));
+    try {
+      await salesService.createSaleReturn(original.id, {
+        items: returnItems.filter(it => it.quantity > 0),
+        type: returnType,
+        reason: returnReason || 'Customer return'
+      });
+      push({ type: 'success', title: 'Return Processed', message: `Sale #${original.saleNumber} updated` });
+      setReturnOpen(false);
+    } catch (err: any) {
+      setSales(prev => prev.map(s => s.id === original.id ? original : s));
+      setReturnError(err?.message || 'Return failed');
+    } finally { setReturnSubmitting(false); }
+  };
 
   // initial load
   useEffect(() => { fetchSales(); }, []); // eslint-disable-line react-hooks/exhaustive-deps
@@ -279,13 +402,27 @@ export function SalesPage() {
                         </TableCell>
                         <TableCell>
                           <div className="flex space-x-2">
-                            <Button size="sm" variant="ghost" className="text-white/70 hover:text-white hover:bg-white/10">
+                            <Button aria-label="View Sale" size="sm" variant="ghost" className="text-white/70 hover:text-white hover:bg-white/10">
                               <Eye className="w-4 h-4" />
                             </Button>
                             <PermissionGuard anyOf={['sales:update']} fallback={null}>
-                              <Button size="sm" variant="ghost" className="text-white/70 hover:text-white hover:bg-white/10">
+                              <Button aria-label="Edit Sale" size="sm" variant="ghost" className="text-white/70 hover:text-white hover:bg-white/10">
                                 <Edit className="w-4 h-4" />
                               </Button>
+                            </PermissionGuard>
+                            <PermissionGuard anyOf={['sales:update']} fallback={null}>
+                              {Number(sale.dueAmount || 0) > 0 && (
+                                <Button aria-label={`Add Payment for ${sale.saleNumber}`} size="sm" variant="ghost" className="text-white/70 hover:text-white hover:bg-white/10" onClick={() => openPayment(sale)}>
+                                  <Banknote className="w-4 h-4" />
+                                </Button>
+                              )}
+                            </PermissionGuard>
+                            <PermissionGuard anyOf={['sales:update']} fallback={null}>
+                              {sale.status !== 'REFUNDED' && sale.items && sale.items.length > 0 && (
+                                <Button aria-label={`Return Sale ${sale.saleNumber}`} size="sm" variant="ghost" className="text-white/70 hover:text-white hover:bg-white/10" onClick={() => openReturn(sale)}>
+                                  R
+                                </Button>
+                              )}
                             </PermissionGuard>
                           </div>
                         </TableCell>
@@ -341,6 +478,130 @@ export function SalesPage() {
           </Card>
         </TabsContent>
       </Tabs>
+      {paymentOpen && paymentSale && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4">
+          <div className="bg-zinc-900 border border-white/10 rounded-lg w-full max-w-md">
+            <form onSubmit={handleSubmitPayment}>
+              <div className="p-4 border-b border-white/10 flex items-center justify-between">
+                <h2 className="text-white font-medium text-sm flex items-center gap-2"><Banknote className="w-4 h-4" /> Add Payment - #{paymentSale.saleNumber}</h2>
+                <Button type="button" variant="ghost" size="sm" className="text-white/60 hover:text-white" onClick={()=> setPaymentOpen(false)}>×</Button>
+              </div>
+              <div className="p-4 space-y-4">
+                {paymentError && <div className="text-xs text-red-400">{paymentError}</div>}
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-1 col-span-2">
+                    <label htmlFor="payment-account" className="text-xs text-white/70">Account *</label>
+                    <select id="payment-account" aria-label="Account" value={paymentAccountId} onChange={e=> { const v = e.target.value ? Number(e.target.value) : ''; setPaymentAccountId(v as any); if (v) { const acc = accounts.find(a=>a.id===Number(v)); if (acc) setPaymentCurrency(acc.currency); } }} className="bg-white/10 border-white/20 text-white text-sm rounded px-2 py-2 w-full">
+                      <option value="">Select account</option>
+                      {accountsLoading && <option>Loading...</option>}
+                      {!accountsLoading && accounts.map(a => <option key={a.id} value={a.id}>{a.name} ({a.currency})</option>)}
+                    </select>
+                  </div>
+                  <div className="space-y-1">
+                    <label className="text-xs text-white/70">Amount *</label>
+                    <Input value={paymentAmount} onChange={e=> setPaymentAmount(e.target.value)} className="bg-white/10 border-white/20 text-white" placeholder="0.00" />
+                  </div>
+                  <div className="space-y-1">
+                    <label className="text-xs text-white/70">Method</label>
+                    <select value={paymentMethod} onChange={e=> setPaymentMethod(e.target.value as PaymentMethod)} className="bg-white/10 border-white/20 text-white text-sm rounded px-2 py-2 w-full">
+                      {['CASH','CARD','BANK_TRANSFER','MOBILE_MONEY','CREDIT'].map(m => <option key={m} value={m}>{m.replace('_',' ')}</option>)}
+                    </select>
+                  </div>
+                  <div className="space-y-1">
+                    <label className="text-xs text-white/70">Currency</label>
+                    <Input value={paymentCurrency || ''} onChange={e=> setPaymentCurrency(e.target.value as Currency)} placeholder="Auto" className="bg-white/10 border-white/20 text-white" />
+                  </div>
+                  <div className="space-y-1 col-span-2">
+                    <label className="text-xs text-white/70">Reference</label>
+                    <Input value={paymentReference} onChange={e=> setPaymentReference(e.target.value)} className="bg-white/10 border-white/20 text-white" placeholder="Optional reference" />
+                  </div>
+                  <div className="col-span-2 text-xs text-white/50 space-y-1">
+                    <div>Due: ${Number(paymentSale.dueAmount || 0).toLocaleString()}</div>
+                    <div>Paid: ${Number(paymentSale.paidAmount || 0).toLocaleString()}</div>
+                    <div>Total: ${Number(paymentSale.totalAmount || 0).toLocaleString()}</div>
+                  </div>
+                </div>
+              </div>
+              <div className="p-4 border-t border-white/10 flex items-center justify-end gap-2 bg-black/20 rounded-b-lg">
+                <Button type="button" variant="ghost" className="text-white/70 hover:text-white" onClick={()=> setPaymentOpen(false)} disabled={paymentSubmitting}>Cancel</Button>
+                <Button data-testid="submit-payment" type="submit" className="bg-white/20 hover:bg-white/30 text-white border border-white/30" disabled={paymentSubmitting}>{paymentSubmitting ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Submit Payment'}</Button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+      {returnOpen && returnSale && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4">
+          <div className="bg-zinc-900 border border-white/10 rounded-lg w-full max-w-2xl max-h-full overflow-auto">
+            <form onSubmit={handleSubmitReturn}>
+              <div className="p-4 border-b border-white/10 flex items-center justify-between">
+                <h2 className="text-white font-medium text-sm">Return - #{returnSale.saleNumber}</h2>
+                <Button type="button" variant="ghost" size="sm" className="text-white/60 hover:text-white" onClick={()=> setReturnOpen(false)}>×</Button>
+              </div>
+              <div className="p-4 space-y-4">
+                {returnError && <div className="text-xs text-red-400">{returnError}</div>}
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div className="space-y-1">
+                    <label className="text-xs text-white/70">Type</label>
+                    <select value={returnType} onChange={e=> setReturnType(e.target.value as any)} className="bg-white/10 border-white/20 text-white text-sm rounded px-2 py-2 w-full">
+                      <option value="REFUND_ONLY">Refund Only</option>
+                      <option value="EXCHANGE">Exchange</option>
+                    </select>
+                  </div>
+                  <div className="space-y-1 md:col-span-2">
+                    <label className="text-xs text-white/70">Reason</label>
+                    <Input value={returnReason} onChange={e=> setReturnReason(e.target.value)} className="bg-white/10 border-white/20 text-white" placeholder="Reason for return" />
+                  </div>
+                </div>
+                <div className="border border-white/10 rounded-lg overflow-hidden">
+                  <Table>
+                    <TableHeader>
+                      <TableRow className="border-white/10">
+                        <TableHead className="text-white/70 text-xs">Item</TableHead>
+                        <TableHead className="text-white/70 text-xs">Sold Qty</TableHead>
+                        <TableHead className="text-white/70 text-xs">Return Qty</TableHead>
+                        <TableHead className="text-white/70 text-xs">Refund/Unit</TableHead>
+                        <TableHead className="text-white/70 text-xs">Line Refund</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {returnSale.items?.map(it => {
+                        const ret = returnItems.find(r => r.saleItemId === it.id)!;
+                        const maxQty = it.quantity;
+                        const unitPrice = Number(it.unitPrice || 0);
+                        const lineRefund = (ret.quantity * unitPrice).toFixed(2);
+                        if (ret.refundAmount !== lineRefund) {
+                          // sync refund amount automatically with quantity * unit price
+                          ret.refundAmount = lineRefund;
+                        }
+                        return (
+                          <TableRow key={it.id} className="border-white/10">
+                            <TableCell className="text-white/70 text-xs">{it.product?.name || it.productId}</TableCell>
+                            <TableCell className="text-white/50 text-center text-xs">{maxQty}</TableCell>
+                            <TableCell className="text-white/70 text-xs">
+                              <Input type="number" min={0} max={maxQty} value={ret.quantity} onChange={e => updateReturnItem(it.id, 'quantity', e.target.value)} className="bg-white/10 border-white/20 text-white h-8 w-20" />
+                            </TableCell>
+                            <TableCell className="text-white/50 text-xs">${unitPrice.toFixed(2)}</TableCell>
+                            <TableCell className="text-white text-xs">${lineRefund}</TableCell>
+                          </TableRow>
+                        );
+                      })}
+                    </TableBody>
+                  </Table>
+                </div>
+                <div className="flex justify-between items-center text-sm text-white/70">
+                  <span>Total Refund</span>
+                  <span className="text-white font-medium">${totalRefund.toFixed(2)}</span>
+                </div>
+              </div>
+              <div className="p-4 border-t border-white/10 flex items-center justify-end gap-2 bg-black/20 rounded-b-lg">
+                <Button type="button" variant="ghost" className="text-white/70 hover:text-white" onClick={()=> setReturnOpen(false)} disabled={returnSubmitting}>Cancel</Button>
+                <Button type="submit" className="bg-white/20 hover:bg-white/30 text-white border border-white/30" disabled={returnSubmitting}>{returnSubmitting ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Process Return'}</Button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

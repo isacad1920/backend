@@ -1,14 +1,14 @@
 """
 User module Pydantic schemas for request/response validation.
 """
+from typing import Optional, List, Dict, Any
+from pydantic import BaseModel, EmailStr, field_validator, Field
+from app.core.base_schema import ApiBaseModel
 from datetime import datetime
 from enum import Enum
+import re
 
-from pydantic import EmailStr, Field, field_validator
-
-from app.core.base_schema import ApiBaseModel
 from app.core.config import UserRole
-
 
 class UserStatus(str, Enum):
     """User account status."""
@@ -21,12 +21,12 @@ class UserStatus(str, Enum):
 class UserBase(ApiBaseModel):
     """Base user schema with common fields."""
     username: str = Field(..., min_length=1, max_length=50, description="Username")
-    email: EmailStr | None = Field(None, description="User email address")
+    email: Optional[EmailStr] = Field(None, description="User email address")
     firstName: str = Field(..., min_length=1, max_length=50, description="First name")
     lastName: str = Field(..., min_length=1, max_length=50, description="Last name")
     role: UserRole = Field(..., description="User role")
     isActive: bool = Field(True, description="User active status")
-    branchId: int | None = Field(None, description="Branch ID")
+    branchId: Optional[int] = Field(None, description="Branch ID")
     
     model_config = {
         "use_enum_values": True,
@@ -36,14 +36,14 @@ class UserBase(ApiBaseModel):
 # Request schemas
 class UserCreateSchema(ApiBaseModel):
     """Schema for creating a new user."""
-    username: str | None = Field(None, min_length=1, max_length=50, description="Username")
+    username: Optional[str] = Field(None, min_length=1, max_length=50, description="Username")
     email: EmailStr = Field(..., description="User email address")
     password: str = Field(..., min_length=8, max_length=128, description="Password")
     firstName: str = Field(..., alias="first_name", min_length=1, max_length=50, description="First name")
     lastName: str = Field(..., alias="last_name", min_length=1, max_length=50, description="Last name")
     role: UserRole = Field(..., description="User role")
     isActive: bool = Field(True, description="User active status")
-    branchId: int | None = Field(None, alias="branch_id", description="Branch ID")
+    branchId: Optional[int] = Field(None, alias="branch_id", description="Branch ID")
     
     @field_validator('password')
     @classmethod
@@ -60,13 +60,13 @@ class UserCreateSchema(ApiBaseModel):
 
 class UserUpdateSchema(ApiBaseModel):
     """Schema for updating user information."""
-    username: str | None = Field(None, min_length=1, max_length=50)
-    email: EmailStr | None = None
-    firstName: str | None = Field(None, alias="first_name")
-    lastName: str | None = Field(None, alias="last_name")
-    role: UserRole | None = None
-    isActive: bool | None = None
-    branchId: int | None = Field(None, alias="branch_id")
+    username: Optional[str] = Field(None, min_length=1, max_length=50)
+    email: Optional[EmailStr] = None
+    firstName: Optional[str] = Field(None, alias="first_name")
+    lastName: Optional[str] = Field(None, alias="last_name")
+    role: Optional[UserRole] = None
+    isActive: Optional[bool] = None
+    branchId: Optional[int] = Field(None, alias="branch_id")
     
     model_config = {
         "populate_by_name": True,
@@ -78,12 +78,12 @@ class UserResponseSchema(ApiBaseModel):
     """Schema for user response data."""
     id: int = Field(..., description="User ID")
     username: str = Field(..., description="Username")
-    email: str | None = Field(None, description="Email")
+    email: Optional[str] = Field(None, description="Email")
     firstName: str = Field(..., description="First name")
     lastName: str = Field(..., description="Last name")
     role: str = Field(..., description="User role")
     isActive: bool = Field(..., description="Active status")
-    branchId: int | None = Field(None, description="Branch ID")
+    branchId: Optional[int] = Field(None, description="Branch ID")
     createdAt: datetime = Field(..., description="Created timestamp")
     updatedAt: datetime = Field(..., description="Updated timestamp")
     
@@ -127,8 +127,8 @@ class UserPasswordResetSchema(ApiBaseModel):
 # Authentication schemas
 class LoginRequestSchema(ApiBaseModel):
     """Schema for login request."""
-    username: str | None = Field(None, description="Username")
-    email: EmailStr | None = Field(None, description="Email address")
+    username: Optional[str] = Field(None, description="Username")
+    email: Optional[EmailStr] = Field(None, description="Email address")
     password: str = Field(..., description="Password")
     remember_me: bool = Field(False, description="Remember me option")
     
@@ -155,7 +155,7 @@ class RefreshTokenRequestSchema(ApiBaseModel):
 # List response schemas
 class UserListResponseSchema(ApiBaseModel):
     """Schema for user list response."""
-    users: list[UserResponseSchema] = Field(..., description="List of users")
+    users: List[UserResponseSchema] = Field(..., description="List of users")
     total: int = Field(..., description="Total number of users")
     page: int = Field(1, description="Current page number")
     limit: int = Field(10, description="Number of items per page")
@@ -165,16 +165,16 @@ class UserDetailResponseSchema(ApiBaseModel):
     """Schema for detailed user response with additional information."""
     id: int
     username: str
-    email: str | None
+    email: Optional[str]
     firstName: str
     lastName: str
     role: UserRole
     isActive: bool
-    branchId: int | None
+    branchId: Optional[int]
     createdAt: datetime
     updatedAt: datetime
-    lastLogin: datetime | None = None
-    permissions: list[str] = Field(default_factory=list)
+    lastLogin: Optional[datetime] = None
+    permissions: List[str] = Field(default_factory=list)
     
     model_config = {
         "from_attributes": True
@@ -189,8 +189,8 @@ class UserStatsSchema(ApiBaseModel):
     new_users_today: int = Field(..., description="New users registered today")
     new_users_this_week: int = Field(..., description="New users registered this week")
     new_users_this_month: int = Field(..., description="New users registered this month")
-    users_by_role: dict[str, int] = Field(..., description="Users count by role")
-    users_by_branch: dict[str, int] = Field(..., description="Users count by branch")
+    users_by_role: Dict[str, int] = Field(..., description="Users count by role")
+    users_by_branch: Dict[str, int] = Field(..., description="Users count by branch")
 
 class UserActivitySchema(ApiBaseModel):
     """Schema for user activity."""
@@ -199,18 +199,18 @@ class UserActivitySchema(ApiBaseModel):
     activity_type: str = Field(..., description="Activity type")
     description: str = Field(..., description="Activity description")
     timestamp: datetime = Field(..., description="Activity timestamp")
-    ip_address: str | None = Field(None, description="IP address")
-    user_agent: str | None = Field(None, description="User agent")
+    ip_address: Optional[str] = Field(None, description="IP address")
+    user_agent: Optional[str] = Field(None, description="User agent")
 
 # Bulk operation schemas
 class BulkUserUpdateSchema(ApiBaseModel):
     """Schema for bulk user updates."""
-    user_ids: list[int] = Field(..., description="List of user IDs")
+    user_ids: List[int] = Field(..., description="List of user IDs")
     updates: UserUpdateSchema = Field(..., description="Updates to apply")
 
 class BulkUserStatusUpdateSchema(ApiBaseModel):
     """Schema for bulk user status updates."""
-    user_ids: list[int] = Field(..., description="List of user IDs")
+    user_ids: List[int] = Field(..., description="List of user IDs")
     is_active: bool = Field(..., description="New active status")
 
 class BulkOperationResponseSchema(ApiBaseModel):
@@ -218,15 +218,15 @@ class BulkOperationResponseSchema(ApiBaseModel):
     success_count: int = Field(..., description="Number of successful operations")
     failed_count: int = Field(..., description="Number of failed operations")
     total_count: int = Field(..., description="Total number of operations")
-    failed_ids: list[int] = Field(default_factory=list, description="List of failed user IDs")
-    errors: list[str] = Field(default_factory=list, description="List of error messages")
+    failed_ids: List[int] = Field(default_factory=list, description="List of failed user IDs")
+    errors: List[str] = Field(default_factory=list, description="List of error messages")
 
 class UserProfileUpdateSchema(ApiBaseModel):
     """Schema for user profile updates."""
-    firstName: str | None = Field(None, description="First name")
-    lastName: str | None = Field(None, description="Last name")
-    email: EmailStr | None = Field(None, description="Email")
-    phone: str | None = Field(None, description="Phone number")
+    firstName: Optional[str] = Field(None, description="First name")
+    lastName: Optional[str] = Field(None, description="Last name")
+    email: Optional[EmailStr] = Field(None, description="Email")
+    phone: Optional[str] = Field(None, description="Phone number")
     
     model_config = {
         "populate_by_name": True
