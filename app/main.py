@@ -429,12 +429,26 @@ def custom_openapi():
 
 app.openapi = custom_openapi
 
-# Add CORS middleware
+# Add CORS middleware (ensure sensible development defaults)
+cors_origins = []
 if settings.backend_cors_origins:
-    app.add_middleware(
-        CORSMiddleware,
-        **settings.cors_settings
-    )
+    cors_origins = [o.strip() for o in settings.backend_cors_origins.split(',') if o.strip()]
+else:
+    # Development fallback: allow common local dev ports (adjust/remove in production)
+    cors_origins = [
+        "http://localhost:3000",
+        "http://127.0.0.1:3000",
+        "http://localhost:5173",
+        "http://127.0.0.1:5173",
+    ]
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=cors_origins,
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 # Add trusted host middleware in production
 if settings.is_production:
