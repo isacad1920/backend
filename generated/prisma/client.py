@@ -161,7 +161,9 @@ def get_client() -> 'Prisma':
 
 class Prisma:
     user: 'actions.UserActions[models.User]'
-    userpermission: 'actions.UserPermissionActions[models.UserPermission]'
+    permission: 'actions.PermissionActions[models.Permission]'
+    rolepermission: 'actions.RolePermissionActions[models.RolePermission]'
+    userpermissionoverride: 'actions.UserPermissionOverrideActions[models.UserPermissionOverride]'
     branch: 'actions.BranchActions[models.Branch]'
     product: 'actions.ProductActions[models.Product]'
     category: 'actions.CategoryActions[models.Category]'
@@ -188,7 +190,9 @@ class Prisma:
 
     __slots__ = (
         'user',
-        'userpermission',
+        'permission',
+        'rolepermission',
+        'userpermissionoverride',
         'branch',
         'product',
         'category',
@@ -233,7 +237,9 @@ class Prisma:
         http: Optional[HttpConfig] = None,
     ) -> None:
         self.user = actions.UserActions[models.User](self, models.User)
-        self.userpermission = actions.UserPermissionActions[models.UserPermission](self, models.UserPermission)
+        self.permission = actions.PermissionActions[models.Permission](self, models.Permission)
+        self.rolepermission = actions.RolePermissionActions[models.RolePermission](self, models.RolePermission)
+        self.userpermissionoverride = actions.UserPermissionOverrideActions[models.UserPermissionOverride](self, models.UserPermissionOverride)
         self.branch = actions.BranchActions[models.Branch](self, models.Branch)
         self.product = actions.ProductActions[models.Product](self, models.Product)
         self.category = actions.CategoryActions[models.Category](self, models.Category)
@@ -722,7 +728,9 @@ class TransactionManager:
 # TODO: don't require copy-pasting arguments between actions and batch actions
 class Batch:
     user: 'UserBatchActions'
-    userpermission: 'UserPermissionBatchActions'
+    permission: 'PermissionBatchActions'
+    rolepermission: 'RolePermissionBatchActions'
+    userpermissionoverride: 'UserPermissionOverrideBatchActions'
     branch: 'BranchBatchActions'
     product: 'ProductBatchActions'
     category: 'CategoryBatchActions'
@@ -752,7 +760,9 @@ class Batch:
         self.__queries: List[str] = []
         self._active_provider = client._active_provider
         self.user = UserBatchActions(self)
-        self.userpermission = UserPermissionBatchActions(self)
+        self.permission = PermissionBatchActions(self)
+        self.rolepermission = RolePermissionBatchActions(self)
+        self.userpermissionoverride = UserPermissionOverrideBatchActions(self)
         self.branch = BranchBatchActions(self)
         self.product = ProductBatchActions(self)
         self.category = CategoryBatchActions(self)
@@ -937,18 +947,18 @@ class UserBatchActions:
 
 # NOTE: some arguments are meaningless in this context but are included
 # for completeness sake
-class UserPermissionBatchActions:
+class PermissionBatchActions:
     def __init__(self, batcher: Batch) -> None:
         self._batcher = batcher
 
     def create(
         self,
-        data: types.UserPermissionCreateInput,
-        include: Optional[types.UserPermissionInclude] = None
+        data: types.PermissionCreateInput,
+        include: Optional[types.PermissionInclude] = None
     ) -> None:
         self._batcher._add(
             method='create',
-            model=models.UserPermission,
+            model=models.Permission,
             arguments={
                 'data': data,
                 'include': include,
@@ -957,7 +967,7 @@ class UserPermissionBatchActions:
 
     def create_many(
         self,
-        data: List[types.UserPermissionCreateWithoutRelationsInput],
+        data: List[types.PermissionCreateWithoutRelationsInput],
         *,
         skip_duplicates: Optional[bool] = None,
     ) -> None:
@@ -966,7 +976,7 @@ class UserPermissionBatchActions:
 
         self._batcher._add(
             method='create_many',
-            model=models.UserPermission,
+            model=models.Permission,
             arguments={
                 'data': data,
                 'skipDuplicates': skip_duplicates,
@@ -976,12 +986,12 @@ class UserPermissionBatchActions:
 
     def delete(
         self,
-        where: types.UserPermissionWhereUniqueInput,
-        include: Optional[types.UserPermissionInclude] = None,
+        where: types.PermissionWhereUniqueInput,
+        include: Optional[types.PermissionInclude] = None,
     ) -> None:
         self._batcher._add(
             method='delete',
-            model=models.UserPermission,
+            model=models.Permission,
             arguments={
                 'where': where,
                 'include': include,
@@ -990,13 +1000,13 @@ class UserPermissionBatchActions:
 
     def update(
         self,
-        data: types.UserPermissionUpdateInput,
-        where: types.UserPermissionWhereUniqueInput,
-        include: Optional[types.UserPermissionInclude] = None
+        data: types.PermissionUpdateInput,
+        where: types.PermissionWhereUniqueInput,
+        include: Optional[types.PermissionInclude] = None
     ) -> None:
         self._batcher._add(
             method='update',
-            model=models.UserPermission,
+            model=models.Permission,
             arguments={
                 'data': data,
                 'where': where,
@@ -1006,13 +1016,13 @@ class UserPermissionBatchActions:
 
     def upsert(
         self,
-        where: types.UserPermissionWhereUniqueInput,
-        data: types.UserPermissionUpsertInput,
-        include: Optional[types.UserPermissionInclude] = None,
+        where: types.PermissionWhereUniqueInput,
+        data: types.PermissionUpsertInput,
+        include: Optional[types.PermissionInclude] = None,
     ) -> None:
         self._batcher._add(
             method='upsert',
-            model=models.UserPermission,
+            model=models.Permission,
             arguments={
                 'where': where,
                 'include': include,
@@ -1023,23 +1033,245 @@ class UserPermissionBatchActions:
 
     def update_many(
         self,
-        data: types.UserPermissionUpdateManyMutationInput,
-        where: types.UserPermissionWhereInput,
+        data: types.PermissionUpdateManyMutationInput,
+        where: types.PermissionWhereInput,
     ) -> None:
         self._batcher._add(
             method='update_many',
-            model=models.UserPermission,
+            model=models.Permission,
             arguments={'data': data, 'where': where,},
             root_selection=['count'],
         )
 
     def delete_many(
         self,
-        where: Optional[types.UserPermissionWhereInput] = None,
+        where: Optional[types.PermissionWhereInput] = None,
     ) -> None:
         self._batcher._add(
             method='delete_many',
-            model=models.UserPermission,
+            model=models.Permission,
+            arguments={'where': where},
+            root_selection=['count'],
+        )
+
+
+
+# NOTE: some arguments are meaningless in this context but are included
+# for completeness sake
+class RolePermissionBatchActions:
+    def __init__(self, batcher: Batch) -> None:
+        self._batcher = batcher
+
+    def create(
+        self,
+        data: types.RolePermissionCreateInput,
+        include: Optional[types.RolePermissionInclude] = None
+    ) -> None:
+        self._batcher._add(
+            method='create',
+            model=models.RolePermission,
+            arguments={
+                'data': data,
+                'include': include,
+            },
+        )
+
+    def create_many(
+        self,
+        data: List[types.RolePermissionCreateWithoutRelationsInput],
+        *,
+        skip_duplicates: Optional[bool] = None,
+    ) -> None:
+        if self._batcher._active_provider == 'sqlite':
+            raise errors.UnsupportedDatabaseError('sqlite', 'create_many()')
+
+        self._batcher._add(
+            method='create_many',
+            model=models.RolePermission,
+            arguments={
+                'data': data,
+                'skipDuplicates': skip_duplicates,
+            },
+            root_selection=['count'],
+        )
+
+    def delete(
+        self,
+        where: types.RolePermissionWhereUniqueInput,
+        include: Optional[types.RolePermissionInclude] = None,
+    ) -> None:
+        self._batcher._add(
+            method='delete',
+            model=models.RolePermission,
+            arguments={
+                'where': where,
+                'include': include,
+            },
+        )
+
+    def update(
+        self,
+        data: types.RolePermissionUpdateInput,
+        where: types.RolePermissionWhereUniqueInput,
+        include: Optional[types.RolePermissionInclude] = None
+    ) -> None:
+        self._batcher._add(
+            method='update',
+            model=models.RolePermission,
+            arguments={
+                'data': data,
+                'where': where,
+                'include': include,
+            },
+        )
+
+    def upsert(
+        self,
+        where: types.RolePermissionWhereUniqueInput,
+        data: types.RolePermissionUpsertInput,
+        include: Optional[types.RolePermissionInclude] = None,
+    ) -> None:
+        self._batcher._add(
+            method='upsert',
+            model=models.RolePermission,
+            arguments={
+                'where': where,
+                'include': include,
+                'create': data.get('create'),
+                'update': data.get('update'),
+            },
+        )
+
+    def update_many(
+        self,
+        data: types.RolePermissionUpdateManyMutationInput,
+        where: types.RolePermissionWhereInput,
+    ) -> None:
+        self._batcher._add(
+            method='update_many',
+            model=models.RolePermission,
+            arguments={'data': data, 'where': where,},
+            root_selection=['count'],
+        )
+
+    def delete_many(
+        self,
+        where: Optional[types.RolePermissionWhereInput] = None,
+    ) -> None:
+        self._batcher._add(
+            method='delete_many',
+            model=models.RolePermission,
+            arguments={'where': where},
+            root_selection=['count'],
+        )
+
+
+
+# NOTE: some arguments are meaningless in this context but are included
+# for completeness sake
+class UserPermissionOverrideBatchActions:
+    def __init__(self, batcher: Batch) -> None:
+        self._batcher = batcher
+
+    def create(
+        self,
+        data: types.UserPermissionOverrideCreateInput,
+        include: Optional[types.UserPermissionOverrideInclude] = None
+    ) -> None:
+        self._batcher._add(
+            method='create',
+            model=models.UserPermissionOverride,
+            arguments={
+                'data': data,
+                'include': include,
+            },
+        )
+
+    def create_many(
+        self,
+        data: List[types.UserPermissionOverrideCreateWithoutRelationsInput],
+        *,
+        skip_duplicates: Optional[bool] = None,
+    ) -> None:
+        if self._batcher._active_provider == 'sqlite':
+            raise errors.UnsupportedDatabaseError('sqlite', 'create_many()')
+
+        self._batcher._add(
+            method='create_many',
+            model=models.UserPermissionOverride,
+            arguments={
+                'data': data,
+                'skipDuplicates': skip_duplicates,
+            },
+            root_selection=['count'],
+        )
+
+    def delete(
+        self,
+        where: types.UserPermissionOverrideWhereUniqueInput,
+        include: Optional[types.UserPermissionOverrideInclude] = None,
+    ) -> None:
+        self._batcher._add(
+            method='delete',
+            model=models.UserPermissionOverride,
+            arguments={
+                'where': where,
+                'include': include,
+            },
+        )
+
+    def update(
+        self,
+        data: types.UserPermissionOverrideUpdateInput,
+        where: types.UserPermissionOverrideWhereUniqueInput,
+        include: Optional[types.UserPermissionOverrideInclude] = None
+    ) -> None:
+        self._batcher._add(
+            method='update',
+            model=models.UserPermissionOverride,
+            arguments={
+                'data': data,
+                'where': where,
+                'include': include,
+            },
+        )
+
+    def upsert(
+        self,
+        where: types.UserPermissionOverrideWhereUniqueInput,
+        data: types.UserPermissionOverrideUpsertInput,
+        include: Optional[types.UserPermissionOverrideInclude] = None,
+    ) -> None:
+        self._batcher._add(
+            method='upsert',
+            model=models.UserPermissionOverride,
+            arguments={
+                'where': where,
+                'include': include,
+                'create': data.get('create'),
+                'update': data.get('update'),
+            },
+        )
+
+    def update_many(
+        self,
+        data: types.UserPermissionOverrideUpdateManyMutationInput,
+        where: types.UserPermissionOverrideWhereInput,
+    ) -> None:
+        self._batcher._add(
+            method='update_many',
+            model=models.UserPermissionOverride,
+            arguments={'data': data, 'where': where,},
+            root_selection=['count'],
+        )
+
+    def delete_many(
+        self,
+        where: Optional[types.UserPermissionOverrideWhereInput] = None,
+    ) -> None:
+        self._batcher._add(
+            method='delete_many',
+            model=models.UserPermissionOverride,
             arguments={'where': where},
             root_selection=['count'],
         )

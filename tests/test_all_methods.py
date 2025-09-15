@@ -159,9 +159,11 @@ def main():
             "reason": "Stock adjustment test"
         }),
         
-        # Permissions - GET methods (Admin endpoints)
-        ("GET", f"{BASE_URL}/admin/permissions/available"),
-        ("GET", f"{BASE_URL}/admin/permissions/user/1?user_role=ADMIN"),
+        # Permissions - New RBAC endpoints
+        ("GET", f"{BASE_URL}/permissions"),  # list permissions
+        ("GET", f"{BASE_URL}/permissions/users/1"),  # user direct + overrides
+        ("GET", f"{BASE_URL}/permissions/effective/1"),  # effective permissions resolution
+        ("GET", f"{BASE_URL}/auth/me"),  # auth alias to ensure still works
     ]
     
     print("Testing endpoints...")

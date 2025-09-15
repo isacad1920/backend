@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
 import { Button } from './ui/button';
 import { Badge } from './ui/badge';
@@ -17,13 +17,34 @@ import {
   Eye,
   Edit
 } from 'lucide-react';
+import { Permission } from '../context/PermissionsContext';
+import { queryKeys } from '../lib/queryKeys';
+import { SkeletonTable } from './SkeletonTable';
+import { ErrorState } from './ErrorState';
+import { useDebouncedValue } from '../hooks/useDebouncedValue';
+import { Input } from './ui/input';
+import { useToast } from '../context/ToastContext';
+import { mapError } from '../lib/errorMap';
+import {
+  useInventoryItems,
+  useInventoryDead,
+  useInventoryMovements,
+  useInventorySummary,
+  useInventoryValuation,
+  useAdjustInventoryStock,
+  useUpdateInventoryStockSettings
+} from '../hooks/useInventoryQueries';
+import { Require } from './Require';
+import { AdjustStockModal } from './AdjustStockModal';
+import { UpdateStockSettingsModal } from './UpdateStockSettingsModal';
 
-const inventoryOverview = {
-  totalProducts: 3174,
-  totalValue: 487650,
-  lowStock: 23,
-  outOfStock: 5,
-  turnoverRate: 4.2
+const inventoryOverviewPlaceholder = {
+  totalProducts: 0,
+  totalValueCost: 0,
+  totalValueRetail: 0,
+  lowStock: 0,
+  deadStock: 0,
+  turnoverRate: 0
 };
 
 interface LowStockItem {
@@ -36,12 +57,7 @@ interface LowStockItem {
   lastOrder: string;
 }
 
-const lowStockItems: LowStockItem[] = [
-  { id: 1, name: 'Laptop Pro 15"', sku: 'LP-001', current: 5, minimum: 10, category: 'Electronics', lastOrder: '2024-12-01' },
-  { id: 2, name: 'Wireless Mouse', sku: 'WM-002', current: 8, minimum: 25, category: 'Electronics', lastOrder: '2024-11-28' },
-  { id: 3, name: 'USB-C Cable', sku: 'UC-003', current: 12, minimum: 50, category: 'Accessories', lastOrder: '2024-12-05' },
-  { id: 4, name: 'Monitor 24"', sku: 'M24-004', current: 3, minimum: 15, category: 'Electronics', lastOrder: '2024-11-30' },
-];
+// Removed static mock arrays; list queries below supply data
 
 type Severity = 'high' | 'medium' | 'low' | 'unknown';
 
@@ -55,11 +71,7 @@ interface DeadStockItem {
   severity: Severity;
 }
 
-const deadStockItems: DeadStockItem[] = [
-  { id: 1, name: 'Old Laptop Model', sku: 'OL-001', quantity: 45, daysStagnant: 180, value: 22500, severity: 'high' },
-  { id: 2, name: 'Legacy Cable', sku: 'LC-002', quantity: 120, daysStagnant: 120, value: 2400, severity: 'medium' },
-  { id: 3, name: 'Outdated Accessory', sku: 'OA-003', quantity: 78, daysStagnant: 90, value: 1560, severity: 'low' },
-];
+// Removed static dead stock mock
 
 type MovementType = 'sale' | 'purchase' | 'adjustment' | 'other';
 
@@ -72,14 +84,72 @@ interface RecentMovement {
   reference: string;
 }
 
-const recentMovements: RecentMovement[] = [
-  { id: 1, product: 'Laptop Pro 15"', type: 'sale', quantity: -2, date: '2024-12-15', reference: 'SAL-001' },
-  { id: 2, product: 'Wireless Mouse', type: 'purchase', quantity: +50, date: '2024-12-14', reference: 'PO-045' },
-  { id: 3, product: 'USB-C Cable', type: 'adjustment', quantity: -5, date: '2024-12-14', reference: 'ADJ-012' },
-  { id: 4, product: 'Monitor 24"', type: 'sale', quantity: -1, date: '2024-12-13', reference: 'SAL-003' },
-];
+// Removed static movements mock
 
 export function InventoryPage() {
+  const { push } = useToast();
+  const [activeTab, setActiveTab] = useState('overview');
+  const [search, setSearch] = useState('');
+  const debouncedSearch = useDebouncedValue(search, 300);
+  const [page, setPage] = useState(1);
+  const [size, setSize] = useState(25);
+  const [deadPage, setDeadPage] = useState(1);
+  const [movementsPage, setMovementsPage] = useState(1);
+  const [adjustModalProduct, setAdjustModalProduct] = useState<any | null>(null);
+  const [thresholdModalProduct, setThresholdModalProduct] = useState<any | null>(null);
+
+  const itemsQuery = useInventoryItems({ page, size, search: debouncedSearch || undefined, status: 'all' });
+  const deadQuery = useInventoryDead({ page: deadPage, size, search: debouncedSearch || undefined });
+  const movementsQuery = useInventoryMovements({ page: movementsPage, size: 25 });
+  const summaryQuery = useInventorySummary();
+  const valuationQuery = useInventoryValuation();
+
+  const adjustMutation = useAdjustInventoryStock();
+  const updateSettingsMutation = useUpdateInventoryStockSettings();
+
+  const overview = React.useMemo(() => {
+    const summary = summaryQuery.data as any;
+    const valuation = valuationQuery.data as any;
+    if (!summary && !valuation) return inventoryOverviewPlaceholder;
+    const totalCost = valuation?.total_inventory_cost ?? summary?.total_inventory_cost ?? 0;
+    const totalRetail = valuation?.total_inventory_retail ?? summary?.total_inventory_retail ?? 0;
+    return {
+      totalProducts: summary?.total_products ?? 0,
+      totalValueCost: totalCost,
+      totalValueRetail: totalRetail,
+      lowStock: summary?.low_stock_count ?? 0,
+      deadStock: summary?.dead_stock_cached ?? 0,
+      turnoverRate: 0
+    };
+  }, [summaryQuery.data, valuationQuery.data]);
+
+  const marginPercent = React.useMemo(() => {
+    if (!overview.totalValueRetail || overview.totalValueRetail <= 0) return 0;
+    const profit = overview.totalValueRetail - overview.totalValueCost;
+    return profit <= 0 ? 0 : (profit / overview.totalValueRetail) * 100;
+  }, [overview.totalValueRetail, overview.totalValueCost]);
+
+  const lowStockPercent = React.useMemo(() => overview.totalProducts > 0 ? (overview.lowStock / overview.totalProducts) * 100 : 0, [overview.lowStock, overview.totalProducts]);
+  const deadStockPercent = React.useMemo(() => overview.totalProducts > 0 ? (overview.deadStock / overview.totalProducts) * 100 : 0, [overview.deadStock, overview.totalProducts]);
+  const inStockPercent = React.useMemo(() => {
+    const val = 100 - lowStockPercent - deadStockPercent;
+    return Math.max(0, Math.min(100, val));
+  }, [lowStockPercent, deadStockPercent]);
+
+  const items = (itemsQuery.data as any)?.items || [];
+  const itemsPagination = (itemsQuery.data as any)?.meta?.pagination || {};
+  const total = itemsPagination?.total || 0;
+  const totalPages = Math.max(1, Math.ceil(total / size));
+
+  const deadItems = (deadQuery.data as any)?.items || [];
+  const deadPagination = (deadQuery.data as any)?.meta?.pagination || {};
+  const deadTotal = deadPagination?.total || 0;
+  const deadTotalPages = Math.max(1, Math.ceil(deadTotal / size));
+
+  const movementItems = (movementsQuery.data as any)?.items || [];
+  const movementPagination = (movementsQuery.data as any)?.meta?.pagination || {};
+  const movementTotal = movementPagination?.total || 0;
+  const movementTotalPages = Math.max(1, Math.ceil(movementTotal / 25));
 
   const getSeverityColor = (severity: Severity): string => {
     switch (severity) {
@@ -108,10 +178,12 @@ export function InventoryPage() {
           <p className="text-white/70">Monitor and manage your inventory across all locations</p>
         </div>
         <div className="flex space-x-2">
-          <Button className="bg-white/20 hover:bg-white/30 text-white border border-white/30">
-            <Plus className="w-4 h-4 mr-2" />
-            Add Product
-          </Button>
+          <Permission perm="products:write" fallback={null}>
+            <Button className="bg-white/20 hover:bg-white/30 text-white border border-white/30">
+              <Plus className="w-4 h-4 mr-2" />
+              Add Product
+            </Button>
+          </Permission>
           <Button variant="outline" className="border-white/30 text-white hover:bg-white/10">
             <Download className="w-4 h-4 mr-2" />
             Export
@@ -119,35 +191,29 @@ export function InventoryPage() {
         </div>
       </div>
 
-      <Tabs defaultValue="overview" className="space-y-4">
-        <TabsList className="bg-white/10 border border-white/20">
-          <TabsTrigger value="overview" className="data-[state=active]:bg-white/20 text-white">
-            Overview
-          </TabsTrigger>
-          <TabsTrigger value="low-stock" className="data-[state=active]:bg-white/20 text-white">
-            Low Stock
-          </TabsTrigger>
-          <TabsTrigger value="dead-stock" className="data-[state=active]:bg-white/20 text-white">
-            Dead Stock
-          </TabsTrigger>
-          <TabsTrigger value="valuation" className="data-[state=active]:bg-white/20 text-white">
-            Valuation
-          </TabsTrigger>
-          <TabsTrigger value="movements" className="data-[state=active]:bg-white/20 text-white">
-            Movements
-          </TabsTrigger>
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
+        <TabsList className="bg-white/10 border border-white/20 flex flex-wrap">
+          {['overview','low-stock','dead-stock','valuation','movements'].map(t => (
+            <TabsTrigger key={t} value={t} className="data-[state=active]:bg-white/20 text-white">
+              {t === 'overview' && 'Overview'}
+              {t === 'low-stock' && 'Low Stock'}
+              {t === 'dead-stock' && 'Dead Stock'}
+              {t === 'valuation' && 'Valuation'}
+              {t === 'movements' && 'Movements'}
+            </TabsTrigger>
+          ))}
         </TabsList>
 
         <TabsContent value="overview" className="space-y-4">
           {/* KPI Cards */}
-          <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-6 gap-4">
             <Card className="bg-white/10 backdrop-blur-md border-white/20">
               <CardContent className="p-4">
                 <div className="flex items-center space-x-2">
                   <Package className="w-8 h-8 text-blue-400" />
                   <div>
                     <p className="text-white/70 text-sm">Total Products</p>
-                    <p className="text-white text-xl">{inventoryOverview.totalProducts.toLocaleString()}</p>
+                    <p className="text-white text-xl">{overview.totalProducts.toLocaleString()}</p>
                   </div>
                 </div>
               </CardContent>
@@ -158,8 +224,8 @@ export function InventoryPage() {
                 <div className="flex items-center space-x-2">
                   <DollarSign className="w-8 h-8 text-green-400" />
                   <div>
-                    <p className="text-white/70 text-sm">Total Value</p>
-                    <p className="text-white text-xl">${inventoryOverview.totalValue.toLocaleString()}</p>
+                    <p className="text-white/70 text-sm">Inventory Cost</p>
+                    <p className="text-white text-xl">${overview.totalValueCost.toLocaleString()}</p>
                   </div>
                 </div>
               </CardContent>
@@ -168,10 +234,22 @@ export function InventoryPage() {
             <Card className="bg-white/10 backdrop-blur-md border-white/20">
               <CardContent className="p-4">
                 <div className="flex items-center space-x-2">
+                  <DollarSign className="w-8 h-8 text-emerald-400" />
+                  <div>
+                    <p className="text-white/70 text-sm">Retail Value</p>
+                    <p className="text-white text-xl">${overview.totalValueRetail.toLocaleString()}</p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card className="bg-white/10 backdrop-blur-md border-white/20">
+              <CardContent className="p-4">
+                <div className="flex items-center space-x-2">
                   <AlertTriangle className="w-8 h-8 text-yellow-400" />
                   <div>
                     <p className="text-white/70 text-sm">Low Stock</p>
-                    <p className="text-white text-xl">{inventoryOverview.lowStock}</p>
+                    <p className="text-white text-xl">{overview.lowStock}</p>
                   </div>
                 </div>
               </CardContent>
@@ -182,8 +260,8 @@ export function InventoryPage() {
                 <div className="flex items-center space-x-2">
                   <FileX className="w-8 h-8 text-red-400" />
                   <div>
-                    <p className="text-white/70 text-sm">Out of Stock</p>
-                    <p className="text-white text-xl">{inventoryOverview.outOfStock}</p>
+                    <p className="text-white/70 text-sm">Dead Stock</p>
+                    <p className="text-white text-xl">{overview.deadStock}</p>
                   </div>
                 </div>
               </CardContent>
@@ -194,8 +272,8 @@ export function InventoryPage() {
                 <div className="flex items-center space-x-2">
                   <BarChart3 className="w-8 h-8 text-purple-400" />
                   <div>
-                    <p className="text-white/70 text-sm">Turnover Rate</p>
-                    <p className="text-white text-xl">{inventoryOverview.turnoverRate}x</p>
+                    <p className="text-white/70 text-sm">Profit Margin</p>
+                    <p className="text-white text-xl">{marginPercent.toFixed(1)}%</p>
                   </div>
                 </div>
               </CardContent>
@@ -211,24 +289,24 @@ export function InventoryPage() {
               <CardContent className="space-y-4">
                 <div>
                   <div className="flex justify-between text-sm mb-2">
-                    <span className="text-white/70">In Stock</span>
-                    <span className="text-white">89%</span>
+                    <span className="text-white/70">In Stock (est)</span>
+                    <span className="text-white">{inStockPercent.toFixed(1)}%</span>
                   </div>
-                  <Progress value={89} className="h-2" />
+                  <Progress value={inStockPercent} className="h-2" />
                 </div>
                 <div>
                   <div className="flex justify-between text-sm mb-2">
                     <span className="text-white/70">Low Stock</span>
-                    <span className="text-white">8%</span>
+                    <span className="text-white">{lowStockPercent.toFixed(1)}%</span>
                   </div>
-                  <Progress value={8} className="h-2" />
+                  <Progress value={lowStockPercent} className="h-2" />
                 </div>
                 <div>
                   <div className="flex justify-between text-sm mb-2">
-                    <span className="text-white/70">Out of Stock</span>
-                    <span className="text-white">3%</span>
+                    <span className="text-white/70">Dead Stock</span>
+                    <span className="text-white">{deadStockPercent.toFixed(1)}%</span>
                   </div>
-                  <Progress value={3} className="h-2" />
+                  <Progress value={deadStockPercent} className="h-2" />
                 </div>
               </CardContent>
             </Card>
@@ -263,166 +341,176 @@ export function InventoryPage() {
 
         <TabsContent value="low-stock" className="space-y-4">
           <Card className="bg-white/10 backdrop-blur-md border-white/20">
-            <CardHeader className="flex flex-row items-center justify-between">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-white">Low Stock Items</CardTitle>
-              <Button className="bg-white/20 hover:bg-white/30 text-white border border-white/30">
-                <RefreshCw className="w-4 h-4 mr-2" />
-                Reorder Selected
-              </Button>
             </CardHeader>
             <CardContent>
-              <Table>
-                <TableHeader>
-                  <TableRow className="border-white/20">
-                    <TableHead className="text-white/70">Product</TableHead>
-                    <TableHead className="text-white/70">SKU</TableHead>
-                    <TableHead className="text-white/70">Current</TableHead>
-                    <TableHead className="text-white/70">Minimum</TableHead>
-                    <TableHead className="text-white/70">Category</TableHead>
-                    <TableHead className="text-white/70">Last Order</TableHead>
-                    <TableHead className="text-white/70">Actions</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {lowStockItems.map((item) => (
-                    <TableRow key={item.id} className="border-white/20">
-                      <TableCell className="text-white">{item.name}</TableCell>
-                      <TableCell className="text-white/70">{item.sku}</TableCell>
-                      <TableCell>
-                        <Badge className="bg-red-500/20 text-red-400 border-red-500/30">
-                          {item.current}
-                        </Badge>
-                      </TableCell>
-                      <TableCell className="text-white/70">{item.minimum}</TableCell>
-                      <TableCell className="text-white/70">{item.category}</TableCell>
-                      <TableCell className="text-white/70">{item.lastOrder}</TableCell>
-                      <TableCell>
-                        <Button size="sm" className="bg-white/20 hover:bg-white/30 text-white border border-white/30">
-                          Reorder
-                        </Button>
-                      </TableCell>
+              {itemsQuery.isLoading ? (
+                <SkeletonTable rows={10} columns={4} />
+              ) : itemsQuery.isError ? (
+                <ErrorState message={(itemsQuery.error as any)?.message || 'Failed to load'} />
+              ) : (
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead className="text-white/70">Product</TableHead>
+                      <TableHead className="text-white/70">SKU</TableHead>
+                      <TableHead className="text-white/70">Qty</TableHead>
+                      <TableHead className="text-white/70">Actions</TableHead>
                     </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        <TabsContent value="dead-stock" className="space-y-4">
-          <Card className="bg-white/10 backdrop-blur-md border-white/20">
-            <CardHeader>
-              <CardTitle className="text-white">Dead Stock Analysis</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <Table>
-                <TableHeader>
-                  <TableRow className="border-white/20">
-                    <TableHead className="text-white/70">Product</TableHead>
-                    <TableHead className="text-white/70">SKU</TableHead>
-                    <TableHead className="text-white/70">Quantity</TableHead>
-                    <TableHead className="text-white/70">Days Stagnant</TableHead>
-                    <TableHead className="text-white/70">Value</TableHead>
-                    <TableHead className="text-white/70">Severity</TableHead>
-                    <TableHead className="text-white/70">Actions</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {deadStockItems.map((item) => (
-                    <TableRow key={item.id} className="border-white/20">
-                      <TableCell className="text-white">{item.name}</TableCell>
-                      <TableCell className="text-white/70">{item.sku}</TableCell>
-                      <TableCell className="text-white/70">{item.quantity}</TableCell>
-                      <TableCell className="text-white/70">{item.daysStagnant} days</TableCell>
-                      <TableCell className="text-white">${item.value.toLocaleString()}</TableCell>
-                      <TableCell>
-                        <Badge className={getSeverityColor(item.severity)}>
-                          {item.severity}
-                        </Badge>
-                      </TableCell>
-                      <TableCell>
-                        <div className="flex space-x-2">
-                          <Button size="sm" variant="ghost" className="text-white/70 hover:text-white hover:bg-white/10">
-                            <Eye className="w-4 h-4" />
-                          </Button>
-                          <Button size="sm" variant="ghost" className="text-white/70 hover:text-white hover:bg-white/10">
-                            <Edit className="w-4 h-4" />
-                          </Button>
-                        </div>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        <TabsContent value="valuation" className="space-y-4">
-          <Card className="bg-white/10 backdrop-blur-md border-white/20">
-            <CardHeader>
-              <CardTitle className="text-white">Inventory Valuation</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div className="text-center p-6 bg-white/5 rounded-lg">
-                  <p className="text-white/70 text-sm mb-2">Cost Value</p>
-                  <p className="text-white text-2xl">$487,650</p>
-                  <p className="text-green-400 text-sm">+5.2% from last month</p>
-                </div>
-                <div className="text-center p-6 bg-white/5 rounded-lg">
-                  <p className="text-white/70 text-sm mb-2">Retail Value</p>
-                  <p className="text-white text-2xl">$731,475</p>
-                  <p className="text-green-400 text-sm">+4.8% from last month</p>
-                </div>
-                <div className="text-center p-6 bg-white/5 rounded-lg">
-                  <p className="text-white/70 text-sm mb-2">Margin</p>
-                  <p className="text-white text-2xl">33.3%</p>
-                  <p className="text-blue-400 text-sm">Avg profit margin</p>
+                  </TableHeader>
+                  <TableBody>
+                    {items.map((it: any) => (
+                      <TableRow key={it.product_id} className="hover:bg-white/5">
+                        <TableCell className="text-white text-sm">{it.name || '—'}</TableCell>
+                        <TableCell className="text-white/60 text-xs">{it.sku || '—'}</TableCell>
+                        <TableCell className="text-white text-sm">{it.quantity}</TableCell>
+                        <TableCell className="text-white/70 text-xs space-x-2">
+                          <Require anyOf={['inventory:adjust','products:update']}>
+                            <Button size="sm" variant="outline" className="h-7 text-white/80 border-white/30" onClick={() => setAdjustModalProduct(it)}>Adj</Button>
+                          </Require>
+                          <Require anyOf={['products:update']}>
+                            <Button size="sm" variant="outline" className="h-7 text-white/80 border-white/30" onClick={() => setThresholdModalProduct(it)}>Thresh</Button>
+                          </Require>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              )}
+              <div className="flex justify-between items-center mt-4 text-white/70 text-xs">
+                <span>Page {page} / {totalPages}</span>
+                <div className="space-x-2">
+                  <Button size="sm" variant="outline" className="h-7 px-2 border-white/30 text-white/80" disabled={page <= 1} onClick={() => setPage(p => Math.max(1, p-1))}>Prev</Button>
+                  <Button size="sm" variant="outline" className="h-7 px-2 border-white/30 text-white/80" disabled={page >= totalPages} onClick={() => setPage(p => Math.min(totalPages, p+1))}>Next</Button>
                 </div>
               </div>
             </CardContent>
           </Card>
         </TabsContent>
 
-        <TabsContent value="movements" className="space-y-4">
+        <TabsContent value="dead-stock" className="space-y-4">
           <Card className="bg-white/10 backdrop-blur-md border-white/20">
-            <CardHeader>
-              <CardTitle className="text-white">Recent Stock Movements</CardTitle>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-white">Dead Stock</CardTitle>
             </CardHeader>
             <CardContent>
-              <Table>
-                <TableHeader>
-                  <TableRow className="border-white/20">
-                    <TableHead className="text-white/70">Product</TableHead>
-                    <TableHead className="text-white/70">Type</TableHead>
-                    <TableHead className="text-white/70">Quantity</TableHead>
-                    <TableHead className="text-white/70">Date</TableHead>
-                    <TableHead className="text-white/70">Reference</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {recentMovements.map((movement) => (
-                    <TableRow key={movement.id} className="border-white/20">
-                      <TableCell className="text-white">{movement.product}</TableCell>
-                      <TableCell>
-                        <Badge className={getMovementTypeColor(movement.type)}>
-                          {movement.type}
-                        </Badge>
-                      </TableCell>
-                      <TableCell className={movement.quantity > 0 ? "text-green-400" : "text-red-400"}>
-                        {movement.quantity > 0 ? `+${movement.quantity}` : movement.quantity}
-                      </TableCell>
-                      <TableCell className="text-white/70">{movement.date}</TableCell>
-                      <TableCell className="text-white/70">{movement.reference}</TableCell>
+              {deadQuery.isLoading ? <SkeletonTable rows={10} columns={5} /> : deadQuery.isError ? <ErrorState message={(deadQuery.error as any)?.message || 'Failed to load dead stock'} /> : (
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead className="text-white/70">Product</TableHead>
+                      <TableHead className="text-white/70">SKU</TableHead>
+                      <TableHead className="text-white/70">Qty</TableHead>
+                      <TableHead className="text-white/70">Dead?</TableHead>
+                      <TableHead className="text-white/70">Actions</TableHead>
                     </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
+                  </TableHeader>
+                  <TableBody>
+                    {(deadQuery.data as any)?.items?.map((it: any) => (
+                      <TableRow key={it.product_id} className="hover:bg-white/5">
+                        <TableCell className="text-white text-sm">{it.name || '—'}</TableCell>
+                        <TableCell className="text-white/60 text-xs">{it.sku || '—'}</TableCell>
+                        <TableCell className="text-white text-sm">{it.quantity}</TableCell>
+                        <TableCell className="text-white/60 text-xs">{it.dead_stock ? 'Yes' : 'No'}</TableCell>
+                        <TableCell className="text-white/70 text-xs space-x-2">
+                          <Require anyOf={['inventory:adjust','products:update']}>
+                            <Button size="sm" variant="outline" className="h-7 text-white/80 border-white/30" onClick={() => setAdjustModalProduct(it)}>Adj</Button>
+                          </Require>
+                          <Require anyOf={['products:update']}>
+                            <Button size="sm" variant="outline" className="h-7 text-white/80 border-white/30" onClick={() => setThresholdModalProduct(it)}>Thresh</Button>
+                          </Require>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              )}
+              <div className="flex justify-between items-center mt-4 text-white/70 text-xs">
+                <span>Page {deadPage} / {deadTotalPages}</span>
+                <div className="space-x-2">
+                  <Button size="sm" variant="outline" className="h-7 px-2 border-white/30 text-white/80" disabled={deadPage <= 1} onClick={() => setDeadPage(p => Math.max(1, p-1))}>Prev</Button>
+                  <Button size="sm" variant="outline" className="h-7 px-2 border-white/30 text-white/80" disabled={deadPage >= deadTotalPages} onClick={() => setDeadPage(p => Math.min(deadTotalPages, p+1))}>Next</Button>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="valuation" className="space-y-4">
+          <Card className="bg-white/10 backdrop-blur-md border-white/20">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-white">Inventory Valuation</CardTitle>
+            </CardHeader>
+            <CardContent>
+              {valuationQuery.isLoading ? <SkeletonTable rows={3} columns={3} /> : valuationQuery.isError ? <ErrorState message={(valuationQuery.error as any)?.message || 'Failed to load valuation'} /> : (
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <Card className="bg-white/5 border-white/10">
+                    <CardContent className="p-4">
+                      <p className="text-white/70 text-xs uppercase mb-1">Total Cost</p>
+                      <p className="text-white text-lg">${(valuationQuery.data as any)?.total_inventory_cost?.toLocaleString?.() || 0}</p>
+                    </CardContent>
+                  </Card>
+                  <Card className="bg-white/5 border-white/10">
+                    <CardContent className="p-4">
+                      <p className="text-white/70 text-xs uppercase mb-1">Total Retail</p>
+                      <p className="text-white text-lg">${(valuationQuery.data as any)?.total_inventory_retail?.toLocaleString?.() || 0}</p>
+                    </CardContent>
+                  </Card>
+                  {(valuationQuery.data as any)?.valuationDerived && (
+                    <Card className="bg-yellow-500/10 border-yellow-500/30">
+                      <CardContent className="p-4">
+                        <p className="text-yellow-400 text-xs">Derived from summary (valuation endpoint fallback)</p>
+                      </CardContent>
+                    </Card>
+                  )}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="movements" className="space-y-4">
+          <Card className="bg-white/10 backdrop-blur-md border-white/20">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-white">Recent Movements</CardTitle>
+            </CardHeader>
+            <CardContent>
+              {movementsQuery.isLoading ? <SkeletonTable rows={10} columns={4} /> : movementsQuery.isError ? <ErrorState message={(movementsQuery.error as any)?.message || 'Failed to load movements'} /> : (
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead className="text-white/70">Type</TableHead>
+                      <TableHead className="text-white/70">Product</TableHead>
+                      <TableHead className="text-white/70">Qty</TableHead>
+                      <TableHead className="text-white/70">Date</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {(movementsQuery.data as any)?.items?.map((m: any, idx: number) => (
+                      <TableRow key={m.id || idx} className="hover:bg-white/5">
+                        <TableCell className="text-white/60 text-xs">{m.type || '—'}</TableCell>
+                        <TableCell className="text-white text-sm">{m.product_name || m.product || '—'}</TableCell>
+                        <TableCell className="text-white text-sm">{m.quantity}</TableCell>
+                        <TableCell className="text-white/60 text-xs">{m.date || m.created_at || '—'}</TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              )}
+              <div className="flex justify-between items-center mt-4 text-white/70 text-xs">
+                <span>Page {movementsPage} / {movementTotalPages}</span>
+                <div className="space-x-2">
+                  <Button size="sm" variant="outline" className="h-7 px-2 border-white/30 text-white/80" disabled={movementsPage <= 1} onClick={() => setMovementsPage(p => Math.max(1, p-1))}>Prev</Button>
+                  <Button size="sm" variant="outline" className="h-7 px-2 border-white/30 text-white/80" disabled={movementsPage >= movementTotalPages} onClick={() => setMovementsPage(p => Math.min(movementTotalPages, p+1))}>Next</Button>
+                </div>
+              </div>
             </CardContent>
           </Card>
         </TabsContent>
       </Tabs>
+      <AdjustStockModal open={!!adjustModalProduct} onOpenChange={(o) => { if(!o) setAdjustModalProduct(null); }} product={adjustModalProduct} />
+      <UpdateStockSettingsModal open={!!thresholdModalProduct} onOpenChange={(o) => { if(!o) setThresholdModalProduct(null); }} product={thresholdModalProduct} />
     </div>
   );
 }

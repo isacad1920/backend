@@ -84,12 +84,23 @@ export class AuthService {
         try { user = await apiClient.get<User>('/users/me'); } catch (e) { console.warn('Fetch /users/me failed', e); }
       }
 
-      // Permissions may come embedded; otherwise attempt fetch
+      // Fetch fresh effective permissions from RBAC endpoint; fall back gracefully
       let permissions: PermissionCode[] = Array.isArray((result as any).permissions) ? (result as any).permissions : [];
-      if (!permissions.length) {
-        try {
-          permissions = await apiClient.get<PermissionCode[]>('/permissions/mine');
-        } catch {/* non-fatal */}
+      try {
+        if (user) {
+          // Prefer normalized endpoint returning object { permissions: [...] }
+            const r = await apiClient.get<any>(`/permissions/users/${user.id}`);
+            if (r && Array.isArray(r.permissions)) {
+              permissions = r.permissions;
+            } else if (Array.isArray(r)) {
+              permissions = r as PermissionCode[];
+            }
+        }
+      } catch {
+        // Fallback legacy convenience endpoint
+        if (!permissions.length) {
+          try { permissions = await apiClient.get<PermissionCode[]>('/permissions/mine'); } catch {/* ignore */}
+        }
       }
 
       if (!user) throw new Error('User data missing from login response');

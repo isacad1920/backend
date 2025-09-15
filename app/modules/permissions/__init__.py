@@ -1,6 +1,8 @@
-"""
-Permission management module for custom permission overrides.
-"""
-from app.modules.permissions.routes import legacy_router, router
+"""Permissions module export for normalized RBAC routes ONLY (legacy compat removed)."""
+from fastapi import APIRouter
+from .routes import router as _rbac_router
 
-__all__ = ["router", "legacy_router"]
+router = APIRouter()
+router.include_router(_rbac_router)
+
+__all__ = ["router"]

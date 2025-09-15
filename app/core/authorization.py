@@ -12,7 +12,8 @@ from functools import wraps
 from fastapi import Depends, HTTPException
 
 from app.core.dependencies import get_current_active_user, get_db
-from app.core.security import PermissionManager, UserRole
+from app.core.permissions import check_permission as rbac_check_permission, get_user_effective_permissions
+from app.core.config import UserRole
 
 
 def require_permissions(*permissions: str, any_of: bool = False):
@@ -35,8 +36,11 @@ def require_permissions(*permissions: str, any_of: bool = False):
         if role == UserRole.ADMIN:
             return
         # Check each required permission
-        results = [PermissionManager.has_permission(role, p) for p in permissions]
-        allowed = any(results) if any_of else all(results)
+        effective = await get_user_effective_permissions(int(current_user.id), db)
+        if any_of:
+            allowed = any(p in effective for p in permissions)
+        else:
+            allowed = all(p in effective for p in permissions)
         if not allowed:
             needed = " or ".join(permissions) if any_of else ", ".join(permissions)
             raise HTTPException(status_code=403, detail=f"Missing permission: {needed}")
@@ -61,8 +65,12 @@ def with_permissions(*permissions: str, any_of: bool = False):
         ):
             role = getattr(current_user, 'role', None)
             if role != UserRole.ADMIN:
-                checks = [PermissionManager.has_permission(role, p) for p in permissions]
-                if (any_of and not any(checks)) or (not any_of and not all(checks)):
+                effective = await get_user_effective_permissions(int(current_user.id), db)
+                if any_of:
+                    ok = any(p in effective for p in permissions)
+                else:
+                    ok = all(p in effective for p in permissions)
+                if not ok:
                     needed = " or ".join(permissions) if any_of else ", ".join(permissions)
                     raise HTTPException(status_code=403, detail=f"Missing permission: {needed}")
             return await func(*args, current_user=current_user, db=db, **kwargs)

@@ -762,12 +762,14 @@ class UserService:
         )
     
     async def _user_to_detailed_response_schema(self, user) -> UserDetailResponseSchema:
-        """Convert user model to detailed response schema."""
-        from app.core.security import PermissionManager
-        
-        # Get user permissions
+        """Convert user model to detailed response schema (RBAC)."""
         user_role = UserRole(user.role)
-        permissions = PermissionManager.get_user_permissions(user_role)
+        try:
+            from app.core.permissions import get_user_effective_permissions
+            effective = await get_user_effective_permissions(user.id, self.db)
+            permissions = sorted(list(effective))
+        except Exception:
+            permissions = []
         
         return UserDetailResponseSchema(
             id=user.id,

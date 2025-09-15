@@ -1091,7 +1091,7 @@ class UserActions(Generic[_PrismaModelT]):
         return resp['data']['result']  # type: ignore[no-any-return]
 
 
-class UserPermissionActions(Generic[_PrismaModelT]):
+class PermissionActions(Generic[_PrismaModelT]):
     __slots__ = (
         '_client',
         '_model',
@@ -1118,7 +1118,7 @@ class UserPermissionActions(Generic[_PrismaModelT]):
 
         Returns
         -------
-        List[prisma.models.UserPermission]
+        List[prisma.models.Permission]
             The records returned by the SQL query
 
         Raises
@@ -1131,8 +1131,8 @@ class UserPermissionActions(Generic[_PrismaModelT]):
         Example
         -------
         ```py
-        users = await UserPermission.prisma().query_raw(
-            'SELECT * FROM UserPermission WHERE id = $1',
+        users = await Permission.prisma().query_raw(
+            'SELECT * FROM Permission WHERE id = $1',
             1767274722,
         )
         ```
@@ -1156,7 +1156,7 @@ class UserPermissionActions(Generic[_PrismaModelT]):
 
         Returns
         -------
-        prisma.models.UserPermission
+        prisma.models.Permission
             The first record returned by the SQL query
         None
             The raw SQL query did not return any records
@@ -1171,9 +1171,9 @@ class UserPermissionActions(Generic[_PrismaModelT]):
         Example
         -------
         ```py
-        user = await UserPermission.prisma().query_first(
-            'SELECT * FROM UserPermission WHERE userId = $1',
-            326272115,
+        user = await Permission.prisma().query_first(
+            'SELECT * FROM Permission WHERE resource = $1',
+            'dcgchcbbf',
         )
         ```
         """
@@ -1181,22 +1181,22 @@ class UserPermissionActions(Generic[_PrismaModelT]):
 
     async def create(
         self,
-        data: types.UserPermissionCreateInput,
-        include: Optional[types.UserPermissionInclude] = None
+        data: types.PermissionCreateInput,
+        include: Optional[types.PermissionInclude] = None
     ) -> _PrismaModelT:
-        """Create a new UserPermission record.
+        """Create a new Permission record.
 
         Parameters
         ----------
         data
-            UserPermission record data
+            Permission record data
         include
-            Specifies which relations should be loaded on the returned UserPermission model
+            Specifies which relations should be loaded on the returned Permission model
 
         Returns
         -------
-        prisma.models.UserPermission
-            The created UserPermission record
+        prisma.models.Permission
+            The created Permission record
 
         Raises
         ------
@@ -1208,13 +1208,12 @@ class UserPermissionActions(Generic[_PrismaModelT]):
         Example
         -------
         ```py
-        # create a UserPermission record from just the required fields
-        userpermission = await UserPermission.prisma().create(
+        # create a Permission record from just the required fields
+        permission = await Permission.prisma().create(
             data={
-                # data to create a UserPermission record
-                'userId': 1343201072,
-                'resource': 'ghfhiafcb',
-                'actions': Json({'heejgedji': True}),
+                # data to create a Permission record
+                'resource': 'bdedcabahc',
+                'action': 'ghfhiafcb',
             },
         )
         ```
@@ -1231,18 +1230,18 @@ class UserPermissionActions(Generic[_PrismaModelT]):
 
     async def create_many(
         self,
-        data: List[types.UserPermissionCreateWithoutRelationsInput],
+        data: List[types.PermissionCreateWithoutRelationsInput],
         *,
         skip_duplicates: Optional[bool] = None,
     ) -> int:
-        """Create multiple UserPermission records at once.
+        """Create multiple Permission records at once.
 
         This function is *not* available when using SQLite.
 
         Parameters
         ----------
         data
-            List of UserPermission record data
+            List of Permission record data
         skip_duplicates
             Boolean flag for ignoring unique constraint errors
 
@@ -1265,19 +1264,17 @@ class UserPermissionActions(Generic[_PrismaModelT]):
         Example
         -------
         ```py
-        total = await UserPermission.prisma().create_many(
+        total = await Permission.prisma().create_many(
             data=[
                 {
-                    # data to create a UserPermission record
-                    'userId': 1969681615,
-                    'resource': 'bbbgbhfjge',
-                    'actions': Json({'igbehcbab': True}),
+                    # data to create a Permission record
+                    'resource': 'heejgedji',
+                    'action': 'bjgjgibgbf',
                 },
                 {
-                    # data to create a UserPermission record
-                    'userId': 1303003706,
-                    'resource': 'bgiggdidbf',
-                    'actions': Json({'caaaedabfc': True}),
+                    # data to create a Permission record
+                    'resource': 'bbbgbhfjge',
+                    'action': 'igbehcbab',
                 },
             ],
             skip_duplicates=True,
@@ -1300,22 +1297,22 @@ class UserPermissionActions(Generic[_PrismaModelT]):
 
     async def delete(
         self,
-        where: types.UserPermissionWhereUniqueInput,
-        include: Optional[types.UserPermissionInclude] = None
+        where: types.PermissionWhereUniqueInput,
+        include: Optional[types.PermissionInclude] = None
     ) -> Optional[_PrismaModelT]:
-        """Delete a single UserPermission record.
+        """Delete a single Permission record.
 
         Parameters
         ----------
         where
-            UserPermission filter to select the record to be deleted, must be unique
+            Permission filter to select the record to be deleted, must be unique
         include
-            Specifies which relations should be loaded on the returned UserPermission model
+            Specifies which relations should be loaded on the returned Permission model
 
         Returns
         -------
-        prisma.models.UserPermission
-            The deleted UserPermission record
+        prisma.models.Permission
+            The deleted Permission record
         None
             Could not find a record to delete
 
@@ -1329,9 +1326,9 @@ class UserPermissionActions(Generic[_PrismaModelT]):
         Example
         -------
         ```py
-        userpermission = await UserPermission.prisma().delete(
+        permission = await Permission.prisma().delete(
             where={
-                'id': 1868141281,
+                'id': 1303003706,
             },
         )
         ```
@@ -1352,22 +1349,22 @@ class UserPermissionActions(Generic[_PrismaModelT]):
 
     async def find_unique(
         self,
-        where: types.UserPermissionWhereUniqueInput,
-        include: Optional[types.UserPermissionInclude] = None
+        where: types.PermissionWhereUniqueInput,
+        include: Optional[types.PermissionInclude] = None
     ) -> Optional[_PrismaModelT]:
-        """Find a unique UserPermission record.
+        """Find a unique Permission record.
 
         Parameters
         ----------
         where
-            UserPermission filter to find the record, must be unique
+            Permission filter to find the record, must be unique
         include
-            Specifies which relations should be loaded on the returned UserPermission model
+            Specifies which relations should be loaded on the returned Permission model
 
         Returns
         -------
-        prisma.models.UserPermission
-            The found UserPermission record
+        prisma.models.Permission
+            The found Permission record
         None
             No record matching the given input could be found
 
@@ -1381,9 +1378,9 @@ class UserPermissionActions(Generic[_PrismaModelT]):
         Example
         -------
         ```py
-        userpermission = await UserPermission.prisma().find_unique(
+        permission = await Permission.prisma().find_unique(
             where={
-                'id': 1860847622,
+                'id': 1686638315,
             },
         )
         ```
@@ -1403,22 +1400,22 @@ class UserPermissionActions(Generic[_PrismaModelT]):
 
     async def find_unique_or_raise(
         self,
-        where: types.UserPermissionWhereUniqueInput,
-        include: Optional[types.UserPermissionInclude] = None
+        where: types.PermissionWhereUniqueInput,
+        include: Optional[types.PermissionInclude] = None
     ) -> _PrismaModelT:
-        """Find a unique UserPermission record. Raises `RecordNotFoundError` if no record is found.
+        """Find a unique Permission record. Raises `RecordNotFoundError` if no record is found.
 
         Parameters
         ----------
         where
-            UserPermission filter to find the record, must be unique
+            Permission filter to find the record, must be unique
         include
-            Specifies which relations should be loaded on the returned UserPermission model
+            Specifies which relations should be loaded on the returned Permission model
 
         Returns
         -------
-        prisma.models.UserPermission
-            The found UserPermission record
+        prisma.models.Permission
+            The found Permission record
 
         Raises
         ------
@@ -1432,9 +1429,9 @@ class UserPermissionActions(Generic[_PrismaModelT]):
         Example
         -------
         ```py
-        userpermission = await UserPermission.prisma().find_unique_or_raise(
+        permission = await Permission.prisma().find_unique_or_raise(
             where={
-                'id': 1448521415,
+                'id': 2000430152,
             },
         )
         ```
@@ -1453,37 +1450,37 @@ class UserPermissionActions(Generic[_PrismaModelT]):
         self,
         take: Optional[int] = None,
         skip: Optional[int] = None,
-        where: Optional[types.UserPermissionWhereInput] = None,
-        cursor: Optional[types.UserPermissionWhereUniqueInput] = None,
-        include: Optional[types.UserPermissionInclude] = None,
-        order: Optional[Union[types.UserPermissionOrderByInput, List[types.UserPermissionOrderByInput]]] = None,
-        distinct: Optional[List[types.UserPermissionScalarFieldKeys]] = None,
+        where: Optional[types.PermissionWhereInput] = None,
+        cursor: Optional[types.PermissionWhereUniqueInput] = None,
+        include: Optional[types.PermissionInclude] = None,
+        order: Optional[Union[types.PermissionOrderByInput, List[types.PermissionOrderByInput]]] = None,
+        distinct: Optional[List[types.PermissionScalarFieldKeys]] = None,
     ) -> List[_PrismaModelT]:
-        """Find multiple UserPermission records.
+        """Find multiple Permission records.
 
         An empty list is returned if no records could be found.
 
         Parameters
         ----------
         take
-            Limit the maximum number of UserPermission records returned
+            Limit the maximum number of Permission records returned
         skip
             Ignore the first N results
         where
-            UserPermission filter to select records
+            Permission filter to select records
         cursor
             Specifies the position in the list to start returning results from, (typically an ID field)
         include
-            Specifies which relations should be loaded on the returned UserPermission model
+            Specifies which relations should be loaded on the returned Permission model
         order
-            Order the returned UserPermission records by any field
+            Order the returned Permission records by any field
         distinct
-            Filter UserPermission records by either a single distinct field or distinct combinations of fields
+            Filter Permission records by either a single distinct field or distinct combinations of fields
 
         Returns
         -------
-        List[prisma.models.UserPermission]
-            The list of all UserPermission records that could be found
+        List[prisma.models.Permission]
+            The list of all Permission records that could be found
 
         Raises
         ------
@@ -1493,14 +1490,14 @@ class UserPermissionActions(Generic[_PrismaModelT]):
         Example
         -------
         ```py
-        # find the first 10 UserPermission records
-        userpermissions = await UserPermission.prisma().find_many(take=10)
+        # find the first 10 Permission records
+        permissions = await Permission.prisma().find_many(take=10)
 
-        # find the first 5 UserPermission records ordered by the resource field
-        userpermissions = await UserPermission.prisma().find_many(
+        # find the first 5 Permission records ordered by the action field
+        permissions = await Permission.prisma().find_many(
             take=5,
             order={
-                'resource': 'desc',
+                'action': 'desc',
             },
         )
         ```
@@ -1523,33 +1520,33 @@ class UserPermissionActions(Generic[_PrismaModelT]):
     async def find_first(
         self,
         skip: Optional[int] = None,
-        where: Optional[types.UserPermissionWhereInput] = None,
-        cursor: Optional[types.UserPermissionWhereUniqueInput] = None,
-        include: Optional[types.UserPermissionInclude] = None,
-        order: Optional[Union[types.UserPermissionOrderByInput, List[types.UserPermissionOrderByInput]]] = None,
-        distinct: Optional[List[types.UserPermissionScalarFieldKeys]] = None,
+        where: Optional[types.PermissionWhereInput] = None,
+        cursor: Optional[types.PermissionWhereUniqueInput] = None,
+        include: Optional[types.PermissionInclude] = None,
+        order: Optional[Union[types.PermissionOrderByInput, List[types.PermissionOrderByInput]]] = None,
+        distinct: Optional[List[types.PermissionScalarFieldKeys]] = None,
     ) -> Optional[_PrismaModelT]:
-        """Find a single UserPermission record.
+        """Find a single Permission record.
 
         Parameters
         ----------
         skip
             Ignore the first N records
         where
-            UserPermission filter to select the record
+            Permission filter to select the record
         cursor
             Specifies the position in the list to start returning results from, (typically an ID field)
         include
-            Specifies which relations should be loaded on the returned UserPermission model
+            Specifies which relations should be loaded on the returned Permission model
         order
-            Order the returned UserPermission records by any field
+            Order the returned Permission records by any field
         distinct
-            Filter UserPermission records by either a single distinct field or distinct combinations of fields
+            Filter Permission records by either a single distinct field or distinct combinations of fields
 
         Returns
         -------
-        prisma.models.UserPermission
-            The first UserPermission record found, matching the given arguments
+        prisma.models.Permission
+            The first Permission record found, matching the given arguments
         None
             No record could be found
 
@@ -1561,11 +1558,11 @@ class UserPermissionActions(Generic[_PrismaModelT]):
         Example
         -------
         ```py
-        # find the second UserPermission record ordered by the actions field
-        userpermission = await UserPermission.prisma().find_first(
+        # find the second Permission record ordered by the createdAt field
+        permission = await Permission.prisma().find_first(
             skip=1,
             order={
-                'actions': 'desc',
+                'createdAt': 'desc',
             },
         )
         ```
@@ -1591,33 +1588,33 @@ class UserPermissionActions(Generic[_PrismaModelT]):
     async def find_first_or_raise(
         self,
         skip: Optional[int] = None,
-        where: Optional[types.UserPermissionWhereInput] = None,
-        cursor: Optional[types.UserPermissionWhereUniqueInput] = None,
-        include: Optional[types.UserPermissionInclude] = None,
-        order: Optional[Union[types.UserPermissionOrderByInput, List[types.UserPermissionOrderByInput]]] = None,
-        distinct: Optional[List[types.UserPermissionScalarFieldKeys]] = None,
+        where: Optional[types.PermissionWhereInput] = None,
+        cursor: Optional[types.PermissionWhereUniqueInput] = None,
+        include: Optional[types.PermissionInclude] = None,
+        order: Optional[Union[types.PermissionOrderByInput, List[types.PermissionOrderByInput]]] = None,
+        distinct: Optional[List[types.PermissionScalarFieldKeys]] = None,
     ) -> _PrismaModelT:
-        """Find a single UserPermission record. Raises `RecordNotFoundError` if no record was found.
+        """Find a single Permission record. Raises `RecordNotFoundError` if no record was found.
 
         Parameters
         ----------
         skip
             Ignore the first N records
         where
-            UserPermission filter to select the record
+            Permission filter to select the record
         cursor
             Specifies the position in the list to start returning results from, (typically an ID field)
         include
-            Specifies which relations should be loaded on the returned UserPermission model
+            Specifies which relations should be loaded on the returned Permission model
         order
-            Order the returned UserPermission records by any field
+            Order the returned Permission records by any field
         distinct
-            Filter UserPermission records by either a single distinct field or distinct combinations of fields
+            Filter Permission records by either a single distinct field or distinct combinations of fields
 
         Returns
         -------
-        prisma.models.UserPermission
-            The first UserPermission record found, matching the given arguments
+        prisma.models.Permission
+            The first Permission record found, matching the given arguments
 
         Raises
         ------
@@ -1629,8 +1626,2067 @@ class UserPermissionActions(Generic[_PrismaModelT]):
         Example
         -------
         ```py
-        # find the second UserPermission record ordered by the createdAt field
-        userpermission = await UserPermission.prisma().find_first_or_raise(
+        # find the second Permission record ordered by the updatedAt field
+        permission = await Permission.prisma().find_first_or_raise(
+            skip=1,
+            order={
+                'updatedAt': 'desc',
+            },
+        )
+        ```
+        """
+        resp = await self._client._execute(
+            method='find_first_or_raise',
+            model=self._model,
+            arguments={
+                'skip': skip,
+                'where': where,
+                'order_by': order,
+                'cursor': cursor,
+                'include': include,
+                'distinct': distinct,
+            },
+        )
+        return model_parse(self._model, resp['data']['result'])
+
+    async def update(
+        self,
+        data: types.PermissionUpdateInput,
+        where: types.PermissionWhereUniqueInput,
+        include: Optional[types.PermissionInclude] = None
+    ) -> Optional[_PrismaModelT]:
+        """Update a single Permission record.
+
+        Parameters
+        ----------
+        data
+            Permission record data specifying what to update
+        where
+            Permission filter to select the unique record to create / update
+        include
+            Specifies which relations should be loaded on the returned Permission model
+
+        Returns
+        -------
+        prisma.models.Permission
+            The updated Permission record
+        None
+            No record could be found
+
+        Raises
+        ------
+        prisma.errors.PrismaError
+            Catch all for every exception raised by Prisma Client Python
+
+        Example
+        -------
+        ```py
+        permission = await Permission.prisma().update(
+            where={
+                'id': 1868141281,
+            },
+            data={
+                # data to update the Permission record to
+            },
+        )
+        ```
+        """
+        try:
+            resp = await self._client._execute(
+                method='update',
+                model=self._model,
+                arguments={
+                    'data': data,
+                    'where': where,
+                    'include': include,
+                },
+            )
+        except errors.RecordNotFoundError:
+            return None
+
+        return model_parse(self._model, resp['data']['result'])
+
+    async def upsert(
+        self,
+        where: types.PermissionWhereUniqueInput,
+        data: types.PermissionUpsertInput,
+        include: Optional[types.PermissionInclude] = None,
+    ) -> _PrismaModelT:
+        """Updates an existing record or create a new one
+
+        Parameters
+        ----------
+        where
+            Permission filter to select the unique record to create / update
+        data
+            Data specifying what fields to set on create and update
+        include
+            Specifies which relations should be loaded on the returned Permission model
+
+        Returns
+        -------
+        prisma.models.Permission
+            The created or updated Permission record
+
+        Raises
+        ------
+        prisma.errors.PrismaError
+            Catch all for every exception raised by Prisma Client Python
+        prisma.errors.MissingRequiredValueError
+            Value is required but was not found
+
+        Example
+        -------
+        ```py
+        permission = await Permission.prisma().upsert(
+            where={
+                'id': 1860847622,
+            },
+            data={
+                'create': {
+                    'id': 1860847622,
+                    'resource': 'bbbgbhfjge',
+                    'action': 'igbehcbab',
+                },
+                'update': {
+                    'resource': 'bbbgbhfjge',
+                    'action': 'igbehcbab',
+                },
+            },
+        )
+        ```
+        """
+        resp = await self._client._execute(
+            method='upsert',
+            model=self._model,
+            arguments={
+                'where': where,
+                'include': include,
+                'create': data.get('create'),
+                'update': data.get('update'),
+            },
+        )
+        return model_parse(self._model, resp['data']['result'])
+
+    async def update_many(
+        self,
+        data: types.PermissionUpdateManyMutationInput,
+        where: types.PermissionWhereInput,
+    ) -> int:
+        """Update multiple Permission records
+
+        Parameters
+        ----------
+        data
+            Permission data to update the selected Permission records to
+        where
+            Filter to select the Permission records to update
+
+        Returns
+        -------
+        int
+            The total number of Permission records that were updated
+
+        Raises
+        ------
+        prisma.errors.PrismaError
+            Catch all for every exception raised by Prisma Client Python
+
+        Example
+        -------
+        ```py
+        # update all Permission records
+        total = await Permission.prisma().update_many(
+            data={
+                'id': 1448521415
+            },
+            where={}
+        )
+        ```
+        """
+        resp = await self._client._execute(
+            method='update_many',
+            model=self._model,
+            arguments={'data': data, 'where': where,},
+            root_selection=['count'],
+        )
+        return int(resp['data']['result']['count'])
+
+    @overload
+    async def count(
+        self,
+        select: None = None,
+        take: Optional[int] = None,
+        skip: Optional[int] = None,
+        where: Optional[types.PermissionWhereInput] = None,
+        cursor: Optional[types.PermissionWhereUniqueInput] = None,
+    ) -> int:
+        """Count the number of Permission records present in the database
+
+        Parameters
+        ----------
+        select
+            Select the Permission fields to be counted
+        take
+            Limit the maximum result
+        skip
+            Ignore the first N records
+        where
+            Permission filter to find records
+        cursor
+            Specifies the position in the list to start counting results from, (typically an ID field)
+        order
+            This parameter is deprecated and will be removed in a future release
+
+        Returns
+        -------
+        int
+            The total number of records found, returned if `select` is not given
+
+        prisma.types.PermissionCountAggregateOutput
+            Data returned when `select` is used, the fields present in this dictionary will
+            match the fields passed in the `select` argument
+
+        Raises
+        ------
+        prisma.errors.PrismaError
+            Catch all for every exception raised by Prisma Client Python
+
+        Example
+        -------
+        ```py
+        # total: int
+        total = await Permission.prisma().count()
+
+        # results: prisma.types.PermissionCountAggregateOutput
+        results = await Permission.prisma().count(
+            select={
+                '_all': True,
+                'resource': True,
+            },
+        )
+        ```
+        """
+
+
+    @overload
+    async def count(
+        self,
+        select: types.PermissionCountAggregateInput,
+        take: Optional[int] = None,
+        skip: Optional[int] = None,
+        where: Optional[types.PermissionWhereInput] = None,
+        cursor: Optional[types.PermissionWhereUniqueInput] = None,
+    ) -> types.PermissionCountAggregateOutput:
+        ...
+
+    async def count(
+        self,
+        select: Optional[types.PermissionCountAggregateInput] = None,
+        take: Optional[int] = None,
+        skip: Optional[int] = None,
+        where: Optional[types.PermissionWhereInput] = None,
+        cursor: Optional[types.PermissionWhereUniqueInput] = None,
+    ) -> Union[int, types.PermissionCountAggregateOutput]:
+        """Count the number of Permission records present in the database
+
+        Parameters
+        ----------
+        select
+            Select the Permission fields to be counted
+        take
+            Limit the maximum result
+        skip
+            Ignore the first N records
+        where
+            Permission filter to find records
+        cursor
+            Specifies the position in the list to start counting results from, (typically an ID field)
+        order
+            This parameter is deprecated and will be removed in a future release
+
+        Returns
+        -------
+        int
+            The total number of records found, returned if `select` is not given
+
+        prisma.types.PermissionCountAggregateOutput
+            Data returned when `select` is used, the fields present in this dictionary will
+            match the fields passed in the `select` argument
+
+        Raises
+        ------
+        prisma.errors.PrismaError
+            Catch all for every exception raised by Prisma Client Python
+
+        Example
+        -------
+        ```py
+        # total: int
+        total = await Permission.prisma().count()
+
+        # results: prisma.types.PermissionCountAggregateOutput
+        results = await Permission.prisma().count(
+            select={
+                '_all': True,
+                'action': True,
+            },
+        )
+        ```
+        """
+
+        # TODO: this selection building should be moved to the QueryBuilder
+        #
+        # note the distinction between checking for `not select` here and `select is None`
+        # later is to handle the case that the given select dictionary is empty, this
+        # is a limitation of our types.
+        if not select:
+            root_selection = ['_count { _all }']
+        else:
+
+            root_selection = [
+                '_count {{ {0} }}'.format(' '.join(k for k, v in select.items() if v is True))
+            ]
+
+        resp = await self._client._execute(
+            method='count',
+            model=self._model,
+            arguments={
+                'take': take,
+                'skip': skip,
+                'where': where,
+                'cursor': cursor,
+            },
+            root_selection=root_selection,
+        )
+
+        if select is None:
+            return cast(int, resp['data']['result']['_count']['_all'])
+        else:
+            return cast(types.PermissionCountAggregateOutput, resp['data']['result']['_count'])
+
+    async def delete_many(
+        self,
+        where: Optional[types.PermissionWhereInput] = None
+    ) -> int:
+        """Delete multiple Permission records.
+
+        Parameters
+        ----------
+        where
+            Optional Permission filter to find the records to be deleted
+
+        Returns
+        -------
+        int
+            The total number of Permission records that were deleted
+
+        Raises
+        ------
+        prisma.errors.PrismaError
+            Catch all for every exception raised by Prisma Client Python
+
+        Example
+        -------
+        ```py
+        # delete all Permission records
+        total = await Permission.prisma().delete_many()
+        ```
+        """
+        resp = await self._client._execute(
+            method='delete_many',
+            model=self._model,
+            arguments={'where': where},
+            root_selection=['count'],
+        )
+        return int(resp['data']['result']['count'])
+
+    # TODO: make this easier to work with safely, currently output fields are typed as
+    #       not required, we should refactor the return type
+    # TODO: consider returning a Dict where the keys are a Tuple of the `by` selection
+    # TODO: statically type that the order argument is required when take or skip are present
+    async def group_by(
+        self,
+        by: List['types.PermissionScalarFieldKeysT'],
+        *,
+        where: Optional['types.PermissionWhereInput'] = None,
+        take: Optional[int] = None,
+        skip: Optional[int] = None,
+        avg: Optional['types.PermissionAvgAggregateInput'] = None,
+        sum: Optional['types.PermissionSumAggregateInput'] = None,
+        min: Optional['types.PermissionMinAggregateInput'] = None,
+        max: Optional['types.PermissionMaxAggregateInput'] = None,
+        having: Optional['types.PermissionScalarWhereWithAggregatesInput'] = None,
+        count: Optional[Union[bool, 'types.PermissionCountAggregateInput']] = None,
+        order: Optional[Union[Mapping['types.PermissionScalarFieldKeysT', 'types.SortOrder'], List[Mapping['types.PermissionScalarFieldKeysT', 'types.SortOrder']]]] = None,
+    ) -> List['types.PermissionGroupByOutput']:
+        """Group Permission records by one or more field values and perform aggregations
+        each group such as finding the average.
+
+        Parameters
+        ----------
+        by
+            List of scalar Permission fields to group records by
+        where
+            Permission filter to select records
+        take
+            Limit the maximum number of Permission records returned
+        skip
+            Ignore the first N records
+        avg
+            Adds the average of all values of the specified fields to the `_avg` field
+            in the returned data.
+        sum
+            Adds the sum of all values of the specified fields to the `_sum` field
+            in the returned data.
+        min
+            Adds the smallest available value for the specified fields to the `_min` field
+            in the returned data.
+        max
+            Adds the largest available value for the specified fields to the `_max` field
+            in the returned data.
+        count
+            Adds a count of non-fields to the `_count` field in the returned data.
+        having
+            Allows you to filter groups by an aggregate value - for example only return
+            groups having an average age less than 50.
+        order
+            Lets you order the returned list by any property that is also present in `by`.
+            Only **one** field is allowed at a time.
+
+        Returns
+        -------
+        List[prisma.types.PermissionGroupByOutput]
+            A list of dictionaries representing the Permission record,
+            this will also have additional fields present if aggregation arguments
+            are used (see the above parameters)
+
+        Raises
+        ------
+        prisma.errors.PrismaError
+            Catch all for every exception raised by Prisma Client Python
+
+        Example
+        -------
+        ```py
+        # group Permission records by createdAt values
+        # and count how many records are in each group
+        results = await Permission.prisma().group_by(
+            ['createdAt'],
+            count=True,
+        )
+        ```
+        """
+        if order is None:
+            if take is not None:
+                raise TypeError('Missing argument: \'order\' which is required when \'take\' is present')
+
+            if skip is not None:
+                raise TypeError('Missing argument: \'order\' which is required when \'skip\' is present')
+
+        root_selection: List[str] = [*by]
+        if avg is not None:
+            root_selection.append(_select_fields('_avg', avg))
+
+        if min is not None:
+            root_selection.append(_select_fields('_min', min))
+
+        if sum is not None:
+            root_selection.append(_select_fields('_sum', sum))
+
+        if max is not None:
+            root_selection.append(_select_fields('_max', max))
+
+        if count is not None:
+            if count is True:
+                root_selection.append('_count { _all }')
+            elif isinstance(count, dict):
+                root_selection.append(_select_fields('_count', count))
+
+        resp = await self._client._execute(
+            method='group_by',
+            model=self._model,
+            arguments={
+                'by': by,
+                'take': take,
+                'skip': skip,
+                'where': where,
+                'having': having,
+                'orderBy': order,
+            },
+            root_selection=root_selection,
+        )
+        return resp['data']['result']  # type: ignore[no-any-return]
+
+
+class RolePermissionActions(Generic[_PrismaModelT]):
+    __slots__ = (
+        '_client',
+        '_model',
+    )
+
+    def __init__(self, client: 'Client', model: Type[_PrismaModelT]) -> None:
+        self._client = client
+        self._model = model
+
+    async def query_raw(
+        self,
+        query: LiteralString,
+        *args: Any,
+    ) -> List[_PrismaModelT]:
+        """Execute a raw SQL query
+
+        Parameters
+        ----------
+        query
+            The raw SQL query string to be executed
+        *args
+            Parameters to be passed to the SQL query, these MUST be used over
+            string formatting to avoid an SQL injection vulnerability
+
+        Returns
+        -------
+        List[prisma.models.RolePermission]
+            The records returned by the SQL query
+
+        Raises
+        ------
+        prisma_errors.RawQueryError
+            This could be due to invalid syntax, mismatched number of parameters or any other error
+        prisma.errors.PrismaError
+            Catch all for every exception raised by Prisma Client Python
+
+        Example
+        -------
+        ```py
+        users = await RolePermission.prisma().query_raw(
+            'SELECT * FROM RolePermission WHERE id = $1',
+            1628650740,
+        )
+        ```
+        """
+        return await self._client.query_raw(query, *args, model=self._model)
+
+    async def query_first(
+        self,
+        query: LiteralString,
+        *args: Any,
+    ) -> Optional[_PrismaModelT]:
+        """Execute a raw SQL query, returning the first result
+
+        Parameters
+        ----------
+        query
+            The raw SQL query string to be executed
+        *args
+            Parameters to be passed to the SQL query, these MUST be used over
+            string formatting to avoid an SQL injection vulnerability
+
+        Returns
+        -------
+        prisma.models.RolePermission
+            The first record returned by the SQL query
+        None
+            The raw SQL query did not return any records
+
+        Raises
+        ------
+        prisma_errors.RawQueryError
+            This could be due to invalid syntax, mismatched number of parameters or any other error
+        prisma.errors.PrismaError
+            Catch all for every exception raised by Prisma Client Python
+
+        Example
+        -------
+        ```py
+        user = await RolePermission.prisma().query_first(
+            'SELECT * FROM RolePermission WHERE role = $1',
+            enums.Role.ADMIN,
+        )
+        ```
+        """
+        return await self._client.query_first(query, *args, model=self._model)
+
+    async def create(
+        self,
+        data: types.RolePermissionCreateInput,
+        include: Optional[types.RolePermissionInclude] = None
+    ) -> _PrismaModelT:
+        """Create a new RolePermission record.
+
+        Parameters
+        ----------
+        data
+            RolePermission record data
+        include
+            Specifies which relations should be loaded on the returned RolePermission model
+
+        Returns
+        -------
+        prisma.models.RolePermission
+            The created RolePermission record
+
+        Raises
+        ------
+        prisma.errors.MissingRequiredValueError
+            Value is required but was not found
+        prisma.errors.PrismaError
+            Catch all for every exception raised by Prisma Client Python
+
+        Example
+        -------
+        ```py
+        # create a RolePermission record from just the required fields
+        rolepermission = await RolePermission.prisma().create(
+            data={
+                # data to create a RolePermission record
+                'role': enums.Role.ADMIN,
+                'permissionId': 1249606685,
+            },
+        )
+        ```
+        """
+        resp = await self._client._execute(
+            method='create',
+            model=self._model,
+            arguments={
+                'data': data,
+                'include': include,
+            },
+        )
+        return model_parse(self._model, resp['data']['result'])
+
+    async def create_many(
+        self,
+        data: List[types.RolePermissionCreateWithoutRelationsInput],
+        *,
+        skip_duplicates: Optional[bool] = None,
+    ) -> int:
+        """Create multiple RolePermission records at once.
+
+        This function is *not* available when using SQLite.
+
+        Parameters
+        ----------
+        data
+            List of RolePermission record data
+        skip_duplicates
+            Boolean flag for ignoring unique constraint errors
+
+        Returns
+        -------
+        int
+            The total number of records created
+
+        Raises
+        ------
+        prisma.errors.UnsupportedDatabaseError
+            Attempting to query when using SQLite
+        prisma.errors.UniqueViolationError
+            A unique constraint check has failed, these can be ignored with the `skip_duplicates` argument
+        prisma.errors.MissingRequiredValueError
+            Value is required but was not found
+        prisma.errors.PrismaError
+            Catch all for every exception raised by Prisma Client Python
+
+        Example
+        -------
+        ```py
+        total = await RolePermission.prisma().create_many(
+            data=[
+                {
+                    # data to create a RolePermission record
+                    'role': enums.Role.ADMIN,
+                    'permissionId': 835903122,
+                },
+                {
+                    # data to create a RolePermission record
+                    'role': enums.Role.ADMIN,
+                    'permissionId': 763719779,
+                },
+            ],
+            skip_duplicates=True,
+        )
+        ```
+        """
+        if self._client._active_provider == 'sqlite':
+            raise errors.UnsupportedDatabaseError('sqlite', 'create_many()')
+
+        resp = await self._client._execute(
+            method='create_many',
+            model=self._model,
+            arguments={
+                'data': data,
+                'skipDuplicates': skip_duplicates,
+            },
+            root_selection=['count'],
+        )
+        return int(resp['data']['result']['count'])
+
+    async def delete(
+        self,
+        where: types.RolePermissionWhereUniqueInput,
+        include: Optional[types.RolePermissionInclude] = None
+    ) -> Optional[_PrismaModelT]:
+        """Delete a single RolePermission record.
+
+        Parameters
+        ----------
+        where
+            RolePermission filter to select the record to be deleted, must be unique
+        include
+            Specifies which relations should be loaded on the returned RolePermission model
+
+        Returns
+        -------
+        prisma.models.RolePermission
+            The deleted RolePermission record
+        None
+            Could not find a record to delete
+
+        Raises
+        ------
+        prisma.errors.PrismaError
+            Catch all for every exception raised by Prisma Client Python
+        prisma.errors.MissingRequiredValueError
+            Value is required but was not found
+
+        Example
+        -------
+        ```py
+        rolepermission = await RolePermission.prisma().delete(
+            where={
+                'id': 429995104,
+            },
+        )
+        ```
+        """
+        try:
+            resp = await self._client._execute(
+                method='delete',
+                model=self._model,
+                arguments={
+                    'where': where,
+                    'include': include,
+                },
+            )
+        except errors.RecordNotFoundError:
+            return None
+
+        return model_parse(self._model, resp['data']['result'])
+
+    async def find_unique(
+        self,
+        where: types.RolePermissionWhereUniqueInput,
+        include: Optional[types.RolePermissionInclude] = None
+    ) -> Optional[_PrismaModelT]:
+        """Find a unique RolePermission record.
+
+        Parameters
+        ----------
+        where
+            RolePermission filter to find the record, must be unique
+        include
+            Specifies which relations should be loaded on the returned RolePermission model
+
+        Returns
+        -------
+        prisma.models.RolePermission
+            The found RolePermission record
+        None
+            No record matching the given input could be found
+
+        Raises
+        ------
+        prisma.errors.PrismaError
+            Catch all for every exception raised by Prisma Client Python
+        prisma.errors.MissingRequiredValueError
+            Value is required but was not found
+
+        Example
+        -------
+        ```py
+        rolepermission = await RolePermission.prisma().find_unique(
+            where={
+                'id': 1775811865,
+            },
+        )
+        ```
+        """
+        resp = await self._client._execute(
+            method='find_unique',
+            model=self._model,
+            arguments={
+                'where': where,
+                'include': include,
+            },
+        )
+        result = resp['data']['result']
+        if result is None:
+            return None
+        return model_parse(self._model, result)
+
+    async def find_unique_or_raise(
+        self,
+        where: types.RolePermissionWhereUniqueInput,
+        include: Optional[types.RolePermissionInclude] = None
+    ) -> _PrismaModelT:
+        """Find a unique RolePermission record. Raises `RecordNotFoundError` if no record is found.
+
+        Parameters
+        ----------
+        where
+            RolePermission filter to find the record, must be unique
+        include
+            Specifies which relations should be loaded on the returned RolePermission model
+
+        Returns
+        -------
+        prisma.models.RolePermission
+            The found RolePermission record
+
+        Raises
+        ------
+        prisma.errors.RecordNotFoundError
+            No record was found
+        prisma.errors.PrismaError
+            Catch all for every exception raised by Prisma Client Python
+        prisma.errors.MissingRequiredValueError
+            Value is required but was not found
+
+        Example
+        -------
+        ```py
+        rolepermission = await RolePermission.prisma().find_unique_or_raise(
+            where={
+                'id': 893145566,
+            },
+        )
+        ```
+        """
+        resp = await self._client._execute(
+            method='find_unique_or_raise',
+            model=self._model,
+            arguments={
+                'where': where,
+                'include': include,
+            },
+        )
+        return model_parse(self._model, resp['data']['result'])
+
+    async def find_many(
+        self,
+        take: Optional[int] = None,
+        skip: Optional[int] = None,
+        where: Optional[types.RolePermissionWhereInput] = None,
+        cursor: Optional[types.RolePermissionWhereUniqueInput] = None,
+        include: Optional[types.RolePermissionInclude] = None,
+        order: Optional[Union[types.RolePermissionOrderByInput, List[types.RolePermissionOrderByInput]]] = None,
+        distinct: Optional[List[types.RolePermissionScalarFieldKeys]] = None,
+    ) -> List[_PrismaModelT]:
+        """Find multiple RolePermission records.
+
+        An empty list is returned if no records could be found.
+
+        Parameters
+        ----------
+        take
+            Limit the maximum number of RolePermission records returned
+        skip
+            Ignore the first N results
+        where
+            RolePermission filter to select records
+        cursor
+            Specifies the position in the list to start returning results from, (typically an ID field)
+        include
+            Specifies which relations should be loaded on the returned RolePermission model
+        order
+            Order the returned RolePermission records by any field
+        distinct
+            Filter RolePermission records by either a single distinct field or distinct combinations of fields
+
+        Returns
+        -------
+        List[prisma.models.RolePermission]
+            The list of all RolePermission records that could be found
+
+        Raises
+        ------
+        prisma.errors.PrismaError
+            Catch all for every exception raised by Prisma Client Python
+
+        Example
+        -------
+        ```py
+        # find the first 10 RolePermission records
+        rolepermissions = await RolePermission.prisma().find_many(take=10)
+
+        # find the first 5 RolePermission records ordered by the permissionId field
+        rolepermissions = await RolePermission.prisma().find_many(
+            take=5,
+            order={
+                'permissionId': 'desc',
+            },
+        )
+        ```
+        """
+        resp = await self._client._execute(
+            method='find_many',
+            model=self._model,
+            arguments={
+                'take': take,
+                'skip': skip,
+                'where': where,
+                'order_by': order,
+                'cursor': cursor,
+                'include': include,
+                'distinct': distinct,
+            },
+        )
+        return [model_parse(self._model, r) for r in resp['data']['result']]
+
+    async def find_first(
+        self,
+        skip: Optional[int] = None,
+        where: Optional[types.RolePermissionWhereInput] = None,
+        cursor: Optional[types.RolePermissionWhereUniqueInput] = None,
+        include: Optional[types.RolePermissionInclude] = None,
+        order: Optional[Union[types.RolePermissionOrderByInput, List[types.RolePermissionOrderByInput]]] = None,
+        distinct: Optional[List[types.RolePermissionScalarFieldKeys]] = None,
+    ) -> Optional[_PrismaModelT]:
+        """Find a single RolePermission record.
+
+        Parameters
+        ----------
+        skip
+            Ignore the first N records
+        where
+            RolePermission filter to select the record
+        cursor
+            Specifies the position in the list to start returning results from, (typically an ID field)
+        include
+            Specifies which relations should be loaded on the returned RolePermission model
+        order
+            Order the returned RolePermission records by any field
+        distinct
+            Filter RolePermission records by either a single distinct field or distinct combinations of fields
+
+        Returns
+        -------
+        prisma.models.RolePermission
+            The first RolePermission record found, matching the given arguments
+        None
+            No record could be found
+
+        Raises
+        ------
+        prisma.errors.PrismaError
+            Catch all for every exception raised by Prisma Client Python
+
+        Example
+        -------
+        ```py
+        # find the second RolePermission record ordered by the createdAt field
+        rolepermission = await RolePermission.prisma().find_first(
+            skip=1,
+            order={
+                'createdAt': 'desc',
+            },
+        )
+        ```
+        """
+        resp = await self._client._execute(
+            method='find_first',
+            model=self._model,
+            arguments={
+                'skip': skip,
+                'where': where,
+                'order_by': order,
+                'cursor': cursor,
+                'include': include,
+                'distinct': distinct,
+            },
+        )
+        result = resp['data']['result']
+        if result is None:
+            return None
+
+        return model_parse(self._model, result)
+
+    async def find_first_or_raise(
+        self,
+        skip: Optional[int] = None,
+        where: Optional[types.RolePermissionWhereInput] = None,
+        cursor: Optional[types.RolePermissionWhereUniqueInput] = None,
+        include: Optional[types.RolePermissionInclude] = None,
+        order: Optional[Union[types.RolePermissionOrderByInput, List[types.RolePermissionOrderByInput]]] = None,
+        distinct: Optional[List[types.RolePermissionScalarFieldKeys]] = None,
+    ) -> _PrismaModelT:
+        """Find a single RolePermission record. Raises `RecordNotFoundError` if no record was found.
+
+        Parameters
+        ----------
+        skip
+            Ignore the first N records
+        where
+            RolePermission filter to select the record
+        cursor
+            Specifies the position in the list to start returning results from, (typically an ID field)
+        include
+            Specifies which relations should be loaded on the returned RolePermission model
+        order
+            Order the returned RolePermission records by any field
+        distinct
+            Filter RolePermission records by either a single distinct field or distinct combinations of fields
+
+        Returns
+        -------
+        prisma.models.RolePermission
+            The first RolePermission record found, matching the given arguments
+
+        Raises
+        ------
+        prisma.errors.RecordNotFoundError
+            No record was found
+        prisma.errors.PrismaError
+            Catch all for every exception raised by Prisma Client Python
+
+        Example
+        -------
+        ```py
+        # find the second RolePermission record ordered by the id field
+        rolepermission = await RolePermission.prisma().find_first_or_raise(
+            skip=1,
+            order={
+                'id': 'desc',
+            },
+        )
+        ```
+        """
+        resp = await self._client._execute(
+            method='find_first_or_raise',
+            model=self._model,
+            arguments={
+                'skip': skip,
+                'where': where,
+                'order_by': order,
+                'cursor': cursor,
+                'include': include,
+                'distinct': distinct,
+            },
+        )
+        return model_parse(self._model, resp['data']['result'])
+
+    async def update(
+        self,
+        data: types.RolePermissionUpdateInput,
+        where: types.RolePermissionWhereUniqueInput,
+        include: Optional[types.RolePermissionInclude] = None
+    ) -> Optional[_PrismaModelT]:
+        """Update a single RolePermission record.
+
+        Parameters
+        ----------
+        data
+            RolePermission record data specifying what to update
+        where
+            RolePermission filter to select the unique record to create / update
+        include
+            Specifies which relations should be loaded on the returned RolePermission model
+
+        Returns
+        -------
+        prisma.models.RolePermission
+            The updated RolePermission record
+        None
+            No record could be found
+
+        Raises
+        ------
+        prisma.errors.PrismaError
+            Catch all for every exception raised by Prisma Client Python
+
+        Example
+        -------
+        ```py
+        rolepermission = await RolePermission.prisma().update(
+            where={
+                'id': 995405759,
+            },
+            data={
+                # data to update the RolePermission record to
+            },
+        )
+        ```
+        """
+        try:
+            resp = await self._client._execute(
+                method='update',
+                model=self._model,
+                arguments={
+                    'data': data,
+                    'where': where,
+                    'include': include,
+                },
+            )
+        except errors.RecordNotFoundError:
+            return None
+
+        return model_parse(self._model, resp['data']['result'])
+
+    async def upsert(
+        self,
+        where: types.RolePermissionWhereUniqueInput,
+        data: types.RolePermissionUpsertInput,
+        include: Optional[types.RolePermissionInclude] = None,
+    ) -> _PrismaModelT:
+        """Updates an existing record or create a new one
+
+        Parameters
+        ----------
+        where
+            RolePermission filter to select the unique record to create / update
+        data
+            Data specifying what fields to set on create and update
+        include
+            Specifies which relations should be loaded on the returned RolePermission model
+
+        Returns
+        -------
+        prisma.models.RolePermission
+            The created or updated RolePermission record
+
+        Raises
+        ------
+        prisma.errors.PrismaError
+            Catch all for every exception raised by Prisma Client Python
+        prisma.errors.MissingRequiredValueError
+            Value is required but was not found
+
+        Example
+        -------
+        ```py
+        rolepermission = await RolePermission.prisma().upsert(
+            where={
+                'id': 2102736524,
+            },
+            data={
+                'create': {
+                    'id': 2102736524,
+                    'role': enums.Role.ADMIN,
+                    'permissionId': 763719779,
+                },
+                'update': {
+                    'role': enums.Role.ADMIN,
+                    'permissionId': 763719779,
+                },
+            },
+        )
+        ```
+        """
+        resp = await self._client._execute(
+            method='upsert',
+            model=self._model,
+            arguments={
+                'where': where,
+                'include': include,
+                'create': data.get('create'),
+                'update': data.get('update'),
+            },
+        )
+        return model_parse(self._model, resp['data']['result'])
+
+    async def update_many(
+        self,
+        data: types.RolePermissionUpdateManyMutationInput,
+        where: types.RolePermissionWhereInput,
+    ) -> int:
+        """Update multiple RolePermission records
+
+        Parameters
+        ----------
+        data
+            RolePermission data to update the selected RolePermission records to
+        where
+            Filter to select the RolePermission records to update
+
+        Returns
+        -------
+        int
+            The total number of RolePermission records that were updated
+
+        Raises
+        ------
+        prisma.errors.PrismaError
+            Catch all for every exception raised by Prisma Client Python
+
+        Example
+        -------
+        ```py
+        # update all RolePermission records
+        total = await RolePermission.prisma().update_many(
+            data={
+                'role': enums.Role.ADMIN
+            },
+            where={}
+        )
+        ```
+        """
+        resp = await self._client._execute(
+            method='update_many',
+            model=self._model,
+            arguments={'data': data, 'where': where,},
+            root_selection=['count'],
+        )
+        return int(resp['data']['result']['count'])
+
+    @overload
+    async def count(
+        self,
+        select: None = None,
+        take: Optional[int] = None,
+        skip: Optional[int] = None,
+        where: Optional[types.RolePermissionWhereInput] = None,
+        cursor: Optional[types.RolePermissionWhereUniqueInput] = None,
+    ) -> int:
+        """Count the number of RolePermission records present in the database
+
+        Parameters
+        ----------
+        select
+            Select the RolePermission fields to be counted
+        take
+            Limit the maximum result
+        skip
+            Ignore the first N records
+        where
+            RolePermission filter to find records
+        cursor
+            Specifies the position in the list to start counting results from, (typically an ID field)
+        order
+            This parameter is deprecated and will be removed in a future release
+
+        Returns
+        -------
+        int
+            The total number of records found, returned if `select` is not given
+
+        prisma.types.RolePermissionCountAggregateOutput
+            Data returned when `select` is used, the fields present in this dictionary will
+            match the fields passed in the `select` argument
+
+        Raises
+        ------
+        prisma.errors.PrismaError
+            Catch all for every exception raised by Prisma Client Python
+
+        Example
+        -------
+        ```py
+        # total: int
+        total = await RolePermission.prisma().count()
+
+        # results: prisma.types.RolePermissionCountAggregateOutput
+        results = await RolePermission.prisma().count(
+            select={
+                '_all': True,
+                'permissionId': True,
+            },
+        )
+        ```
+        """
+
+
+    @overload
+    async def count(
+        self,
+        select: types.RolePermissionCountAggregateInput,
+        take: Optional[int] = None,
+        skip: Optional[int] = None,
+        where: Optional[types.RolePermissionWhereInput] = None,
+        cursor: Optional[types.RolePermissionWhereUniqueInput] = None,
+    ) -> types.RolePermissionCountAggregateOutput:
+        ...
+
+    async def count(
+        self,
+        select: Optional[types.RolePermissionCountAggregateInput] = None,
+        take: Optional[int] = None,
+        skip: Optional[int] = None,
+        where: Optional[types.RolePermissionWhereInput] = None,
+        cursor: Optional[types.RolePermissionWhereUniqueInput] = None,
+    ) -> Union[int, types.RolePermissionCountAggregateOutput]:
+        """Count the number of RolePermission records present in the database
+
+        Parameters
+        ----------
+        select
+            Select the RolePermission fields to be counted
+        take
+            Limit the maximum result
+        skip
+            Ignore the first N records
+        where
+            RolePermission filter to find records
+        cursor
+            Specifies the position in the list to start counting results from, (typically an ID field)
+        order
+            This parameter is deprecated and will be removed in a future release
+
+        Returns
+        -------
+        int
+            The total number of records found, returned if `select` is not given
+
+        prisma.types.RolePermissionCountAggregateOutput
+            Data returned when `select` is used, the fields present in this dictionary will
+            match the fields passed in the `select` argument
+
+        Raises
+        ------
+        prisma.errors.PrismaError
+            Catch all for every exception raised by Prisma Client Python
+
+        Example
+        -------
+        ```py
+        # total: int
+        total = await RolePermission.prisma().count()
+
+        # results: prisma.types.RolePermissionCountAggregateOutput
+        results = await RolePermission.prisma().count(
+            select={
+                '_all': True,
+                'createdAt': True,
+            },
+        )
+        ```
+        """
+
+        # TODO: this selection building should be moved to the QueryBuilder
+        #
+        # note the distinction between checking for `not select` here and `select is None`
+        # later is to handle the case that the given select dictionary is empty, this
+        # is a limitation of our types.
+        if not select:
+            root_selection = ['_count { _all }']
+        else:
+
+            root_selection = [
+                '_count {{ {0} }}'.format(' '.join(k for k, v in select.items() if v is True))
+            ]
+
+        resp = await self._client._execute(
+            method='count',
+            model=self._model,
+            arguments={
+                'take': take,
+                'skip': skip,
+                'where': where,
+                'cursor': cursor,
+            },
+            root_selection=root_selection,
+        )
+
+        if select is None:
+            return cast(int, resp['data']['result']['_count']['_all'])
+        else:
+            return cast(types.RolePermissionCountAggregateOutput, resp['data']['result']['_count'])
+
+    async def delete_many(
+        self,
+        where: Optional[types.RolePermissionWhereInput] = None
+    ) -> int:
+        """Delete multiple RolePermission records.
+
+        Parameters
+        ----------
+        where
+            Optional RolePermission filter to find the records to be deleted
+
+        Returns
+        -------
+        int
+            The total number of RolePermission records that were deleted
+
+        Raises
+        ------
+        prisma.errors.PrismaError
+            Catch all for every exception raised by Prisma Client Python
+
+        Example
+        -------
+        ```py
+        # delete all RolePermission records
+        total = await RolePermission.prisma().delete_many()
+        ```
+        """
+        resp = await self._client._execute(
+            method='delete_many',
+            model=self._model,
+            arguments={'where': where},
+            root_selection=['count'],
+        )
+        return int(resp['data']['result']['count'])
+
+    # TODO: make this easier to work with safely, currently output fields are typed as
+    #       not required, we should refactor the return type
+    # TODO: consider returning a Dict where the keys are a Tuple of the `by` selection
+    # TODO: statically type that the order argument is required when take or skip are present
+    async def group_by(
+        self,
+        by: List['types.RolePermissionScalarFieldKeysT'],
+        *,
+        where: Optional['types.RolePermissionWhereInput'] = None,
+        take: Optional[int] = None,
+        skip: Optional[int] = None,
+        avg: Optional['types.RolePermissionAvgAggregateInput'] = None,
+        sum: Optional['types.RolePermissionSumAggregateInput'] = None,
+        min: Optional['types.RolePermissionMinAggregateInput'] = None,
+        max: Optional['types.RolePermissionMaxAggregateInput'] = None,
+        having: Optional['types.RolePermissionScalarWhereWithAggregatesInput'] = None,
+        count: Optional[Union[bool, 'types.RolePermissionCountAggregateInput']] = None,
+        order: Optional[Union[Mapping['types.RolePermissionScalarFieldKeysT', 'types.SortOrder'], List[Mapping['types.RolePermissionScalarFieldKeysT', 'types.SortOrder']]]] = None,
+    ) -> List['types.RolePermissionGroupByOutput']:
+        """Group RolePermission records by one or more field values and perform aggregations
+        each group such as finding the average.
+
+        Parameters
+        ----------
+        by
+            List of scalar RolePermission fields to group records by
+        where
+            RolePermission filter to select records
+        take
+            Limit the maximum number of RolePermission records returned
+        skip
+            Ignore the first N records
+        avg
+            Adds the average of all values of the specified fields to the `_avg` field
+            in the returned data.
+        sum
+            Adds the sum of all values of the specified fields to the `_sum` field
+            in the returned data.
+        min
+            Adds the smallest available value for the specified fields to the `_min` field
+            in the returned data.
+        max
+            Adds the largest available value for the specified fields to the `_max` field
+            in the returned data.
+        count
+            Adds a count of non-fields to the `_count` field in the returned data.
+        having
+            Allows you to filter groups by an aggregate value - for example only return
+            groups having an average age less than 50.
+        order
+            Lets you order the returned list by any property that is also present in `by`.
+            Only **one** field is allowed at a time.
+
+        Returns
+        -------
+        List[prisma.types.RolePermissionGroupByOutput]
+            A list of dictionaries representing the RolePermission record,
+            this will also have additional fields present if aggregation arguments
+            are used (see the above parameters)
+
+        Raises
+        ------
+        prisma.errors.PrismaError
+            Catch all for every exception raised by Prisma Client Python
+
+        Example
+        -------
+        ```py
+        # group RolePermission records by id values
+        # and count how many records are in each group
+        results = await RolePermission.prisma().group_by(
+            ['id'],
+            count=True,
+        )
+        ```
+        """
+        if order is None:
+            if take is not None:
+                raise TypeError('Missing argument: \'order\' which is required when \'take\' is present')
+
+            if skip is not None:
+                raise TypeError('Missing argument: \'order\' which is required when \'skip\' is present')
+
+        root_selection: List[str] = [*by]
+        if avg is not None:
+            root_selection.append(_select_fields('_avg', avg))
+
+        if min is not None:
+            root_selection.append(_select_fields('_min', min))
+
+        if sum is not None:
+            root_selection.append(_select_fields('_sum', sum))
+
+        if max is not None:
+            root_selection.append(_select_fields('_max', max))
+
+        if count is not None:
+            if count is True:
+                root_selection.append('_count { _all }')
+            elif isinstance(count, dict):
+                root_selection.append(_select_fields('_count', count))
+
+        resp = await self._client._execute(
+            method='group_by',
+            model=self._model,
+            arguments={
+                'by': by,
+                'take': take,
+                'skip': skip,
+                'where': where,
+                'having': having,
+                'orderBy': order,
+            },
+            root_selection=root_selection,
+        )
+        return resp['data']['result']  # type: ignore[no-any-return]
+
+
+class UserPermissionOverrideActions(Generic[_PrismaModelT]):
+    __slots__ = (
+        '_client',
+        '_model',
+    )
+
+    def __init__(self, client: 'Client', model: Type[_PrismaModelT]) -> None:
+        self._client = client
+        self._model = model
+
+    async def query_raw(
+        self,
+        query: LiteralString,
+        *args: Any,
+    ) -> List[_PrismaModelT]:
+        """Execute a raw SQL query
+
+        Parameters
+        ----------
+        query
+            The raw SQL query string to be executed
+        *args
+            Parameters to be passed to the SQL query, these MUST be used over
+            string formatting to avoid an SQL injection vulnerability
+
+        Returns
+        -------
+        List[prisma.models.UserPermissionOverride]
+            The records returned by the SQL query
+
+        Raises
+        ------
+        prisma_errors.RawQueryError
+            This could be due to invalid syntax, mismatched number of parameters or any other error
+        prisma.errors.PrismaError
+            Catch all for every exception raised by Prisma Client Python
+
+        Example
+        -------
+        ```py
+        users = await UserPermissionOverride.prisma().query_raw(
+            'SELECT * FROM UserPermissionOverride WHERE id = $1',
+            271520213,
+        )
+        ```
+        """
+        return await self._client.query_raw(query, *args, model=self._model)
+
+    async def query_first(
+        self,
+        query: LiteralString,
+        *args: Any,
+    ) -> Optional[_PrismaModelT]:
+        """Execute a raw SQL query, returning the first result
+
+        Parameters
+        ----------
+        query
+            The raw SQL query string to be executed
+        *args
+            Parameters to be passed to the SQL query, these MUST be used over
+            string formatting to avoid an SQL injection vulnerability
+
+        Returns
+        -------
+        prisma.models.UserPermissionOverride
+            The first record returned by the SQL query
+        None
+            The raw SQL query did not return any records
+
+        Raises
+        ------
+        prisma_errors.RawQueryError
+            This could be due to invalid syntax, mismatched number of parameters or any other error
+        prisma.errors.PrismaError
+            Catch all for every exception raised by Prisma Client Python
+
+        Example
+        -------
+        ```py
+        user = await UserPermissionOverride.prisma().query_first(
+            'SELECT * FROM UserPermissionOverride WHERE userId = $1',
+            456633834,
+        )
+        ```
+        """
+        return await self._client.query_first(query, *args, model=self._model)
+
+    async def create(
+        self,
+        data: types.UserPermissionOverrideCreateInput,
+        include: Optional[types.UserPermissionOverrideInclude] = None
+    ) -> _PrismaModelT:
+        """Create a new UserPermissionOverride record.
+
+        Parameters
+        ----------
+        data
+            UserPermissionOverride record data
+        include
+            Specifies which relations should be loaded on the returned UserPermissionOverride model
+
+        Returns
+        -------
+        prisma.models.UserPermissionOverride
+            The created UserPermissionOverride record
+
+        Raises
+        ------
+        prisma.errors.MissingRequiredValueError
+            Value is required but was not found
+        prisma.errors.PrismaError
+            Catch all for every exception raised by Prisma Client Python
+
+        Example
+        -------
+        ```py
+        # create a UserPermissionOverride record from just the required fields
+        userpermissionoverride = await UserPermissionOverride.prisma().create(
+            data={
+                # data to create a UserPermissionOverride record
+                'userId': 2058258651,
+                'permissionId': 1583689592,
+                'type': enums.PermissionType.ALLOW,
+            },
+        )
+        ```
+        """
+        resp = await self._client._execute(
+            method='create',
+            model=self._model,
+            arguments={
+                'data': data,
+                'include': include,
+            },
+        )
+        return model_parse(self._model, resp['data']['result'])
+
+    async def create_many(
+        self,
+        data: List[types.UserPermissionOverrideCreateWithoutRelationsInput],
+        *,
+        skip_duplicates: Optional[bool] = None,
+    ) -> int:
+        """Create multiple UserPermissionOverride records at once.
+
+        This function is *not* available when using SQLite.
+
+        Parameters
+        ----------
+        data
+            List of UserPermissionOverride record data
+        skip_duplicates
+            Boolean flag for ignoring unique constraint errors
+
+        Returns
+        -------
+        int
+            The total number of records created
+
+        Raises
+        ------
+        prisma.errors.UnsupportedDatabaseError
+            Attempting to query when using SQLite
+        prisma.errors.UniqueViolationError
+            A unique constraint check has failed, these can be ignored with the `skip_duplicates` argument
+        prisma.errors.MissingRequiredValueError
+            Value is required but was not found
+        prisma.errors.PrismaError
+            Catch all for every exception raised by Prisma Client Python
+
+        Example
+        -------
+        ```py
+        total = await UserPermissionOverride.prisma().create_many(
+            data=[
+                {
+                    # data to create a UserPermissionOverride record
+                    'userId': 878442065,
+                    'permissionId': 1675280054,
+                    'type': enums.PermissionType.ALLOW,
+                },
+                {
+                    # data to create a UserPermissionOverride record
+                    'userId': 1627576247,
+                    'permissionId': 2054802212,
+                    'type': enums.PermissionType.ALLOW,
+                },
+            ],
+            skip_duplicates=True,
+        )
+        ```
+        """
+        if self._client._active_provider == 'sqlite':
+            raise errors.UnsupportedDatabaseError('sqlite', 'create_many()')
+
+        resp = await self._client._execute(
+            method='create_many',
+            model=self._model,
+            arguments={
+                'data': data,
+                'skipDuplicates': skip_duplicates,
+            },
+            root_selection=['count'],
+        )
+        return int(resp['data']['result']['count'])
+
+    async def delete(
+        self,
+        where: types.UserPermissionOverrideWhereUniqueInput,
+        include: Optional[types.UserPermissionOverrideInclude] = None
+    ) -> Optional[_PrismaModelT]:
+        """Delete a single UserPermissionOverride record.
+
+        Parameters
+        ----------
+        where
+            UserPermissionOverride filter to select the record to be deleted, must be unique
+        include
+            Specifies which relations should be loaded on the returned UserPermissionOverride model
+
+        Returns
+        -------
+        prisma.models.UserPermissionOverride
+            The deleted UserPermissionOverride record
+        None
+            Could not find a record to delete
+
+        Raises
+        ------
+        prisma.errors.PrismaError
+            Catch all for every exception raised by Prisma Client Python
+        prisma.errors.MissingRequiredValueError
+            Value is required but was not found
+
+        Example
+        -------
+        ```py
+        userpermissionoverride = await UserPermissionOverride.prisma().delete(
+            where={
+                'id': 60335757,
+            },
+        )
+        ```
+        """
+        try:
+            resp = await self._client._execute(
+                method='delete',
+                model=self._model,
+                arguments={
+                    'where': where,
+                    'include': include,
+                },
+            )
+        except errors.RecordNotFoundError:
+            return None
+
+        return model_parse(self._model, resp['data']['result'])
+
+    async def find_unique(
+        self,
+        where: types.UserPermissionOverrideWhereUniqueInput,
+        include: Optional[types.UserPermissionOverrideInclude] = None
+    ) -> Optional[_PrismaModelT]:
+        """Find a unique UserPermissionOverride record.
+
+        Parameters
+        ----------
+        where
+            UserPermissionOverride filter to find the record, must be unique
+        include
+            Specifies which relations should be loaded on the returned UserPermissionOverride model
+
+        Returns
+        -------
+        prisma.models.UserPermissionOverride
+            The found UserPermissionOverride record
+        None
+            No record matching the given input could be found
+
+        Raises
+        ------
+        prisma.errors.PrismaError
+            Catch all for every exception raised by Prisma Client Python
+        prisma.errors.MissingRequiredValueError
+            Value is required but was not found
+
+        Example
+        -------
+        ```py
+        userpermissionoverride = await UserPermissionOverride.prisma().find_unique(
+            where={
+                'id': 684462146,
+            },
+        )
+        ```
+        """
+        resp = await self._client._execute(
+            method='find_unique',
+            model=self._model,
+            arguments={
+                'where': where,
+                'include': include,
+            },
+        )
+        result = resp['data']['result']
+        if result is None:
+            return None
+        return model_parse(self._model, result)
+
+    async def find_unique_or_raise(
+        self,
+        where: types.UserPermissionOverrideWhereUniqueInput,
+        include: Optional[types.UserPermissionOverrideInclude] = None
+    ) -> _PrismaModelT:
+        """Find a unique UserPermissionOverride record. Raises `RecordNotFoundError` if no record is found.
+
+        Parameters
+        ----------
+        where
+            UserPermissionOverride filter to find the record, must be unique
+        include
+            Specifies which relations should be loaded on the returned UserPermissionOverride model
+
+        Returns
+        -------
+        prisma.models.UserPermissionOverride
+            The found UserPermissionOverride record
+
+        Raises
+        ------
+        prisma.errors.RecordNotFoundError
+            No record was found
+        prisma.errors.PrismaError
+            Catch all for every exception raised by Prisma Client Python
+        prisma.errors.MissingRequiredValueError
+            Value is required but was not found
+
+        Example
+        -------
+        ```py
+        userpermissionoverride = await UserPermissionOverride.prisma().find_unique_or_raise(
+            where={
+                'id': 1625503827,
+            },
+        )
+        ```
+        """
+        resp = await self._client._execute(
+            method='find_unique_or_raise',
+            model=self._model,
+            arguments={
+                'where': where,
+                'include': include,
+            },
+        )
+        return model_parse(self._model, resp['data']['result'])
+
+    async def find_many(
+        self,
+        take: Optional[int] = None,
+        skip: Optional[int] = None,
+        where: Optional[types.UserPermissionOverrideWhereInput] = None,
+        cursor: Optional[types.UserPermissionOverrideWhereUniqueInput] = None,
+        include: Optional[types.UserPermissionOverrideInclude] = None,
+        order: Optional[Union[types.UserPermissionOverrideOrderByInput, List[types.UserPermissionOverrideOrderByInput]]] = None,
+        distinct: Optional[List[types.UserPermissionOverrideScalarFieldKeys]] = None,
+    ) -> List[_PrismaModelT]:
+        """Find multiple UserPermissionOverride records.
+
+        An empty list is returned if no records could be found.
+
+        Parameters
+        ----------
+        take
+            Limit the maximum number of UserPermissionOverride records returned
+        skip
+            Ignore the first N results
+        where
+            UserPermissionOverride filter to select records
+        cursor
+            Specifies the position in the list to start returning results from, (typically an ID field)
+        include
+            Specifies which relations should be loaded on the returned UserPermissionOverride model
+        order
+            Order the returned UserPermissionOverride records by any field
+        distinct
+            Filter UserPermissionOverride records by either a single distinct field or distinct combinations of fields
+
+        Returns
+        -------
+        List[prisma.models.UserPermissionOverride]
+            The list of all UserPermissionOverride records that could be found
+
+        Raises
+        ------
+        prisma.errors.PrismaError
+            Catch all for every exception raised by Prisma Client Python
+
+        Example
+        -------
+        ```py
+        # find the first 10 UserPermissionOverride records
+        userpermissionoverrides = await UserPermissionOverride.prisma().find_many(take=10)
+
+        # find the first 5 UserPermissionOverride records ordered by the permissionId field
+        userpermissionoverrides = await UserPermissionOverride.prisma().find_many(
+            take=5,
+            order={
+                'permissionId': 'desc',
+            },
+        )
+        ```
+        """
+        resp = await self._client._execute(
+            method='find_many',
+            model=self._model,
+            arguments={
+                'take': take,
+                'skip': skip,
+                'where': where,
+                'order_by': order,
+                'cursor': cursor,
+                'include': include,
+                'distinct': distinct,
+            },
+        )
+        return [model_parse(self._model, r) for r in resp['data']['result']]
+
+    async def find_first(
+        self,
+        skip: Optional[int] = None,
+        where: Optional[types.UserPermissionOverrideWhereInput] = None,
+        cursor: Optional[types.UserPermissionOverrideWhereUniqueInput] = None,
+        include: Optional[types.UserPermissionOverrideInclude] = None,
+        order: Optional[Union[types.UserPermissionOverrideOrderByInput, List[types.UserPermissionOverrideOrderByInput]]] = None,
+        distinct: Optional[List[types.UserPermissionOverrideScalarFieldKeys]] = None,
+    ) -> Optional[_PrismaModelT]:
+        """Find a single UserPermissionOverride record.
+
+        Parameters
+        ----------
+        skip
+            Ignore the first N records
+        where
+            UserPermissionOverride filter to select the record
+        cursor
+            Specifies the position in the list to start returning results from, (typically an ID field)
+        include
+            Specifies which relations should be loaded on the returned UserPermissionOverride model
+        order
+            Order the returned UserPermissionOverride records by any field
+        distinct
+            Filter UserPermissionOverride records by either a single distinct field or distinct combinations of fields
+
+        Returns
+        -------
+        prisma.models.UserPermissionOverride
+            The first UserPermissionOverride record found, matching the given arguments
+        None
+            No record could be found
+
+        Raises
+        ------
+        prisma.errors.PrismaError
+            Catch all for every exception raised by Prisma Client Python
+
+        Example
+        -------
+        ```py
+        # find the second UserPermissionOverride record ordered by the type field
+        userpermissionoverride = await UserPermissionOverride.prisma().find_first(
+            skip=1,
+            order={
+                'type': 'desc',
+            },
+        )
+        ```
+        """
+        resp = await self._client._execute(
+            method='find_first',
+            model=self._model,
+            arguments={
+                'skip': skip,
+                'where': where,
+                'order_by': order,
+                'cursor': cursor,
+                'include': include,
+                'distinct': distinct,
+            },
+        )
+        result = resp['data']['result']
+        if result is None:
+            return None
+
+        return model_parse(self._model, result)
+
+    async def find_first_or_raise(
+        self,
+        skip: Optional[int] = None,
+        where: Optional[types.UserPermissionOverrideWhereInput] = None,
+        cursor: Optional[types.UserPermissionOverrideWhereUniqueInput] = None,
+        include: Optional[types.UserPermissionOverrideInclude] = None,
+        order: Optional[Union[types.UserPermissionOverrideOrderByInput, List[types.UserPermissionOverrideOrderByInput]]] = None,
+        distinct: Optional[List[types.UserPermissionOverrideScalarFieldKeys]] = None,
+    ) -> _PrismaModelT:
+        """Find a single UserPermissionOverride record. Raises `RecordNotFoundError` if no record was found.
+
+        Parameters
+        ----------
+        skip
+            Ignore the first N records
+        where
+            UserPermissionOverride filter to select the record
+        cursor
+            Specifies the position in the list to start returning results from, (typically an ID field)
+        include
+            Specifies which relations should be loaded on the returned UserPermissionOverride model
+        order
+            Order the returned UserPermissionOverride records by any field
+        distinct
+            Filter UserPermissionOverride records by either a single distinct field or distinct combinations of fields
+
+        Returns
+        -------
+        prisma.models.UserPermissionOverride
+            The first UserPermissionOverride record found, matching the given arguments
+
+        Raises
+        ------
+        prisma.errors.RecordNotFoundError
+            No record was found
+        prisma.errors.PrismaError
+            Catch all for every exception raised by Prisma Client Python
+
+        Example
+        -------
+        ```py
+        # find the second UserPermissionOverride record ordered by the createdAt field
+        userpermissionoverride = await UserPermissionOverride.prisma().find_first_or_raise(
             skip=1,
             order={
                 'createdAt': 'desc',
@@ -1654,25 +3710,25 @@ class UserPermissionActions(Generic[_PrismaModelT]):
 
     async def update(
         self,
-        data: types.UserPermissionUpdateInput,
-        where: types.UserPermissionWhereUniqueInput,
-        include: Optional[types.UserPermissionInclude] = None
+        data: types.UserPermissionOverrideUpdateInput,
+        where: types.UserPermissionOverrideWhereUniqueInput,
+        include: Optional[types.UserPermissionOverrideInclude] = None
     ) -> Optional[_PrismaModelT]:
-        """Update a single UserPermission record.
+        """Update a single UserPermissionOverride record.
 
         Parameters
         ----------
         data
-            UserPermission record data specifying what to update
+            UserPermissionOverride record data specifying what to update
         where
-            UserPermission filter to select the unique record to create / update
+            UserPermissionOverride filter to select the unique record to create / update
         include
-            Specifies which relations should be loaded on the returned UserPermission model
+            Specifies which relations should be loaded on the returned UserPermissionOverride model
 
         Returns
         -------
-        prisma.models.UserPermission
-            The updated UserPermission record
+        prisma.models.UserPermissionOverride
+            The updated UserPermissionOverride record
         None
             No record could be found
 
@@ -1684,12 +3740,12 @@ class UserPermissionActions(Generic[_PrismaModelT]):
         Example
         -------
         ```py
-        userpermission = await UserPermission.prisma().update(
+        userpermissionoverride = await UserPermissionOverride.prisma().update(
             where={
-                'id': 1628650740,
+                'id': 521827728,
             },
             data={
-                # data to update the UserPermission record to
+                # data to update the UserPermissionOverride record to
             },
         )
         ```
@@ -1711,25 +3767,25 @@ class UserPermissionActions(Generic[_PrismaModelT]):
 
     async def upsert(
         self,
-        where: types.UserPermissionWhereUniqueInput,
-        data: types.UserPermissionUpsertInput,
-        include: Optional[types.UserPermissionInclude] = None,
+        where: types.UserPermissionOverrideWhereUniqueInput,
+        data: types.UserPermissionOverrideUpsertInput,
+        include: Optional[types.UserPermissionOverrideInclude] = None,
     ) -> _PrismaModelT:
         """Updates an existing record or create a new one
 
         Parameters
         ----------
         where
-            UserPermission filter to select the unique record to create / update
+            UserPermissionOverride filter to select the unique record to create / update
         data
             Data specifying what fields to set on create and update
         include
-            Specifies which relations should be loaded on the returned UserPermission model
+            Specifies which relations should be loaded on the returned UserPermissionOverride model
 
         Returns
         -------
-        prisma.models.UserPermission
-            The created or updated UserPermission record
+        prisma.models.UserPermissionOverride
+            The created or updated UserPermissionOverride record
 
         Raises
         ------
@@ -1741,21 +3797,21 @@ class UserPermissionActions(Generic[_PrismaModelT]):
         Example
         -------
         ```py
-        userpermission = await UserPermission.prisma().upsert(
+        userpermissionoverride = await UserPermissionOverride.prisma().upsert(
             where={
-                'id': 1249606685,
+                'id': 1266032265,
             },
             data={
                 'create': {
-                    'id': 1249606685,
-                    'userId': 1303003706,
-                    'resource': 'bgiggdidbf',
-                    'actions': Json({'caaaedabfc': True}),
+                    'id': 1266032265,
+                    'userId': 1627576247,
+                    'permissionId': 2054802212,
+                    'type': enums.PermissionType.ALLOW,
                 },
                 'update': {
-                    'userId': 1303003706,
-                    'resource': 'bgiggdidbf',
-                    'actions': Json({'caaaedabfc': True}),
+                    'userId': 1627576247,
+                    'permissionId': 2054802212,
+                    'type': enums.PermissionType.ALLOW,
                 },
             },
         )
@@ -1775,22 +3831,22 @@ class UserPermissionActions(Generic[_PrismaModelT]):
 
     async def update_many(
         self,
-        data: types.UserPermissionUpdateManyMutationInput,
-        where: types.UserPermissionWhereInput,
+        data: types.UserPermissionOverrideUpdateManyMutationInput,
+        where: types.UserPermissionOverrideWhereInput,
     ) -> int:
-        """Update multiple UserPermission records
+        """Update multiple UserPermissionOverride records
 
         Parameters
         ----------
         data
-            UserPermission data to update the selected UserPermission records to
+            UserPermissionOverride data to update the selected UserPermissionOverride records to
         where
-            Filter to select the UserPermission records to update
+            Filter to select the UserPermissionOverride records to update
 
         Returns
         -------
         int
-            The total number of UserPermission records that were updated
+            The total number of UserPermissionOverride records that were updated
 
         Raises
         ------
@@ -1800,8 +3856,8 @@ class UserPermissionActions(Generic[_PrismaModelT]):
         Example
         -------
         ```py
-        # update all UserPermission records
-        total = await UserPermission.prisma().update_many(
+        # update all UserPermissionOverride records
+        total = await UserPermissionOverride.prisma().update_many(
             data={
                 'updatedAt': datetime.datetime.utcnow()
             },
@@ -1823,21 +3879,21 @@ class UserPermissionActions(Generic[_PrismaModelT]):
         select: None = None,
         take: Optional[int] = None,
         skip: Optional[int] = None,
-        where: Optional[types.UserPermissionWhereInput] = None,
-        cursor: Optional[types.UserPermissionWhereUniqueInput] = None,
+        where: Optional[types.UserPermissionOverrideWhereInput] = None,
+        cursor: Optional[types.UserPermissionOverrideWhereUniqueInput] = None,
     ) -> int:
-        """Count the number of UserPermission records present in the database
+        """Count the number of UserPermissionOverride records present in the database
 
         Parameters
         ----------
         select
-            Select the UserPermission fields to be counted
+            Select the UserPermissionOverride fields to be counted
         take
             Limit the maximum result
         skip
             Ignore the first N records
         where
-            UserPermission filter to find records
+            UserPermissionOverride filter to find records
         cursor
             Specifies the position in the list to start counting results from, (typically an ID field)
         order
@@ -1848,7 +3904,7 @@ class UserPermissionActions(Generic[_PrismaModelT]):
         int
             The total number of records found, returned if `select` is not given
 
-        prisma.types.UserPermissionCountAggregateOutput
+        prisma.types.UserPermissionOverrideCountAggregateOutput
             Data returned when `select` is used, the fields present in this dictionary will
             match the fields passed in the `select` argument
 
@@ -1861,10 +3917,10 @@ class UserPermissionActions(Generic[_PrismaModelT]):
         -------
         ```py
         # total: int
-        total = await UserPermission.prisma().count()
+        total = await UserPermissionOverride.prisma().count()
 
-        # results: prisma.types.UserPermissionCountAggregateOutput
-        results = await UserPermission.prisma().count(
+        # results: prisma.types.UserPermissionOverrideCountAggregateOutput
+        results = await UserPermissionOverride.prisma().count(
             select={
                 '_all': True,
                 'id': True,
@@ -1877,34 +3933,34 @@ class UserPermissionActions(Generic[_PrismaModelT]):
     @overload
     async def count(
         self,
-        select: types.UserPermissionCountAggregateInput,
+        select: types.UserPermissionOverrideCountAggregateInput,
         take: Optional[int] = None,
         skip: Optional[int] = None,
-        where: Optional[types.UserPermissionWhereInput] = None,
-        cursor: Optional[types.UserPermissionWhereUniqueInput] = None,
-    ) -> types.UserPermissionCountAggregateOutput:
+        where: Optional[types.UserPermissionOverrideWhereInput] = None,
+        cursor: Optional[types.UserPermissionOverrideWhereUniqueInput] = None,
+    ) -> types.UserPermissionOverrideCountAggregateOutput:
         ...
 
     async def count(
         self,
-        select: Optional[types.UserPermissionCountAggregateInput] = None,
+        select: Optional[types.UserPermissionOverrideCountAggregateInput] = None,
         take: Optional[int] = None,
         skip: Optional[int] = None,
-        where: Optional[types.UserPermissionWhereInput] = None,
-        cursor: Optional[types.UserPermissionWhereUniqueInput] = None,
-    ) -> Union[int, types.UserPermissionCountAggregateOutput]:
-        """Count the number of UserPermission records present in the database
+        where: Optional[types.UserPermissionOverrideWhereInput] = None,
+        cursor: Optional[types.UserPermissionOverrideWhereUniqueInput] = None,
+    ) -> Union[int, types.UserPermissionOverrideCountAggregateOutput]:
+        """Count the number of UserPermissionOverride records present in the database
 
         Parameters
         ----------
         select
-            Select the UserPermission fields to be counted
+            Select the UserPermissionOverride fields to be counted
         take
             Limit the maximum result
         skip
             Ignore the first N records
         where
-            UserPermission filter to find records
+            UserPermissionOverride filter to find records
         cursor
             Specifies the position in the list to start counting results from, (typically an ID field)
         order
@@ -1915,7 +3971,7 @@ class UserPermissionActions(Generic[_PrismaModelT]):
         int
             The total number of records found, returned if `select` is not given
 
-        prisma.types.UserPermissionCountAggregateOutput
+        prisma.types.UserPermissionOverrideCountAggregateOutput
             Data returned when `select` is used, the fields present in this dictionary will
             match the fields passed in the `select` argument
 
@@ -1928,10 +3984,10 @@ class UserPermissionActions(Generic[_PrismaModelT]):
         -------
         ```py
         # total: int
-        total = await UserPermission.prisma().count()
+        total = await UserPermissionOverride.prisma().count()
 
-        # results: prisma.types.UserPermissionCountAggregateOutput
-        results = await UserPermission.prisma().count(
+        # results: prisma.types.UserPermissionOverrideCountAggregateOutput
+        results = await UserPermissionOverride.prisma().count(
             select={
                 '_all': True,
                 'userId': True,
@@ -1968,23 +4024,23 @@ class UserPermissionActions(Generic[_PrismaModelT]):
         if select is None:
             return cast(int, resp['data']['result']['_count']['_all'])
         else:
-            return cast(types.UserPermissionCountAggregateOutput, resp['data']['result']['_count'])
+            return cast(types.UserPermissionOverrideCountAggregateOutput, resp['data']['result']['_count'])
 
     async def delete_many(
         self,
-        where: Optional[types.UserPermissionWhereInput] = None
+        where: Optional[types.UserPermissionOverrideWhereInput] = None
     ) -> int:
-        """Delete multiple UserPermission records.
+        """Delete multiple UserPermissionOverride records.
 
         Parameters
         ----------
         where
-            Optional UserPermission filter to find the records to be deleted
+            Optional UserPermissionOverride filter to find the records to be deleted
 
         Returns
         -------
         int
-            The total number of UserPermission records that were deleted
+            The total number of UserPermissionOverride records that were deleted
 
         Raises
         ------
@@ -1994,8 +4050,8 @@ class UserPermissionActions(Generic[_PrismaModelT]):
         Example
         -------
         ```py
-        # delete all UserPermission records
-        total = await UserPermission.prisma().delete_many()
+        # delete all UserPermissionOverride records
+        total = await UserPermissionOverride.prisma().delete_many()
         ```
         """
         resp = await self._client._execute(
@@ -2012,30 +4068,30 @@ class UserPermissionActions(Generic[_PrismaModelT]):
     # TODO: statically type that the order argument is required when take or skip are present
     async def group_by(
         self,
-        by: List['types.UserPermissionScalarFieldKeysT'],
+        by: List['types.UserPermissionOverrideScalarFieldKeysT'],
         *,
-        where: Optional['types.UserPermissionWhereInput'] = None,
+        where: Optional['types.UserPermissionOverrideWhereInput'] = None,
         take: Optional[int] = None,
         skip: Optional[int] = None,
-        avg: Optional['types.UserPermissionAvgAggregateInput'] = None,
-        sum: Optional['types.UserPermissionSumAggregateInput'] = None,
-        min: Optional['types.UserPermissionMinAggregateInput'] = None,
-        max: Optional['types.UserPermissionMaxAggregateInput'] = None,
-        having: Optional['types.UserPermissionScalarWhereWithAggregatesInput'] = None,
-        count: Optional[Union[bool, 'types.UserPermissionCountAggregateInput']] = None,
-        order: Optional[Union[Mapping['types.UserPermissionScalarFieldKeysT', 'types.SortOrder'], List[Mapping['types.UserPermissionScalarFieldKeysT', 'types.SortOrder']]]] = None,
-    ) -> List['types.UserPermissionGroupByOutput']:
-        """Group UserPermission records by one or more field values and perform aggregations
+        avg: Optional['types.UserPermissionOverrideAvgAggregateInput'] = None,
+        sum: Optional['types.UserPermissionOverrideSumAggregateInput'] = None,
+        min: Optional['types.UserPermissionOverrideMinAggregateInput'] = None,
+        max: Optional['types.UserPermissionOverrideMaxAggregateInput'] = None,
+        having: Optional['types.UserPermissionOverrideScalarWhereWithAggregatesInput'] = None,
+        count: Optional[Union[bool, 'types.UserPermissionOverrideCountAggregateInput']] = None,
+        order: Optional[Union[Mapping['types.UserPermissionOverrideScalarFieldKeysT', 'types.SortOrder'], List[Mapping['types.UserPermissionOverrideScalarFieldKeysT', 'types.SortOrder']]]] = None,
+    ) -> List['types.UserPermissionOverrideGroupByOutput']:
+        """Group UserPermissionOverride records by one or more field values and perform aggregations
         each group such as finding the average.
 
         Parameters
         ----------
         by
-            List of scalar UserPermission fields to group records by
+            List of scalar UserPermissionOverride fields to group records by
         where
-            UserPermission filter to select records
+            UserPermissionOverride filter to select records
         take
-            Limit the maximum number of UserPermission records returned
+            Limit the maximum number of UserPermissionOverride records returned
         skip
             Ignore the first N records
         avg
@@ -2061,8 +4117,8 @@ class UserPermissionActions(Generic[_PrismaModelT]):
 
         Returns
         -------
-        List[prisma.types.UserPermissionGroupByOutput]
-            A list of dictionaries representing the UserPermission record,
+        List[prisma.types.UserPermissionOverrideGroupByOutput]
+            A list of dictionaries representing the UserPermissionOverride record,
             this will also have additional fields present if aggregation arguments
             are used (see the above parameters)
 
@@ -2074,10 +4130,10 @@ class UserPermissionActions(Generic[_PrismaModelT]):
         Example
         -------
         ```py
-        # group UserPermission records by resource values
+        # group UserPermissionOverride records by permissionId values
         # and count how many records are in each group
-        results = await UserPermission.prisma().group_by(
-            ['resource'],
+        results = await UserPermissionOverride.prisma().group_by(
+            ['permissionId'],
             count=True,
         )
         ```
@@ -2166,7 +4222,7 @@ class BranchActions(Generic[_PrismaModelT]):
         ```py
         users = await Branch.prisma().query_raw(
             'SELECT * FROM Branch WHERE id = $1',
-            835903122,
+            93253262,
         )
         ```
         """
@@ -2206,7 +4262,7 @@ class BranchActions(Generic[_PrismaModelT]):
         ```py
         user = await Branch.prisma().query_first(
             'SELECT * FROM Branch WHERE name = $1',
-            'hgdhbjhhj',
+            'cafdaehjid',
         )
         ```
         """
@@ -2245,7 +4301,7 @@ class BranchActions(Generic[_PrismaModelT]):
         branch = await Branch.prisma().create(
             data={
                 # data to create a Branch record
-                'name': 'ecjjjfbae',
+                'name': 'gifdddbia',
             },
         )
         ```
@@ -2300,11 +4356,11 @@ class BranchActions(Generic[_PrismaModelT]):
             data=[
                 {
                     # data to create a Branch record
-                    'name': 'bhhfibbigf',
+                    'name': 'bchehecef',
                 },
                 {
                     # data to create a Branch record
-                    'name': 'ijdbeffgg',
+                    'name': 'jeijcbhfe',
                 },
             ],
             skip_duplicates=True,
@@ -2358,7 +4414,7 @@ class BranchActions(Generic[_PrismaModelT]):
         ```py
         branch = await Branch.prisma().delete(
             where={
-                'id': 995405759,
+                'id': 1964990155,
             },
         )
         ```
@@ -2410,7 +4466,7 @@ class BranchActions(Generic[_PrismaModelT]):
         ```py
         branch = await Branch.prisma().find_unique(
             where={
-                'id': 2102736524,
+                'id': 1228891816,
             },
         )
         ```
@@ -2461,7 +4517,7 @@ class BranchActions(Generic[_PrismaModelT]):
         ```py
         branch = await Branch.prisma().find_unique_or_raise(
             where={
-                'id': 271520213,
+                'id': 255202753,
             },
         )
         ```
@@ -2713,7 +4769,7 @@ class BranchActions(Generic[_PrismaModelT]):
         ```py
         branch = await Branch.prisma().update(
             where={
-                'id': 456633834,
+                'id': 1223573862,
             },
             data={
                 # data to update the Branch record to
@@ -2770,15 +4826,15 @@ class BranchActions(Generic[_PrismaModelT]):
         ```py
         branch = await Branch.prisma().upsert(
             where={
-                'id': 2058258651,
+                'id': 541269159,
             },
             data={
                 'create': {
-                    'id': 2058258651,
-                    'name': 'ijdbeffgg',
+                    'id': 541269159,
+                    'name': 'jeijcbhfe',
                 },
                 'update': {
-                    'name': 'ijdbeffgg',
+                    'name': 'jeijcbhfe',
                 },
             },
         )
@@ -3189,7 +5245,7 @@ class ProductActions(Generic[_PrismaModelT]):
         ```py
         users = await Product.prisma().query_raw(
             'SELECT * FROM Product WHERE id = $1',
-            1583689592,
+            1064846676,
         )
         ```
         """
@@ -3229,7 +5285,7 @@ class ProductActions(Generic[_PrismaModelT]):
         ```py
         user = await Product.prisma().query_first(
             'SELECT * FROM Product WHERE sku = $1',
-            'ihieecagf',
+            'faidicegb',
         )
         ```
         """
@@ -3268,10 +5324,10 @@ class ProductActions(Generic[_PrismaModelT]):
         product = await Product.prisma().create(
             data={
                 # data to create a Product record
-                'sku': 'bghfciaafe',
-                'name': 'bgchfhgceh',
-                'costPrice': Decimal('2054802212.6033'),
-                'sellingPrice': Decimal('684462146.162550'),
+                'sku': 'bacecgfhbe',
+                'name': 'ihcahiead',
+                'costPrice': Decimal('1874748096.91689'),
+                'sellingPrice': Decimal('769267518.82031'),
             },
         )
         ```
@@ -3326,17 +5382,17 @@ class ProductActions(Generic[_PrismaModelT]):
             data=[
                 {
                     # data to create a Product record
-                    'sku': 'fcbichhci',
-                    'name': 'bcggadccgf',
-                    'costPrice': Decimal('93253262.205304'),
-                    'sellingPrice': Decimal('685333180.12747'),
+                    'sku': 'jchciaee',
+                    'name': 'deeificjd',
+                    'costPrice': Decimal('1121741130.149589'),
+                    'sellingPrice': Decimal('208521688.86081'),
                 },
                 {
                     # data to create a Product record
-                    'sku': 'jeijcbhfe',
-                    'name': 'bjgejjabff',
-                    'costPrice': Decimal('1228891816.25520'),
-                    'sellingPrice': Decimal('1223573862.54126'),
+                    'sku': 'bggajdcbbi',
+                    'name': 'fcfhgbjed',
+                    'costPrice': Decimal('736209796.49390'),
+                    'sellingPrice': Decimal('639686562.65400'),
                 },
             ],
             skip_duplicates=True,
@@ -3390,7 +5446,7 @@ class ProductActions(Generic[_PrismaModelT]):
         ```py
         product = await Product.prisma().delete(
             where={
-                'id': 1064846676,
+                'id': 1905261552,
             },
         )
         ```
@@ -3442,7 +5498,7 @@ class ProductActions(Generic[_PrismaModelT]):
         ```py
         product = await Product.prisma().find_unique(
             where={
-                'id': 508382461,
+                'id': 78746985,
             },
         )
         ```
@@ -3493,7 +5549,7 @@ class ProductActions(Generic[_PrismaModelT]):
         ```py
         product = await Product.prisma().find_unique_or_raise(
             where={
-                'id': 1024265714,
+                'id': 1398328302,
             },
         )
         ```
@@ -3745,7 +5801,7 @@ class ProductActions(Generic[_PrismaModelT]):
         ```py
         product = await Product.prisma().update(
             where={
-                'id': 872078403,
+                'id': 856000655,
             },
             data={
                 # data to update the Product record to
@@ -3802,21 +5858,21 @@ class ProductActions(Generic[_PrismaModelT]):
         ```py
         product = await Product.prisma().upsert(
             where={
-                'id': 1874748096,
+                'id': 1452336924,
             },
             data={
                 'create': {
-                    'id': 1874748096,
-                    'sku': 'jeijcbhfe',
-                    'name': 'bjgejjabff',
-                    'costPrice': Decimal('1228891816.25520'),
-                    'sellingPrice': Decimal('1223573862.54126'),
+                    'id': 1452336924,
+                    'sku': 'bggajdcbbi',
+                    'name': 'fcfhgbjed',
+                    'costPrice': Decimal('736209796.49390'),
+                    'sellingPrice': Decimal('639686562.65400'),
                 },
                 'update': {
-                    'sku': 'jeijcbhfe',
-                    'name': 'bjgejjabff',
-                    'costPrice': Decimal('1228891816.25520'),
-                    'sellingPrice': Decimal('1223573862.54126'),
+                    'sku': 'bggajdcbbi',
+                    'name': 'fcfhgbjed',
+                    'costPrice': Decimal('736209796.49390'),
+                    'sellingPrice': Decimal('639686562.65400'),
                 },
             },
         )
@@ -3864,7 +5920,7 @@ class ProductActions(Generic[_PrismaModelT]):
         # update all Product records
         total = await Product.prisma().update_many(
             data={
-                'costPrice': Decimal('916896761.76926')
+                'costPrice': Decimal('1573199653.201390')
             },
             where={}
         )
@@ -4227,7 +6283,7 @@ class CategoryActions(Generic[_PrismaModelT]):
         ```py
         users = await Category.prisma().query_raw(
             'SELECT * FROM Category WHERE id = $1',
-            820312479,
+            500965035,
         )
         ```
         """
@@ -4267,7 +6323,7 @@ class CategoryActions(Generic[_PrismaModelT]):
         ```py
         user = await Category.prisma().query_first(
             'SELECT * FROM Category WHERE name = $1',
-            'jchciaee',
+            'biaagcedjc',
         )
         ```
         """
@@ -4306,7 +6362,7 @@ class CategoryActions(Generic[_PrismaModelT]):
         category = await Category.prisma().create(
             data={
                 # data to create a Category record
-                'name': 'deeificjd',
+                'name': 'cahhaghecf',
             },
         )
         ```
@@ -4361,11 +6417,11 @@ class CategoryActions(Generic[_PrismaModelT]):
             data=[
                 {
                     # data to create a Category record
-                    'name': 'bbcbhebbda',
+                    'name': 'bghcbbcidi',
                 },
                 {
                     # data to create a Category record
-                    'name': 'bejfijgcfb',
+                    'name': 'jcgghhgdj',
                 },
             ],
             skip_duplicates=True,
@@ -4419,7 +6475,7 @@ class CategoryActions(Generic[_PrismaModelT]):
         ```py
         category = await Category.prisma().delete(
             where={
-                'id': 208521688,
+                'id': 1447624116,
             },
         )
         ```
@@ -4471,7 +6527,7 @@ class CategoryActions(Generic[_PrismaModelT]):
         ```py
         category = await Category.prisma().find_unique(
             where={
-                'id': 860811569,
+                'id': 1738083805,
             },
         )
         ```
@@ -4522,7 +6578,7 @@ class CategoryActions(Generic[_PrismaModelT]):
         ```py
         category = await Category.prisma().find_unique_or_raise(
             where={
-                'id': 1660932118,
+                'id': 340946258,
             },
         )
         ```
@@ -4774,7 +6830,7 @@ class CategoryActions(Generic[_PrismaModelT]):
         ```py
         category = await Category.prisma().update(
             where={
-                'id': 525761943,
+                'id': 601077795,
             },
             data={
                 # data to update the Category record to
@@ -4831,15 +6887,15 @@ class CategoryActions(Generic[_PrismaModelT]):
         ```py
         category = await Category.prisma().upsert(
             where={
-                'id': 736209796,
+                'id': 290603296,
             },
             data={
                 'create': {
-                    'id': 736209796,
-                    'name': 'bejfijgcfb',
+                    'id': 290603296,
+                    'name': 'jcgghhgdj',
                 },
                 'update': {
-                    'name': 'bejfijgcfb',
+                    'name': 'jcgghhgdj',
                 },
             },
         )
@@ -5250,7 +7306,7 @@ class StockActions(Generic[_PrismaModelT]):
         ```py
         users = await Stock.prisma().query_raw(
             'SELECT * FROM Stock WHERE id = $1',
-            493907821,
+            1855826649,
         )
         ```
         """
@@ -5290,7 +7346,7 @@ class StockActions(Generic[_PrismaModelT]):
         ```py
         user = await Stock.prisma().query_first(
             'SELECT * FROM Stock WHERE productId = $1',
-            639686562,
+            1611009182,
         )
         ```
         """
@@ -5329,7 +7385,7 @@ class StockActions(Generic[_PrismaModelT]):
         stock = await Stock.prisma().create(
             data={
                 # data to create a Stock record
-                'productId': 654007347,
+                'productId': 446673791,
             },
         )
         ```
@@ -5384,11 +7440,11 @@ class StockActions(Generic[_PrismaModelT]):
             data=[
                 {
                     # data to create a Stock record
-                    'productId': 1905261552,
+                    'productId': 300568396,
                 },
                 {
                     # data to create a Stock record
-                    'productId': 78746985,
+                    'productId': 632626069,
                 },
             ],
             skip_duplicates=True,
@@ -5442,7 +7498,7 @@ class StockActions(Generic[_PrismaModelT]):
         ```py
         stock = await Stock.prisma().delete(
             where={
-                'id': 1398328302,
+                'id': 1724011690,
             },
         )
         ```
@@ -5494,7 +7550,7 @@ class StockActions(Generic[_PrismaModelT]):
         ```py
         stock = await Stock.prisma().find_unique(
             where={
-                'id': 856000655,
+                'id': 470157467,
             },
         )
         ```
@@ -5545,7 +7601,7 @@ class StockActions(Generic[_PrismaModelT]):
         ```py
         stock = await Stock.prisma().find_unique_or_raise(
             where={
-                'id': 1452336924,
+                'id': 1209209912,
             },
         )
         ```
@@ -5797,7 +7853,7 @@ class StockActions(Generic[_PrismaModelT]):
         ```py
         stock = await Stock.prisma().update(
             where={
-                'id': 1573199653,
+                'id': 1536744465,
             },
             data={
                 # data to update the Stock record to
@@ -5854,15 +7910,15 @@ class StockActions(Generic[_PrismaModelT]):
         ```py
         stock = await Stock.prisma().upsert(
             where={
-                'id': 2013903098,
+                'id': 424218998,
             },
             data={
                 'create': {
-                    'id': 2013903098,
-                    'productId': 78746985,
+                    'id': 424218998,
+                    'productId': 632626069,
                 },
                 'update': {
-                    'productId': 78746985,
+                    'productId': 632626069,
                 },
             },
         )
@@ -6273,7 +8329,7 @@ class CustomerActions(Generic[_PrismaModelT]):
         ```py
         users = await Customer.prisma().query_raw(
             'SELECT * FROM Customer WHERE id = $1',
-            500965035,
+            2125632375,
         )
         ```
         """
@@ -6313,7 +8369,7 @@ class CustomerActions(Generic[_PrismaModelT]):
         ```py
         user = await Customer.prisma().query_first(
             'SELECT * FROM Customer WHERE name = $1',
-            'biaagcedjc',
+            'fdgjfbhia',
         )
         ```
         """
@@ -6352,7 +8408,7 @@ class CustomerActions(Generic[_PrismaModelT]):
         customer = await Customer.prisma().create(
             data={
                 # data to create a Customer record
-                'name': 'cahhaghecf',
+                'name': 'jcehcdchh',
             },
         )
         ```
@@ -6407,11 +8463,11 @@ class CustomerActions(Generic[_PrismaModelT]):
             data=[
                 {
                     # data to create a Customer record
-                    'name': 'bghcbbcidi',
+                    'name': 'bgcbjdhjcc',
                 },
                 {
                     # data to create a Customer record
-                    'name': 'jcgghhgdj',
+                    'name': 'bieiidcabj',
                 },
             ],
             skip_duplicates=True,
@@ -6465,7 +8521,7 @@ class CustomerActions(Generic[_PrismaModelT]):
         ```py
         customer = await Customer.prisma().delete(
             where={
-                'id': 1447624116,
+                'id': 1921528400,
             },
         )
         ```
@@ -6517,7 +8573,7 @@ class CustomerActions(Generic[_PrismaModelT]):
         ```py
         customer = await Customer.prisma().find_unique(
             where={
-                'id': 1738083805,
+                'id': 2100427849,
             },
         )
         ```
@@ -6568,7 +8624,7 @@ class CustomerActions(Generic[_PrismaModelT]):
         ```py
         customer = await Customer.prisma().find_unique_or_raise(
             where={
-                'id': 340946258,
+                'id': 849140046,
             },
         )
         ```
@@ -6820,7 +8876,7 @@ class CustomerActions(Generic[_PrismaModelT]):
         ```py
         customer = await Customer.prisma().update(
             where={
-                'id': 601077795,
+                'id': 928152175,
             },
             data={
                 # data to update the Customer record to
@@ -6877,15 +8933,15 @@ class CustomerActions(Generic[_PrismaModelT]):
         ```py
         customer = await Customer.prisma().upsert(
             where={
-                'id': 290603296,
+                'id': 273032060,
             },
             data={
                 'create': {
-                    'id': 290603296,
-                    'name': 'jcgghhgdj',
+                    'id': 273032060,
+                    'name': 'bieiidcabj',
                 },
                 'update': {
-                    'name': 'jcgghhgdj',
+                    'name': 'bieiidcabj',
                 },
             },
         )
@@ -7296,7 +9352,7 @@ class SaleActions(Generic[_PrismaModelT]):
         ```py
         users = await Sale.prisma().query_raw(
             'SELECT * FROM Sale WHERE id = $1',
-            1855826649,
+            982848517,
         )
         ```
         """
@@ -7336,7 +9392,7 @@ class SaleActions(Generic[_PrismaModelT]):
         ```py
         user = await Sale.prisma().query_first(
             'SELECT * FROM Sale WHERE branchId = $1',
-            1611009182,
+            510737498,
         )
         ```
         """
@@ -7375,9 +9431,9 @@ class SaleActions(Generic[_PrismaModelT]):
         sale = await Sale.prisma().create(
             data={
                 # data to create a Sale record
-                'branchId': 446673791,
-                'totalAmount': Decimal('300568396.63262'),
-                'userId': 1724011690,
+                'branchId': 2117488267,
+                'totalAmount': Decimal('1401944936.129760'),
+                'userId': 519488550,
             },
         )
         ```
@@ -7432,15 +9488,15 @@ class SaleActions(Generic[_PrismaModelT]):
             data=[
                 {
                     # data to create a Sale record
-                    'branchId': 470157467,
-                    'totalAmount': Decimal('1209209912.153674'),
-                    'userId': 424218998,
+                    'branchId': 976832615,
+                    'totalAmount': Decimal('1696425492.16926'),
+                    'userId': 1023081650,
                 },
                 {
                     # data to create a Sale record
-                    'branchId': 2125632375,
-                    'totalAmount': Decimal('536951780.92472'),
-                    'userId': 1621937922,
+                    'branchId': 327681027,
+                    'totalAmount': Decimal('527748992.202935'),
+                    'userId': 1318597118,
                 },
             ],
             skip_duplicates=True,
@@ -7494,7 +9550,7 @@ class SaleActions(Generic[_PrismaModelT]):
         ```py
         sale = await Sale.prisma().delete(
             where={
-                'id': 1848832019,
+                'id': 2122112351,
             },
         )
         ```
@@ -7546,7 +9602,7 @@ class SaleActions(Generic[_PrismaModelT]):
         ```py
         sale = await Sale.prisma().find_unique(
             where={
-                'id': 1921528400,
+                'id': 1024943020,
             },
         )
         ```
@@ -7597,7 +9653,7 @@ class SaleActions(Generic[_PrismaModelT]):
         ```py
         sale = await Sale.prisma().find_unique_or_raise(
             where={
-                'id': 2100427849,
+                'id': 1717307509,
             },
         )
         ```
@@ -7849,7 +9905,7 @@ class SaleActions(Generic[_PrismaModelT]):
         ```py
         sale = await Sale.prisma().update(
             where={
-                'id': 849140046,
+                'id': 1598124042,
             },
             data={
                 # data to update the Sale record to
@@ -7906,19 +9962,19 @@ class SaleActions(Generic[_PrismaModelT]):
         ```py
         sale = await Sale.prisma().upsert(
             where={
-                'id': 928152175,
+                'id': 817623163,
             },
             data={
                 'create': {
-                    'id': 928152175,
-                    'branchId': 2125632375,
-                    'totalAmount': Decimal('536951780.92472'),
-                    'userId': 1621937922,
+                    'id': 817623163,
+                    'branchId': 327681027,
+                    'totalAmount': Decimal('527748992.202935'),
+                    'userId': 1318597118,
                 },
                 'update': {
-                    'branchId': 2125632375,
-                    'totalAmount': Decimal('536951780.92472'),
-                    'userId': 1621937922,
+                    'branchId': 327681027,
+                    'totalAmount': Decimal('527748992.202935'),
+                    'userId': 1318597118,
                 },
             },
         )
@@ -7966,7 +10022,7 @@ class SaleActions(Generic[_PrismaModelT]):
         # update all Sale records
         total = await Sale.prisma().update_many(
             data={
-                'customerId': 273032060
+                'customerId': 1030557336
             },
             where={}
         )
@@ -8329,7 +10385,7 @@ class SaleItemActions(Generic[_PrismaModelT]):
         ```py
         users = await SaleItem.prisma().query_raw(
             'SELECT * FROM SaleItem WHERE id = $1',
-            982848517,
+            1131525873,
         )
         ```
         """
@@ -8369,7 +10425,7 @@ class SaleItemActions(Generic[_PrismaModelT]):
         ```py
         user = await SaleItem.prisma().query_first(
             'SELECT * FROM SaleItem WHERE saleId = $1',
-            510737498,
+            210666198,
         )
         ```
         """
@@ -8408,11 +10464,11 @@ class SaleItemActions(Generic[_PrismaModelT]):
         saleitem = await SaleItem.prisma().create(
             data={
                 # data to create a SaleItem record
-                'saleId': 2117488267,
-                'stockId': 1401944936,
-                'quantity': 1297607553,
-                'price': Decimal('519488550.97683'),
-                'subtotal': Decimal('1696425492.16926'),
+                'saleId': 1276057943,
+                'stockId': 745569348,
+                'quantity': 307876141,
+                'price': Decimal('1674049122.152685'),
+                'subtotal': Decimal('958077104.151305'),
             },
         )
         ```
@@ -8467,19 +10523,19 @@ class SaleItemActions(Generic[_PrismaModelT]):
             data=[
                 {
                     # data to create a SaleItem record
-                    'saleId': 1023081650,
-                    'stockId': 327681027,
-                    'quantity': 527748992,
-                    'price': Decimal('2029357497.131859'),
-                    'subtotal': Decimal('2122112351.102494'),
+                    'saleId': 204674734,
+                    'stockId': 2067651663,
+                    'quantity': 1183911900,
+                    'price': Decimal('1589704933.124347'),
+                    'subtotal': Decimal('1369828971.167859'),
                 },
                 {
                     # data to create a SaleItem record
-                    'saleId': 1717307509,
-                    'stockId': 1598124042,
-                    'quantity': 817623163,
-                    'price': Decimal('1030557336.113152'),
-                    'subtotal': Decimal('210666198.127605'),
+                    'saleId': 403521121,
+                    'stockId': 648760710,
+                    'quantity': 607323719,
+                    'price': Decimal('1468890740.62903'),
+                    'subtotal': Decimal('1214168082.89861'),
                 },
             ],
             skip_duplicates=True,
@@ -8533,7 +10589,7 @@ class SaleItemActions(Generic[_PrismaModelT]):
         ```py
         saleitem = await SaleItem.prisma().delete(
             where={
-                'id': 745569348,
+                'id': 658378208,
             },
         )
         ```
@@ -8585,7 +10641,7 @@ class SaleItemActions(Generic[_PrismaModelT]):
         ```py
         saleitem = await SaleItem.prisma().find_unique(
             where={
-                'id': 307876141,
+                'id': 954620057,
             },
         )
         ```
@@ -8636,7 +10692,7 @@ class SaleItemActions(Generic[_PrismaModelT]):
         ```py
         saleitem = await SaleItem.prisma().find_unique_or_raise(
             where={
-                'id': 1674049122,
+                'id': 1214809950,
             },
         )
         ```
@@ -8888,7 +10944,7 @@ class SaleItemActions(Generic[_PrismaModelT]):
         ```py
         saleitem = await SaleItem.prisma().update(
             where={
-                'id': 1526854643,
+                'id': 1047820095,
             },
             data={
                 # data to update the SaleItem record to
@@ -8945,23 +11001,23 @@ class SaleItemActions(Generic[_PrismaModelT]):
         ```py
         saleitem = await SaleItem.prisma().upsert(
             where={
-                'id': 958077104,
+                'id': 1302734860,
             },
             data={
                 'create': {
-                    'id': 958077104,
-                    'saleId': 1717307509,
-                    'stockId': 1598124042,
-                    'quantity': 817623163,
-                    'price': Decimal('1030557336.113152'),
-                    'subtotal': Decimal('210666198.127605'),
+                    'id': 1302734860,
+                    'saleId': 403521121,
+                    'stockId': 648760710,
+                    'quantity': 607323719,
+                    'price': Decimal('1468890740.62903'),
+                    'subtotal': Decimal('1214168082.89861'),
                 },
                 'update': {
-                    'saleId': 1717307509,
-                    'stockId': 1598124042,
-                    'quantity': 817623163,
-                    'price': Decimal('1030557336.113152'),
-                    'subtotal': Decimal('210666198.127605'),
+                    'saleId': 403521121,
+                    'stockId': 648760710,
+                    'quantity': 607323719,
+                    'price': Decimal('1468890740.62903'),
+                    'subtotal': Decimal('1214168082.89861'),
                 },
             },
         )
@@ -9009,7 +11065,7 @@ class SaleItemActions(Generic[_PrismaModelT]):
         # update all SaleItem records
         total = await SaleItem.prisma().update_many(
             data={
-                'subtotal': Decimal('1513050921.20467')
+                'subtotal': Decimal('893052245.28008')
             },
             where={}
         )
@@ -9372,7 +11428,7 @@ class ReturnSaleActions(Generic[_PrismaModelT]):
         ```py
         users = await ReturnSale.prisma().query_raw(
             'SELECT * FROM ReturnSale WHERE id = $1',
-            2067651663,
+            549668955,
         )
         ```
         """
@@ -9412,7 +11468,7 @@ class ReturnSaleActions(Generic[_PrismaModelT]):
         ```py
         user = await ReturnSale.prisma().query_first(
             'SELECT * FROM ReturnSale WHERE originalId = $1',
-            1183911900,
+            76790008,
         )
         ```
         """
@@ -9451,7 +11507,7 @@ class ReturnSaleActions(Generic[_PrismaModelT]):
         returnsale = await ReturnSale.prisma().create(
             data={
                 # data to create a ReturnSale record
-                'originalId': 1589704933,
+                'originalId': 2098299345,
             },
         )
         ```
@@ -9506,11 +11562,11 @@ class ReturnSaleActions(Generic[_PrismaModelT]):
             data=[
                 {
                     # data to create a ReturnSale record
-                    'originalId': 1243475898,
+                    'originalId': 245900342,
                 },
                 {
                     # data to create a ReturnSale record
-                    'originalId': 1369828971,
+                    'originalId': 811863863,
                 },
             ],
             skip_duplicates=True,
@@ -9564,7 +11620,7 @@ class ReturnSaleActions(Generic[_PrismaModelT]):
         ```py
         returnsale = await ReturnSale.prisma().delete(
             where={
-                'id': 1678593480,
+                'id': 1388801188,
             },
         )
         ```
@@ -9616,7 +11672,7 @@ class ReturnSaleActions(Generic[_PrismaModelT]):
         ```py
         returnsale = await ReturnSale.prisma().find_unique(
             where={
-                'id': 403521121,
+                'id': 752577037,
             },
         )
         ```
@@ -9667,7 +11723,7 @@ class ReturnSaleActions(Generic[_PrismaModelT]):
         ```py
         returnsale = await ReturnSale.prisma().find_unique_or_raise(
             where={
-                'id': 648760710,
+                'id': 1187663298,
             },
         )
         ```
@@ -9919,7 +11975,7 @@ class ReturnSaleActions(Generic[_PrismaModelT]):
         ```py
         returnsale = await ReturnSale.prisma().update(
             where={
-                'id': 607323719,
+                'id': 769681363,
             },
             data={
                 # data to update the ReturnSale record to
@@ -9976,15 +12032,15 @@ class ReturnSaleActions(Generic[_PrismaModelT]):
         ```py
         returnsale = await ReturnSale.prisma().upsert(
             where={
-                'id': 1468890740,
+                'id': 1214295824,
             },
             data={
                 'create': {
-                    'id': 1468890740,
-                    'originalId': 1369828971,
+                    'id': 1214295824,
+                    'originalId': 811863863,
                 },
                 'update': {
-                    'originalId': 1369828971,
+                    'originalId': 811863863,
                 },
             },
         )
@@ -10032,7 +12088,7 @@ class ReturnSaleActions(Generic[_PrismaModelT]):
         # update all ReturnSale records
         total = await ReturnSale.prisma().update_many(
             data={
-                'id': 629039005
+                'id': 1021417993
             },
             where={}
         )
@@ -10395,7 +12451,7 @@ class ReturnItemActions(Generic[_PrismaModelT]):
         ```py
         users = await ReturnItem.prisma().query_raw(
             'SELECT * FROM ReturnItem WHERE id = $1',
-            1214168082,
+            351503374,
         )
         ```
         """
@@ -10435,7 +12491,7 @@ class ReturnItemActions(Generic[_PrismaModelT]):
         ```py
         user = await ReturnItem.prisma().query_first(
             'SELECT * FROM ReturnItem WHERE returnId = $1',
-            898613219,
+            1321184815,
         )
         ```
         """
@@ -10474,10 +12530,10 @@ class ReturnItemActions(Generic[_PrismaModelT]):
         returnitem = await ReturnItem.prisma().create(
             data={
                 # data to create a ReturnItem record
-                'returnId': 658378208,
-                'saleItemId': 954620057,
-                'quantity': 1214809950,
-                'refundAmount': Decimal('1047820095.130273'),
+                'returnId': 369732668,
+                'saleItemId': 1191235013,
+                'quantity': 627561242,
+                'refundAmount': Decimal('1872952907.179328'),
             },
         )
         ```
@@ -10532,17 +12588,17 @@ class ReturnItemActions(Generic[_PrismaModelT]):
             data=[
                 {
                     # data to create a ReturnItem record
-                    'returnId': 893052245,
-                    'saleItemId': 280083306,
-                    'quantity': 549668955,
-                    'refundAmount': Decimal('76790008.209829'),
+                    'returnId': 1814397249,
+                    'saleItemId': 1923090150,
+                    'quantity': 1277244455,
+                    'refundAmount': Decimal('1160857300.36123'),
                 },
                 {
                     # data to create a ReturnItem record
-                    'returnId': 245900342,
-                    'saleItemId': 811863863,
-                    'quantity': 1388801188,
-                    'refundAmount': Decimal('752577037.118766'),
+                    'returnId': 1406511986,
+                    'saleItemId': 1482877891,
+                    'quantity': 566623296,
+                    'refundAmount': Decimal('229119865.175001'),
                 },
             ],
             skip_duplicates=True,
@@ -10596,7 +12652,7 @@ class ReturnItemActions(Generic[_PrismaModelT]):
         ```py
         returnitem = await ReturnItem.prisma().delete(
             where={
-                'id': 769681363,
+                'id': 410943775,
             },
         )
         ```
@@ -10648,7 +12704,7 @@ class ReturnItemActions(Generic[_PrismaModelT]):
         ```py
         returnitem = await ReturnItem.prisma().find_unique(
             where={
-                'id': 1214295824,
+                'id': 909024364,
             },
         )
         ```
@@ -10699,7 +12755,7 @@ class ReturnItemActions(Generic[_PrismaModelT]):
         ```py
         returnitem = await ReturnItem.prisma().find_unique_or_raise(
             where={
-                'id': 1021417993,
+                'id': 755610165,
             },
         )
         ```
@@ -10951,7 +13007,7 @@ class ReturnItemActions(Generic[_PrismaModelT]):
         ```py
         returnitem = await ReturnItem.prisma().update(
             where={
-                'id': 351503374,
+                'id': 1802188490,
             },
             data={
                 # data to update the ReturnItem record to
@@ -11008,21 +13064,21 @@ class ReturnItemActions(Generic[_PrismaModelT]):
         ```py
         returnitem = await ReturnItem.prisma().upsert(
             where={
-                'id': 1321184815,
+                'id': 294916155,
             },
             data={
                 'create': {
-                    'id': 1321184815,
-                    'returnId': 245900342,
-                    'saleItemId': 811863863,
-                    'quantity': 1388801188,
-                    'refundAmount': Decimal('752577037.118766'),
+                    'id': 294916155,
+                    'returnId': 1406511986,
+                    'saleItemId': 1482877891,
+                    'quantity': 566623296,
+                    'refundAmount': Decimal('229119865.175001'),
                 },
                 'update': {
-                    'returnId': 245900342,
-                    'saleItemId': 811863863,
-                    'quantity': 1388801188,
-                    'refundAmount': Decimal('752577037.118766'),
+                    'returnId': 1406511986,
+                    'saleItemId': 1482877891,
+                    'quantity': 566623296,
+                    'refundAmount': Decimal('229119865.175001'),
                 },
             },
         )
@@ -11070,7 +13126,7 @@ class ReturnItemActions(Generic[_PrismaModelT]):
         # update all ReturnItem records
         total = await ReturnItem.prisma().update_many(
             data={
-                'id': 369732668
+                'id': 564073304
             },
             where={}
         )
@@ -11433,7 +13489,7 @@ class PaymentActions(Generic[_PrismaModelT]):
         ```py
         users = await Payment.prisma().query_raw(
             'SELECT * FROM Payment WHERE id = $1',
-            1191235013,
+            380648625,
         )
         ```
         """
@@ -11473,7 +13529,7 @@ class PaymentActions(Generic[_PrismaModelT]):
         ```py
         user = await Payment.prisma().query_first(
             'SELECT * FROM Payment WHERE saleId = $1',
-            627561242,
+            1030616470,
         )
         ```
         """
@@ -11512,10 +13568,10 @@ class PaymentActions(Generic[_PrismaModelT]):
         payment = await Payment.prisma().create(
             data={
                 # data to create a Payment record
-                'saleId': 1872952907,
-                'accountId': 1793282088,
-                'userId': 1814397249,
-                'amount': Decimal('1923090150.127724'),
+                'saleId': 816411927,
+                'accountId': 1084099844,
+                'userId': 1079702253,
+                'amount': Decimal('755750178.112868'),
             },
         )
         ```
@@ -11570,17 +13626,17 @@ class PaymentActions(Generic[_PrismaModelT]):
             data=[
                 {
                     # data to create a Payment record
-                    'saleId': 1160857300,
-                    'accountId': 361230461,
-                    'userId': 1406511986,
-                    'amount': Decimal('1482877891.56662'),
+                    'saleId': 259061104,
+                    'accountId': 1115738345,
+                    'userId': 1303781742,
+                    'amount': Decimal('1573908495.119589'),
                 },
                 {
                     # data to create a Payment record
-                    'saleId': 229119865,
-                    'accountId': 1750011070,
-                    'userId': 410943775,
-                    'amount': Decimal('909024364.75561'),
+                    'saleId': 739021477,
+                    'accountId': 1722214010,
+                    'userId': 1269136939,
+                    'amount': Decimal('573178504.144026'),
                 },
             ],
             skip_duplicates=True,
@@ -11634,7 +13690,7 @@ class PaymentActions(Generic[_PrismaModelT]):
         ```py
         payment = await Payment.prisma().delete(
             where={
-                'id': 1802188490,
+                'id': 1185738822,
             },
         )
         ```
@@ -11686,7 +13742,7 @@ class PaymentActions(Generic[_PrismaModelT]):
         ```py
         payment = await Payment.prisma().find_unique(
             where={
-                'id': 294916155,
+                'id': 1694224903,
             },
         )
         ```
@@ -11737,7 +13793,7 @@ class PaymentActions(Generic[_PrismaModelT]):
         ```py
         payment = await Payment.prisma().find_unique_or_raise(
             where={
-                'id': 564073304,
+                'id': 1906360116,
             },
         )
         ```
@@ -11989,7 +14045,7 @@ class PaymentActions(Generic[_PrismaModelT]):
         ```py
         payment = await Payment.prisma().update(
             where={
-                'id': 380648625,
+                'id': 1911255389,
             },
             data={
                 # data to update the Payment record to
@@ -12046,21 +14102,21 @@ class PaymentActions(Generic[_PrismaModelT]):
         ```py
         payment = await Payment.prisma().upsert(
             where={
-                'id': 1030616470,
+                'id': 146262738,
             },
             data={
                 'create': {
-                    'id': 1030616470,
-                    'saleId': 229119865,
-                    'accountId': 1750011070,
-                    'userId': 410943775,
-                    'amount': Decimal('909024364.75561'),
+                    'id': 146262738,
+                    'saleId': 739021477,
+                    'accountId': 1722214010,
+                    'userId': 1269136939,
+                    'amount': Decimal('573178504.144026'),
                 },
                 'update': {
-                    'saleId': 229119865,
-                    'accountId': 1750011070,
-                    'userId': 410943775,
-                    'amount': Decimal('909024364.75561'),
+                    'saleId': 739021477,
+                    'accountId': 1722214010,
+                    'userId': 1269136939,
+                    'amount': Decimal('573178504.144026'),
                 },
             },
         )
@@ -12108,7 +14164,7 @@ class PaymentActions(Generic[_PrismaModelT]):
         # update all Payment records
         total = await Payment.prisma().update_many(
             data={
-                'amount': Decimal('816411927.108409')
+                'amount': Decimal('1719240611.194855')
             },
             where={}
         )
@@ -12471,7 +14527,7 @@ class JournalEntryActions(Generic[_PrismaModelT]):
         ```py
         users = await JournalEntry.prisma().query_raw(
             'SELECT * FROM JournalEntry WHERE id = $1',
-            1079702253,
+            1383253593,
         )
         ```
         """
@@ -12511,7 +14567,7 @@ class JournalEntryActions(Generic[_PrismaModelT]):
         ```py
         user = await JournalEntry.prisma().query_first(
             'SELECT * FROM JournalEntry WHERE referenceType = $1',
-            'hffhfabhi',
+            'dfeggejja',
         )
         ```
         """
@@ -12660,7 +14716,7 @@ class JournalEntryActions(Generic[_PrismaModelT]):
         ```py
         journalentry = await JournalEntry.prisma().delete(
             where={
-                'id': 1128680371,
+                'id': 647166719,
             },
         )
         ```
@@ -12712,7 +14768,7 @@ class JournalEntryActions(Generic[_PrismaModelT]):
         ```py
         journalentry = await JournalEntry.prisma().find_unique(
             where={
-                'id': 259061104,
+                'id': 357089484,
             },
         )
         ```
@@ -12763,7 +14819,7 @@ class JournalEntryActions(Generic[_PrismaModelT]):
         ```py
         journalentry = await JournalEntry.prisma().find_unique_or_raise(
             where={
-                'id': 1115738345,
+                'id': 612396821,
             },
         )
         ```
@@ -13015,7 +15071,7 @@ class JournalEntryActions(Generic[_PrismaModelT]):
         ```py
         journalentry = await JournalEntry.prisma().update(
             where={
-                'id': 1303781742,
+                'id': 1808130602,
             },
             data={
                 # data to update the JournalEntry record to
@@ -13072,11 +15128,11 @@ class JournalEntryActions(Generic[_PrismaModelT]):
         ```py
         journalentry = await JournalEntry.prisma().upsert(
             where={
-                'id': 1573908495,
+                'id': 1151748123,
             },
             data={
                 'create': {
-                    'id': 1573908495,
+                    'id': 1151748123,
                 },
                 'update': {
                 },
@@ -13126,7 +15182,7 @@ class JournalEntryActions(Generic[_PrismaModelT]):
         # update all JournalEntry records
         total = await JournalEntry.prisma().update_many(
             data={
-                'id': 1195899036
+                'id': 78060984
             },
             where={}
         )
@@ -13489,7 +15545,7 @@ class JournalEntryLineActions(Generic[_PrismaModelT]):
         ```py
         users = await JournalEntryLine.prisma().query_raw(
             'SELECT * FROM JournalEntryLine WHERE id = $1',
-            739021477,
+            444983185,
         )
         ```
         """
@@ -13529,7 +15585,7 @@ class JournalEntryLineActions(Generic[_PrismaModelT]):
         ```py
         user = await JournalEntryLine.prisma().query_first(
             'SELECT * FROM JournalEntryLine WHERE entryId = $1',
-            1722214010,
+            45610742,
         )
         ```
         """
@@ -13568,8 +15624,8 @@ class JournalEntryLineActions(Generic[_PrismaModelT]):
         journalentryline = await JournalEntryLine.prisma().create(
             data={
                 # data to create a JournalEntryLine record
-                'entryId': 1269136939,
-                'accountId': 573178504,
+                'entryId': 769084151,
+                'accountId': 1334599012,
             },
         )
         ```
@@ -13624,13 +15680,13 @@ class JournalEntryLineActions(Generic[_PrismaModelT]):
             data=[
                 {
                     # data to create a JournalEntryLine record
-                    'entryId': 1440265249,
-                    'accountId': 1185738822,
+                    'entryId': 1116761037,
+                    'accountId': 1172606082,
                 },
                 {
                     # data to create a JournalEntryLine record
-                    'entryId': 1694224903,
-                    'accountId': 1906360116,
+                    'entryId': 330014611,
+                    'accountId': 1768156112,
                 },
             ],
             skip_duplicates=True,
@@ -13684,7 +15740,7 @@ class JournalEntryLineActions(Generic[_PrismaModelT]):
         ```py
         journalentryline = await JournalEntryLine.prisma().delete(
             where={
-                'id': 1911255389,
+                'id': 71628745,
             },
         )
         ```
@@ -13736,7 +15792,7 @@ class JournalEntryLineActions(Generic[_PrismaModelT]):
         ```py
         journalentryline = await JournalEntryLine.prisma().find_unique(
             where={
-                'id': 146262738,
+                'id': 55766734,
             },
         )
         ```
@@ -13787,7 +15843,7 @@ class JournalEntryLineActions(Generic[_PrismaModelT]):
         ```py
         journalentryline = await JournalEntryLine.prisma().find_unique_or_raise(
             where={
-                'id': 1719240611,
+                'id': 812032495,
             },
         )
         ```
@@ -14039,7 +16095,7 @@ class JournalEntryLineActions(Generic[_PrismaModelT]):
         ```py
         journalentryline = await JournalEntryLine.prisma().update(
             where={
-                'id': 1948555936,
+                'id': 1323562236,
             },
             data={
                 # data to update the JournalEntryLine record to
@@ -14096,17 +16152,17 @@ class JournalEntryLineActions(Generic[_PrismaModelT]):
         ```py
         journalentryline = await JournalEntryLine.prisma().upsert(
             where={
-                'id': 1383253593,
+                'id': 43796357,
             },
             data={
                 'create': {
-                    'id': 1383253593,
-                    'entryId': 1694224903,
-                    'accountId': 1906360116,
+                    'id': 43796357,
+                    'entryId': 330014611,
+                    'accountId': 1768156112,
                 },
                 'update': {
-                    'entryId': 1694224903,
-                    'accountId': 1906360116,
+                    'entryId': 330014611,
+                    'accountId': 1768156112,
                 },
             },
         )
@@ -14154,7 +16210,7 @@ class JournalEntryLineActions(Generic[_PrismaModelT]):
         # update all JournalEntryLine records
         total = await JournalEntryLine.prisma().update_many(
             data={
-                'description': 'dfeggejja'
+                'description': 'bdeffdadda'
             },
             where={}
         )
@@ -14517,7 +16573,7 @@ class AccountActions(Generic[_PrismaModelT]):
         ```py
         users = await Account.prisma().query_raw(
             'SELECT * FROM Account WHERE id = $1',
-            647166719,
+            1965387275,
         )
         ```
         """
@@ -14557,7 +16613,7 @@ class AccountActions(Generic[_PrismaModelT]):
         ```py
         user = await Account.prisma().query_first(
             'SELECT * FROM Account WHERE name = $1',
-            'dfhaijeie',
+            'iaeihdeei',
         )
         ```
         """
@@ -14596,7 +16652,7 @@ class AccountActions(Generic[_PrismaModelT]):
         account = await Account.prisma().create(
             data={
                 # data to create a Account record
-                'name': 'gbcdjgicb',
+                'name': 'bfggejgfbd',
                 'type': enums.AccountType.ASSET,
             },
         )
@@ -14652,12 +16708,12 @@ class AccountActions(Generic[_PrismaModelT]):
             data=[
                 {
                     # data to create a Account record
-                    'name': 'biaibdagac',
+                    'name': 'ifaaaedja',
                     'type': enums.AccountType.ASSET,
                 },
                 {
                     # data to create a Account record
-                    'name': 'bbfbheibcd',
+                    'name': 'cbajdjjabf',
                     'type': enums.AccountType.ASSET,
                 },
             ],
@@ -14712,7 +16768,7 @@ class AccountActions(Generic[_PrismaModelT]):
         ```py
         account = await Account.prisma().delete(
             where={
-                'id': 78060984,
+                'id': 1282664340,
             },
         )
         ```
@@ -14764,7 +16820,7 @@ class AccountActions(Generic[_PrismaModelT]):
         ```py
         account = await Account.prisma().find_unique(
             where={
-                'id': 444983185,
+                'id': 241230397,
             },
         )
         ```
@@ -14815,7 +16871,7 @@ class AccountActions(Generic[_PrismaModelT]):
         ```py
         account = await Account.prisma().find_unique_or_raise(
             where={
-                'id': 45610742,
+                'id': 475863602,
             },
         )
         ```
@@ -15067,7 +17123,7 @@ class AccountActions(Generic[_PrismaModelT]):
         ```py
         account = await Account.prisma().update(
             where={
-                'id': 769084151,
+                'id': 1716228995,
             },
             data={
                 # data to update the Account record to
@@ -15124,16 +17180,16 @@ class AccountActions(Generic[_PrismaModelT]):
         ```py
         account = await Account.prisma().upsert(
             where={
-                'id': 1334599012,
+                'id': 1869736192,
             },
             data={
                 'create': {
-                    'id': 1334599012,
-                    'name': 'bbfbheibcd',
+                    'id': 1869736192,
+                    'name': 'cbajdjjabf',
                     'type': enums.AccountType.ASSET,
                 },
                 'update': {
-                    'name': 'bbfbheibcd',
+                    'name': 'cbajdjjabf',
                     'type': enums.AccountType.ASSET,
                 },
             },
@@ -15182,7 +17238,7 @@ class AccountActions(Generic[_PrismaModelT]):
         # update all Account records
         total = await Account.prisma().update_many(
             data={
-                'active': False
+                'branchId': 1585341753
             },
             where={}
         )
@@ -15246,7 +17302,7 @@ class AccountActions(Generic[_PrismaModelT]):
         results = await Account.prisma().count(
             select={
                 '_all': True,
-                'branchId': True,
+                'isActive': True,
             },
         )
         ```
@@ -15545,7 +17601,7 @@ class AccountTransferActions(Generic[_PrismaModelT]):
         ```py
         users = await AccountTransfer.prisma().query_raw(
             'SELECT * FROM AccountTransfer WHERE id = $1',
-            1172606082,
+            29271934,
         )
         ```
         """
@@ -15585,7 +17641,7 @@ class AccountTransferActions(Generic[_PrismaModelT]):
         ```py
         user = await AccountTransfer.prisma().query_first(
             'SELECT * FROM AccountTransfer WHERE fromAccountId = $1',
-            330014611,
+            1588192479,
         )
         ```
         """
@@ -15624,9 +17680,9 @@ class AccountTransferActions(Generic[_PrismaModelT]):
         accounttransfer = await AccountTransfer.prisma().create(
             data={
                 # data to create a AccountTransfer record
-                'fromAccountId': 1768156112,
-                'toAccountId': 71628745,
-                'amount': Decimal('55766734.81203'),
+                'fromAccountId': 898405676,
+                'toAccountId': 777460725,
+                'amount': Decimal('437894538.39334'),
                 'currency': enums.Currency.USD,
             },
         )
@@ -15682,16 +17738,16 @@ class AccountTransferActions(Generic[_PrismaModelT]):
             data=[
                 {
                     # data to create a AccountTransfer record
-                    'fromAccountId': 1323562236,
-                    'toAccountId': 43796357,
-                    'amount': Decimal('1345530330.196538'),
+                    'fromAccountId': 163829784,
+                    'toAccountId': 248152689,
+                    'amount': Decimal('341715030.169276'),
                     'currency': enums.Currency.USD,
                 },
                 {
                     # data to create a AccountTransfer record
-                    'fromAccountId': 804873448,
-                    'toAccountId': 1566496513,
-                    'amount': Decimal('850004390.210939'),
+                    'fromAccountId': 86662596,
+                    'toAccountId': 1697895597,
+                    'amount': Decimal('1286370274.86457'),
                     'currency': enums.Currency.USD,
                 },
             ],
@@ -15746,7 +17802,7 @@ class AccountTransferActions(Generic[_PrismaModelT]):
         ```py
         accounttransfer = await AccountTransfer.prisma().delete(
             where={
-                'id': 1282664340,
+                'id': 491885104,
             },
         )
         ```
@@ -15798,7 +17854,7 @@ class AccountTransferActions(Generic[_PrismaModelT]):
         ```py
         accounttransfer = await AccountTransfer.prisma().find_unique(
             where={
-                'id': 241230397,
+                'id': 392564393,
             },
         )
         ```
@@ -15849,7 +17905,7 @@ class AccountTransferActions(Generic[_PrismaModelT]):
         ```py
         accounttransfer = await AccountTransfer.prisma().find_unique_or_raise(
             where={
-                'id': 475863602,
+                'id': 1319234606,
             },
         )
         ```
@@ -16101,7 +18157,7 @@ class AccountTransferActions(Generic[_PrismaModelT]):
         ```py
         accounttransfer = await AccountTransfer.prisma().update(
             where={
-                'id': 1716228995,
+                'id': 712754127,
             },
             data={
                 # data to update the AccountTransfer record to
@@ -16158,20 +18214,20 @@ class AccountTransferActions(Generic[_PrismaModelT]):
         ```py
         accounttransfer = await AccountTransfer.prisma().upsert(
             where={
-                'id': 1869736192,
+                'id': 1299554652,
             },
             data={
                 'create': {
-                    'id': 1869736192,
-                    'fromAccountId': 804873448,
-                    'toAccountId': 1566496513,
-                    'amount': Decimal('850004390.210939'),
+                    'id': 1299554652,
+                    'fromAccountId': 86662596,
+                    'toAccountId': 1697895597,
+                    'amount': Decimal('1286370274.86457'),
                     'currency': enums.Currency.USD,
                 },
                 'update': {
-                    'fromAccountId': 804873448,
-                    'toAccountId': 1566496513,
-                    'amount': Decimal('850004390.210939'),
+                    'fromAccountId': 86662596,
+                    'toAccountId': 1697895597,
+                    'amount': Decimal('1286370274.86457'),
                     'currency': enums.Currency.USD,
                 },
             },
@@ -16220,7 +18276,7 @@ class AccountTransferActions(Generic[_PrismaModelT]):
         # update all AccountTransfer records
         total = await AccountTransfer.prisma().update_many(
             data={
-                'rateApplied': Decimal('1585341753.2927')
+                'rateApplied': Decimal('2070408293.81190')
             },
             where={}
         )
@@ -16583,7 +18639,7 @@ class BranchOrderActions(Generic[_PrismaModelT]):
         ```py
         users = await BranchOrder.prisma().query_raw(
             'SELECT * FROM BranchOrder WHERE id = $1',
-            1588192479,
+            396021227,
         )
         ```
         """
@@ -16623,7 +18679,7 @@ class BranchOrderActions(Generic[_PrismaModelT]):
         ```py
         user = await BranchOrder.prisma().query_first(
             'SELECT * FROM BranchOrder WHERE branchId = $1',
-            898405676,
+            644446024,
         )
         ```
         """
@@ -16662,8 +18718,8 @@ class BranchOrderActions(Generic[_PrismaModelT]):
         branchorder = await BranchOrder.prisma().create(
             data={
                 # data to create a BranchOrder record
-                'branchId': 777460725,
-                'requestedById': 437894538,
+                'branchId': 116386273,
+                'requestedById': 309285638,
             },
         )
         ```
@@ -16718,13 +18774,13 @@ class BranchOrderActions(Generic[_PrismaModelT]):
             data=[
                 {
                     # data to create a BranchOrder record
-                    'branchId': 393342971,
-                    'requestedById': 163829784,
+                    'branchId': 22437319,
+                    'requestedById': 1900199924,
                 },
                 {
                     # data to create a BranchOrder record
-                    'branchId': 248152689,
-                    'requestedById': 341715030,
+                    'branchId': 2057323293,
+                    'requestedById': 1344117138,
                 },
             ],
             skip_duplicates=True,
@@ -16778,7 +18834,7 @@ class BranchOrderActions(Generic[_PrismaModelT]):
         ```py
         branchorder = await BranchOrder.prisma().delete(
             where={
-                'id': 1692766423,
+                'id': 2052132707,
             },
         )
         ```
@@ -16830,7 +18886,7 @@ class BranchOrderActions(Generic[_PrismaModelT]):
         ```py
         branchorder = await BranchOrder.prisma().find_unique(
             where={
-                'id': 86662596,
+                'id': 1355147104,
             },
         )
         ```
@@ -16881,7 +18937,7 @@ class BranchOrderActions(Generic[_PrismaModelT]):
         ```py
         branchorder = await BranchOrder.prisma().find_unique_or_raise(
             where={
-                'id': 1697895597,
+                'id': 84079641,
             },
         )
         ```
@@ -17133,7 +19189,7 @@ class BranchOrderActions(Generic[_PrismaModelT]):
         ```py
         branchorder = await BranchOrder.prisma().update(
             where={
-                'id': 1286370274,
+                'id': 754433246,
             },
             data={
                 # data to update the BranchOrder record to
@@ -17190,17 +19246,17 @@ class BranchOrderActions(Generic[_PrismaModelT]):
         ```py
         branchorder = await BranchOrder.prisma().upsert(
             where={
-                'id': 864576371,
+                'id': 314261183,
             },
             data={
                 'create': {
-                    'id': 864576371,
-                    'branchId': 248152689,
-                    'requestedById': 341715030,
+                    'id': 314261183,
+                    'branchId': 2057323293,
+                    'requestedById': 1344117138,
                 },
                 'update': {
-                    'branchId': 248152689,
-                    'requestedById': 341715030,
+                    'branchId': 2057323293,
+                    'requestedById': 1344117138,
                 },
             },
         )
@@ -17248,7 +19304,7 @@ class BranchOrderActions(Generic[_PrismaModelT]):
         # update all BranchOrder records
         total = await BranchOrder.prisma().update_many(
             data={
-                'receivedById': 491885104
+                'receivedById': 227678604
             },
             where={}
         )
@@ -17611,7 +19667,7 @@ class BranchOrderItemActions(Generic[_PrismaModelT]):
         ```py
         users = await BranchOrderItem.prisma().query_raw(
             'SELECT * FROM BranchOrderItem WHERE id = $1',
-            392564393,
+            423999701,
         )
         ```
         """
@@ -17651,7 +19707,7 @@ class BranchOrderItemActions(Generic[_PrismaModelT]):
         ```py
         user = await BranchOrderItem.prisma().query_first(
             'SELECT * FROM BranchOrderItem WHERE branchOrderId = $1',
-            1319234606,
+            180275434,
         )
         ```
         """
@@ -17690,9 +19746,9 @@ class BranchOrderItemActions(Generic[_PrismaModelT]):
         branchorderitem = await BranchOrderItem.prisma().create(
             data={
                 # data to create a BranchOrderItem record
-                'branchOrderId': 712754127,
-                'stockId': 1299554652,
-                'requestedQty': 2070408293,
+                'branchOrderId': 57608155,
+                'stockId': 2030912120,
+                'requestedQty': 1974865233,
             },
         )
         ```
@@ -17747,15 +19803,15 @@ class BranchOrderItemActions(Generic[_PrismaModelT]):
             data=[
                 {
                     # data to create a BranchOrderItem record
-                    'branchOrderId': 811900218,
-                    'stockId': 396021227,
-                    'requestedQty': 644446024,
+                    'branchOrderId': 1949862326,
+                    'stockId': 1858881207,
+                    'requestedQty': 319819300,
                 },
                 {
                     # data to create a BranchOrderItem record
-                    'branchOrderId': 116386273,
-                    'stockId': 309285638,
-                    'requestedQty': 22437319,
+                    'branchOrderId': 368913805,
+                    'stockId': 146508610,
+                    'requestedQty': 1398052691,
                 },
             ],
             skip_duplicates=True,
@@ -17809,7 +19865,7 @@ class BranchOrderItemActions(Generic[_PrismaModelT]):
         ```py
         branchorderitem = await BranchOrderItem.prisma().delete(
             where={
-                'id': 1900199924,
+                'id': 1582426256,
             },
         )
         ```
@@ -17861,7 +19917,7 @@ class BranchOrderItemActions(Generic[_PrismaModelT]):
         ```py
         branchorderitem = await BranchOrderItem.prisma().find_unique(
             where={
-                'id': 2057323293,
+                'id': 219944329,
             },
         )
         ```
@@ -17912,7 +19968,7 @@ class BranchOrderItemActions(Generic[_PrismaModelT]):
         ```py
         branchorderitem = await BranchOrderItem.prisma().find_unique_or_raise(
             where={
-                'id': 1344117138,
+                'id': 343611790,
             },
         )
         ```
@@ -18164,7 +20220,7 @@ class BranchOrderItemActions(Generic[_PrismaModelT]):
         ```py
         branchorderitem = await BranchOrderItem.prisma().update(
             where={
-                'id': 2052132707,
+                'id': 201807279,
             },
             data={
                 # data to update the BranchOrderItem record to
@@ -18221,19 +20277,19 @@ class BranchOrderItemActions(Generic[_PrismaModelT]):
         ```py
         branchorderitem = await BranchOrderItem.prisma().upsert(
             where={
-                'id': 1355147104,
+                'id': 261422524,
             },
             data={
                 'create': {
-                    'id': 1355147104,
-                    'branchOrderId': 116386273,
-                    'stockId': 309285638,
-                    'requestedQty': 22437319,
+                    'id': 261422524,
+                    'branchOrderId': 368913805,
+                    'stockId': 146508610,
+                    'requestedQty': 1398052691,
                 },
                 'update': {
-                    'branchOrderId': 116386273,
-                    'stockId': 309285638,
-                    'requestedQty': 22437319,
+                    'branchOrderId': 368913805,
+                    'stockId': 146508610,
+                    'requestedQty': 1398052691,
                 },
             },
         )
@@ -18281,7 +20337,7 @@ class BranchOrderItemActions(Generic[_PrismaModelT]):
         # update all BranchOrderItem records
         total = await BranchOrderItem.prisma().update_many(
             data={
-                'sentQty': 84079641
+                'sentQty': 52920645
             },
             where={}
         )
@@ -18644,7 +20700,7 @@ class AuditLogActions(Generic[_PrismaModelT]):
         ```py
         users = await AuditLog.prisma().query_raw(
             'SELECT * FROM AuditLog WHERE id = $1',
-            754433246,
+            1637040282,
         )
         ```
         """
@@ -18684,7 +20740,7 @@ class AuditLogActions(Generic[_PrismaModelT]):
         ```py
         user = await AuditLog.prisma().query_first(
             'SELECT * FROM AuditLog WHERE userId = $1',
-            314261183,
+            2055052747,
         )
         ```
         """
@@ -18836,7 +20892,7 @@ class AuditLogActions(Generic[_PrismaModelT]):
         ```py
         auditlog = await AuditLog.prisma().delete(
             where={
-                'id': 227678604,
+                'id': 59914664,
             },
         )
         ```
@@ -18888,7 +20944,7 @@ class AuditLogActions(Generic[_PrismaModelT]):
         ```py
         auditlog = await AuditLog.prisma().find_unique(
             where={
-                'id': 423999701,
+                'id': 1388571841,
             },
         )
         ```
@@ -18939,7 +20995,7 @@ class AuditLogActions(Generic[_PrismaModelT]):
         ```py
         auditlog = await AuditLog.prisma().find_unique_or_raise(
             where={
-                'id': 180275434,
+                'id': 232049766,
             },
         )
         ```
@@ -19191,7 +21247,7 @@ class AuditLogActions(Generic[_PrismaModelT]):
         ```py
         auditlog = await AuditLog.prisma().update(
             where={
-                'id': 57608155,
+                'id': 918965159,
             },
             data={
                 # data to update the AuditLog record to
@@ -19248,11 +21304,11 @@ class AuditLogActions(Generic[_PrismaModelT]):
         ```py
         auditlog = await AuditLog.prisma().upsert(
             where={
-                'id': 2030912120,
+                'id': 665143380,
             },
             data={
                 'create': {
-                    'id': 2030912120,
+                    'id': 665143380,
                     'action': enums.AuditAction.CREATE,
                 },
                 'update': {
@@ -19304,7 +21360,7 @@ class AuditLogActions(Generic[_PrismaModelT]):
         # update all AuditLog records
         total = await AuditLog.prisma().update_many(
             data={
-                'oldValues': Json({'bjheigfcdd': True})
+                'oldValues': Json({'djjejdaj': True})
             },
             where={}
         )
@@ -19667,7 +21723,7 @@ class SystemInfoActions(Generic[_PrismaModelT]):
         ```py
         users = await SystemInfo.prisma().query_raw(
             'SELECT * FROM SystemInfo WHERE id = $1',
-            1949862326,
+            1901152498,
         )
         ```
         """
@@ -19707,7 +21763,7 @@ class SystemInfoActions(Generic[_PrismaModelT]):
         ```py
         user = await SystemInfo.prisma().query_first(
             'SELECT * FROM SystemInfo WHERE systemName = $1',
-            'bifiiibcah',
+            'bgchfbjibb',
         )
         ```
         """
@@ -19746,7 +21802,7 @@ class SystemInfoActions(Generic[_PrismaModelT]):
         systeminfo = await SystemInfo.prisma().create(
             data={
                 # data to create a SystemInfo record
-                'systemName': 'dbjibjdaa',
+                'systemName': 'bajecchdjc',
                 'environment': enums.Environment.DEV,
                 'baseCurrency': enums.Currency.USD,
             },
@@ -19803,13 +21859,13 @@ class SystemInfoActions(Generic[_PrismaModelT]):
             data=[
                 {
                     # data to create a SystemInfo record
-                    'systemName': 'dgijbdiaf',
+                    'systemName': 'dfgacajif',
                     'environment': enums.Environment.DEV,
                     'baseCurrency': enums.Currency.USD,
                 },
                 {
                     # data to create a SystemInfo record
-                    'systemName': 'begfaigba',
+                    'systemName': 'bgdiddfadi',
                     'environment': enums.Environment.DEV,
                     'baseCurrency': enums.Currency.USD,
                 },
@@ -19865,7 +21921,7 @@ class SystemInfoActions(Generic[_PrismaModelT]):
         ```py
         systeminfo = await SystemInfo.prisma().delete(
             where={
-                'id': 1398052691,
+                'id': 1891567775,
             },
         )
         ```
@@ -19917,7 +21973,7 @@ class SystemInfoActions(Generic[_PrismaModelT]):
         ```py
         systeminfo = await SystemInfo.prisma().find_unique(
             where={
-                'id': 1582426256,
+                'id': 1072778732,
             },
         )
         ```
@@ -19968,7 +22024,7 @@ class SystemInfoActions(Generic[_PrismaModelT]):
         ```py
         systeminfo = await SystemInfo.prisma().find_unique_or_raise(
             where={
-                'id': 219944329,
+                'id': 1879328181,
             },
         )
         ```
@@ -20220,7 +22276,7 @@ class SystemInfoActions(Generic[_PrismaModelT]):
         ```py
         systeminfo = await SystemInfo.prisma().update(
             where={
-                'id': 343611790,
+                'id': 1577911370,
             },
             data={
                 # data to update the SystemInfo record to
@@ -20277,17 +22333,17 @@ class SystemInfoActions(Generic[_PrismaModelT]):
         ```py
         systeminfo = await SystemInfo.prisma().upsert(
             where={
-                'id': 201807279,
+                'id': 504729531,
             },
             data={
                 'create': {
-                    'id': 201807279,
-                    'systemName': 'begfaigba',
+                    'id': 504729531,
+                    'systemName': 'bgdiddfadi',
                     'environment': enums.Environment.DEV,
                     'baseCurrency': enums.Currency.USD,
                 },
                 'update': {
-                    'systemName': 'begfaigba',
+                    'systemName': 'bgdiddfadi',
                     'environment': enums.Environment.DEV,
                     'baseCurrency': enums.Currency.USD,
                 },
@@ -20337,7 +22393,7 @@ class SystemInfoActions(Generic[_PrismaModelT]):
         # update all SystemInfo records
         total = await SystemInfo.prisma().update_many(
             data={
-                'companyEmail': 'cgbeccfce'
+                'companyEmail': 'bbaiefbee'
             },
             where={}
         )
@@ -20700,7 +22756,7 @@ class BackupActions(Generic[_PrismaModelT]):
         ```py
         users = await Backup.prisma().query_raw(
             'SELECT * FROM Backup WHERE id = $1',
-            52920645,
+            1300269105,
         )
         ```
         """
@@ -20780,7 +22836,7 @@ class BackupActions(Generic[_PrismaModelT]):
             data={
                 # data to create a Backup record
                 'type': enums.BackupType.FULL,
-                'location': 'bgdhaeacic',
+                'location': 'biibaighec',
                 'status': enums.BackupStatus.PENDING,
             },
         )
@@ -20837,13 +22893,13 @@ class BackupActions(Generic[_PrismaModelT]):
                 {
                     # data to create a Backup record
                     'type': enums.BackupType.FULL,
-                    'location': 'caffafcheh',
+                    'location': 'baicdfeidj',
                     'status': enums.BackupStatus.PENDING,
                 },
                 {
                     # data to create a Backup record
                     'type': enums.BackupType.FULL,
-                    'location': 'fjjbegge',
+                    'location': 'befgiciadg',
                     'status': enums.BackupStatus.PENDING,
                 },
             ],
@@ -20898,7 +22954,7 @@ class BackupActions(Generic[_PrismaModelT]):
         ```py
         backup = await Backup.prisma().delete(
             where={
-                'id': 1388571841,
+                'id': 2124707437,
             },
         )
         ```
@@ -20950,7 +23006,7 @@ class BackupActions(Generic[_PrismaModelT]):
         ```py
         backup = await Backup.prisma().find_unique(
             where={
-                'id': 232049766,
+                'id': 1298780834,
             },
         )
         ```
@@ -21001,7 +23057,7 @@ class BackupActions(Generic[_PrismaModelT]):
         ```py
         backup = await Backup.prisma().find_unique_or_raise(
             where={
-                'id': 918965159,
+                'id': 1065892659,
             },
         )
         ```
@@ -21253,7 +23309,7 @@ class BackupActions(Generic[_PrismaModelT]):
         ```py
         backup = await Backup.prisma().update(
             where={
-                'id': 665143380,
+                'id': 1266478832,
             },
             data={
                 # data to update the Backup record to
@@ -21310,18 +23366,18 @@ class BackupActions(Generic[_PrismaModelT]):
         ```py
         backup = await Backup.prisma().upsert(
             where={
-                'id': 39949309,
+                'id': 1923026025,
             },
             data={
                 'create': {
-                    'id': 39949309,
+                    'id': 1923026025,
                     'type': enums.BackupType.FULL,
-                    'location': 'fjjbegge',
+                    'location': 'befgiciadg',
                     'status': enums.BackupStatus.PENDING,
                 },
                 'update': {
                     'type': enums.BackupType.FULL,
-                    'location': 'fjjbegge',
+                    'location': 'befgiciadg',
                     'status': enums.BackupStatus.PENDING,
                 },
             },
@@ -21733,7 +23789,7 @@ class RevokedTokenActions(Generic[_PrismaModelT]):
         ```py
         users = await RevokedToken.prisma().query_raw(
             'SELECT * FROM RevokedToken WHERE id = $1',
-            1901152498,
+            95844078,
         )
         ```
         """
@@ -21773,7 +23829,7 @@ class RevokedTokenActions(Generic[_PrismaModelT]):
         ```py
         user = await RevokedToken.prisma().query_first(
             'SELECT * FROM RevokedToken WHERE jti = $1',
-            'bgchfbjibb',
+            'bijfjbddfj',
         )
         ```
         """
@@ -21812,8 +23868,8 @@ class RevokedTokenActions(Generic[_PrismaModelT]):
         revokedtoken = await RevokedToken.prisma().create(
             data={
                 # data to create a RevokedToken record
-                'jti': 'bajecchdjc',
-                'token': 'dfgacajif',
+                'jti': 'cdcdjdcee',
+                'token': 'bbbgjdbgcb',
                 'expiresAt': datetime.datetime.utcnow(),
             },
         )
@@ -21869,14 +23925,14 @@ class RevokedTokenActions(Generic[_PrismaModelT]):
             data=[
                 {
                     # data to create a RevokedToken record
-                    'jti': 'bgdiddfadi',
-                    'token': 'bijbfghhhf',
+                    'jti': 'bcedacgecg',
+                    'token': 'cbdffjeh',
                     'expiresAt': datetime.datetime.utcnow(),
                 },
                 {
                     # data to create a RevokedToken record
-                    'jti': 'bahchhihdc',
-                    'token': 'bihjdcibib',
+                    'jti': 'idbcdhbci',
+                    'token': 'bacegehahd',
                     'expiresAt': datetime.datetime.utcnow(),
                 },
             ],
@@ -21931,7 +23987,7 @@ class RevokedTokenActions(Generic[_PrismaModelT]):
         ```py
         revokedtoken = await RevokedToken.prisma().delete(
             where={
-                'id': 1577911370,
+                'id': 414348742,
             },
         )
         ```
@@ -21983,7 +24039,7 @@ class RevokedTokenActions(Generic[_PrismaModelT]):
         ```py
         revokedtoken = await RevokedToken.prisma().find_unique(
             where={
-                'id': 504729531,
+                'id': 1090693511,
             },
         )
         ```
@@ -22034,7 +24090,7 @@ class RevokedTokenActions(Generic[_PrismaModelT]):
         ```py
         revokedtoken = await RevokedToken.prisma().find_unique_or_raise(
             where={
-                'id': 110845144,
+                'id': 1664319668,
             },
         )
         ```
@@ -22286,7 +24342,7 @@ class RevokedTokenActions(Generic[_PrismaModelT]):
         ```py
         revokedtoken = await RevokedToken.prisma().update(
             where={
-                'id': 1300269105,
+                'id': 761058525,
             },
             data={
                 # data to update the RevokedToken record to
@@ -22343,18 +24399,18 @@ class RevokedTokenActions(Generic[_PrismaModelT]):
         ```py
         revokedtoken = await RevokedToken.prisma().upsert(
             where={
-                'id': 1881086742,
+                'id': 1498425426,
             },
             data={
                 'create': {
-                    'id': 1881086742,
-                    'jti': 'bahchhihdc',
-                    'token': 'bihjdcibib',
+                    'id': 1498425426,
+                    'jti': 'idbcdhbci',
+                    'token': 'bacegehahd',
                     'expiresAt': datetime.datetime.utcnow(),
                 },
                 'update': {
-                    'jti': 'bahchhihdc',
-                    'token': 'bihjdcibib',
+                    'jti': 'idbcdhbci',
+                    'token': 'bacegehahd',
                     'expiresAt': datetime.datetime.utcnow(),
                 },
             },
@@ -22403,7 +24459,7 @@ class RevokedTokenActions(Generic[_PrismaModelT]):
         # update all RevokedToken records
         total = await RevokedToken.prisma().update_many(
             data={
-                'revokedBy': 1082354839
+                'revokedBy': 1960204067
             },
             where={}
         )
@@ -22766,7 +24822,7 @@ class SystemSettingActions(Generic[_PrismaModelT]):
         ```py
         users = await SystemSetting.prisma().query_raw(
             'SELECT * FROM SystemSetting WHERE id = $1',
-            1456828036,
+            1440871456,
         )
         ```
         """
@@ -22806,7 +24862,7 @@ class SystemSettingActions(Generic[_PrismaModelT]):
         ```py
         user = await SystemSetting.prisma().query_first(
             'SELECT * FROM SystemSetting WHERE key = $1',
-            'cbcehahedh',
+            'bfbfgeddfd',
         )
         ```
         """
@@ -22845,8 +24901,8 @@ class SystemSettingActions(Generic[_PrismaModelT]):
         systemsetting = await SystemSetting.prisma().create(
             data={
                 # data to create a SystemSetting record
-                'key': 'bcjihiaide',
-                'value': 'bagfijcgfj',
+                'key': 'jbgheibja',
+                'value': 'eejajbid',
             },
         )
         ```
@@ -22901,13 +24957,13 @@ class SystemSettingActions(Generic[_PrismaModelT]):
             data=[
                 {
                     # data to create a SystemSetting record
-                    'key': 'bcggehiidc',
-                    'value': 'bjcdacgacf',
+                    'key': 'efhdcdaie',
+                    'value': 'cadejecgbd',
                 },
                 {
                     # data to create a SystemSetting record
-                    'key': 'jfieeahi',
-                    'value': 'bijfjbddfj',
+                    'key': 'bahjhjjhcc',
+                    'value': 'ebhbhbdff',
                 },
             ],
             skip_duplicates=True,
@@ -22961,7 +25017,7 @@ class SystemSettingActions(Generic[_PrismaModelT]):
         ```py
         systemsetting = await SystemSetting.prisma().delete(
             where={
-                'id': 232393244,
+                'id': 1384523576,
             },
         )
         ```
@@ -23013,7 +25069,7 @@ class SystemSettingActions(Generic[_PrismaModelT]):
         ```py
         systemsetting = await SystemSetting.prisma().find_unique(
             where={
-                'id': 1116931621,
+                'id': 274854673,
             },
         )
         ```
@@ -23064,7 +25120,7 @@ class SystemSettingActions(Generic[_PrismaModelT]):
         ```py
         systemsetting = await SystemSetting.prisma().find_unique_or_raise(
             where={
-                'id': 1243026426,
+                'id': 568974454,
             },
         )
         ```
@@ -23316,7 +25372,7 @@ class SystemSettingActions(Generic[_PrismaModelT]):
         ```py
         systemsetting = await SystemSetting.prisma().update(
             where={
-                'id': 21355947,
+                'id': 721617527,
             },
             data={
                 # data to update the SystemSetting record to
@@ -23373,17 +25429,17 @@ class SystemSettingActions(Generic[_PrismaModelT]):
         ```py
         systemsetting = await SystemSetting.prisma().upsert(
             where={
-                'id': 831237128,
+                'id': 1511161572,
             },
             data={
                 'create': {
-                    'id': 831237128,
-                    'key': 'jfieeahi',
-                    'value': 'bijfjbddfj',
+                    'id': 1511161572,
+                    'key': 'bahjhjjhcc',
+                    'value': 'ebhbhbdff',
                 },
                 'update': {
-                    'key': 'jfieeahi',
-                    'value': 'bijfjbddfj',
+                    'key': 'bahjhjjhcc',
+                    'value': 'ebhbhbdff',
                 },
             },
         )
@@ -23431,7 +25487,7 @@ class SystemSettingActions(Generic[_PrismaModelT]):
         # update all SystemSetting records
         total = await SystemSetting.prisma().update_many(
             data={
-                'id': 1024647073
+                'id': 81899341
             },
             where={}
         )
@@ -23794,7 +25850,7 @@ class NotificationActions(Generic[_PrismaModelT]):
         ```py
         users = await Notification.prisma().query_raw(
             'SELECT * FROM Notification WHERE id = $1',
-            414348742,
+            2047822338,
         )
         ```
         """
@@ -23834,7 +25890,7 @@ class NotificationActions(Generic[_PrismaModelT]):
         ```py
         user = await Notification.prisma().query_first(
             'SELECT * FROM Notification WHERE userId = $1',
-            1090693511,
+            1620791059,
         )
         ```
         """
@@ -23873,9 +25929,9 @@ class NotificationActions(Generic[_PrismaModelT]):
         notification = await Notification.prisma().create(
             data={
                 # data to create a Notification record
-                'userId': 1664319668,
-                'title': 'hgbafifcf',
-                'message': 'bejiecfecg',
+                'userId': 1877648720,
+                'title': 'bdgbfahbef',
+                'message': 'fccjhidic',
             },
         )
         ```
@@ -23930,15 +25986,15 @@ class NotificationActions(Generic[_PrismaModelT]):
             data=[
                 {
                     # data to create a Notification record
-                    'userId': 1960204067,
-                    'title': 'beeaihbefg',
-                    'message': 'bfbfgeddfd',
+                    'userId': 1365363055,
+                    'title': 'bicgeaiaga',
+                    'message': 'fajhhafab',
                 },
                 {
                     # data to create a Notification record
-                    'userId': 916748190,
-                    'title': 'eejajbid',
-                    'message': 'efhdcdaie',
+                    'userId': 1548228442,
+                    'title': 'hciegiihf',
+                    'message': 'bahifjfga',
                 },
             ],
             skip_duplicates=True,
@@ -23992,7 +26048,7 @@ class NotificationActions(Generic[_PrismaModelT]):
         ```py
         notification = await Notification.prisma().delete(
             where={
-                'id': 2034942613,
+                'id': 1041547905,
             },
         )
         ```
@@ -24044,7 +26100,7 @@ class NotificationActions(Generic[_PrismaModelT]):
         ```py
         notification = await Notification.prisma().find_unique(
             where={
-                'id': 1079799722,
+                'id': 1927302950,
             },
         )
         ```
@@ -24095,7 +26151,7 @@ class NotificationActions(Generic[_PrismaModelT]):
         ```py
         notification = await Notification.prisma().find_unique_or_raise(
             where={
-                'id': 417171355,
+                'id': 520320871,
             },
         )
         ```
@@ -24347,7 +26403,7 @@ class NotificationActions(Generic[_PrismaModelT]):
         ```py
         notification = await Notification.prisma().update(
             where={
-                'id': 1384523576,
+                'id': 1132816660,
             },
             data={
                 # data to update the Notification record to
@@ -24404,19 +26460,19 @@ class NotificationActions(Generic[_PrismaModelT]):
         ```py
         notification = await Notification.prisma().upsert(
             where={
-                'id': 274854673,
+                'id': 1061815741,
             },
             data={
                 'create': {
-                    'id': 274854673,
-                    'userId': 916748190,
-                    'title': 'eejajbid',
-                    'message': 'efhdcdaie',
+                    'id': 1061815741,
+                    'userId': 1548228442,
+                    'title': 'hciegiihf',
+                    'message': 'bahifjfga',
                 },
                 'update': {
-                    'userId': 916748190,
-                    'title': 'eejajbid',
-                    'message': 'efhdcdaie',
+                    'userId': 1548228442,
+                    'title': 'hciegiihf',
+                    'message': 'bahifjfga',
                 },
             },
         )
@@ -24464,7 +26520,7 @@ class NotificationActions(Generic[_PrismaModelT]):
         # update all Notification records
         total = await Notification.prisma().update_many(
             data={
-                'data': Json({'fgijheefe': True})
+                'data': Json({'bidgcabjag': True})
             },
             where={}
         )
@@ -24827,7 +26883,7 @@ class StockAdjustmentActions(Generic[_PrismaModelT]):
         ```py
         users = await StockAdjustment.prisma().query_raw(
             'SELECT * FROM StockAdjustment WHERE id = $1',
-            721617527,
+            742793987,
         )
         ```
         """
@@ -24867,7 +26923,7 @@ class StockAdjustmentActions(Generic[_PrismaModelT]):
         ```py
         user = await StockAdjustment.prisma().query_first(
             'SELECT * FROM StockAdjustment WHERE productId = $1',
-            1511161572,
+            265945728,
         )
         ```
         """
@@ -24906,12 +26962,12 @@ class StockAdjustmentActions(Generic[_PrismaModelT]):
         stockadjustment = await StockAdjustment.prisma().create(
             data={
                 # data to create a StockAdjustment record
-                'productId': 81899341,
+                'productId': 462831801,
                 'adjustmentType': enums.AdjustmentType.INCREASE,
                 'reason': enums.AdjustmentReason.physical_count,
-                'quantityBefore': 2047822338,
-                'quantityAfter': 1620791059,
-                'adjustmentQty': 1877648720,
+                'quantityBefore': 247995646,
+                'quantityAfter': 780004447,
+                'adjustmentQty': 438093484,
             },
         )
         ```
@@ -24966,21 +27022,21 @@ class StockAdjustmentActions(Generic[_PrismaModelT]):
             data=[
                 {
                     # data to create a StockAdjustment record
-                    'productId': 1361507145,
+                    'productId': 936456053,
                     'adjustmentType': enums.AdjustmentType.INCREASE,
                     'reason': enums.AdjustmentReason.physical_count,
-                    'quantityBefore': 522978382,
-                    'quantityAfter': 1365363055,
-                    'adjustmentQty': 1826408060,
+                    'quantityBefore': 1778715402,
+                    'quantityAfter': 1094643579,
+                    'adjustmentQty': 1759879576,
                 },
                 {
                     # data to create a StockAdjustment record
-                    'productId': 509770501,
+                    'productId': 882003441,
                     'adjustmentType': enums.AdjustmentType.INCREASE,
                     'reason': enums.AdjustmentReason.physical_count,
-                    'quantityBefore': 1548228442,
-                    'quantityAfter': 728468875,
-                    'adjustmentQty': 107859560,
+                    'quantityBefore': 1869663702,
+                    'quantityAfter': 1531119703,
+                    'adjustmentQty': 1381973828,
                 },
             ],
             skip_duplicates=True,
@@ -25034,7 +27090,7 @@ class StockAdjustmentActions(Generic[_PrismaModelT]):
         ```py
         stockadjustment = await StockAdjustment.prisma().delete(
             where={
-                'id': 1041547905,
+                'id': 1248647213,
             },
         )
         ```
@@ -25086,7 +27142,7 @@ class StockAdjustmentActions(Generic[_PrismaModelT]):
         ```py
         stockadjustment = await StockAdjustment.prisma().find_unique(
             where={
-                'id': 1927302950,
+                'id': 2047078754,
             },
         )
         ```
@@ -25137,7 +27193,7 @@ class StockAdjustmentActions(Generic[_PrismaModelT]):
         ```py
         stockadjustment = await StockAdjustment.prisma().find_unique_or_raise(
             where={
-                'id': 520320871,
+                'id': 990237427,
             },
         )
         ```
@@ -25389,7 +27445,7 @@ class StockAdjustmentActions(Generic[_PrismaModelT]):
         ```py
         stockadjustment = await StockAdjustment.prisma().update(
             where={
-                'id': 1132816660,
+                'id': 1119030192,
             },
             data={
                 # data to update the StockAdjustment record to
@@ -25446,25 +27502,25 @@ class StockAdjustmentActions(Generic[_PrismaModelT]):
         ```py
         stockadjustment = await StockAdjustment.prisma().upsert(
             where={
-                'id': 1061815741,
+                'id': 770427433,
             },
             data={
                 'create': {
-                    'id': 1061815741,
-                    'productId': 509770501,
+                    'id': 770427433,
+                    'productId': 882003441,
                     'adjustmentType': enums.AdjustmentType.INCREASE,
                     'reason': enums.AdjustmentReason.physical_count,
-                    'quantityBefore': 1548228442,
-                    'quantityAfter': 728468875,
-                    'adjustmentQty': 107859560,
+                    'quantityBefore': 1869663702,
+                    'quantityAfter': 1531119703,
+                    'adjustmentQty': 1381973828,
                 },
                 'update': {
-                    'productId': 509770501,
+                    'productId': 882003441,
                     'adjustmentType': enums.AdjustmentType.INCREASE,
                     'reason': enums.AdjustmentReason.physical_count,
-                    'quantityBefore': 1548228442,
-                    'quantityAfter': 728468875,
-                    'adjustmentQty': 107859560,
+                    'quantityBefore': 1869663702,
+                    'quantityAfter': 1531119703,
+                    'adjustmentQty': 1381973828,
                 },
             },
         )
@@ -25512,7 +27568,7 @@ class StockAdjustmentActions(Generic[_PrismaModelT]):
         # update all StockAdjustment records
         total = await StockAdjustment.prisma().update_many(
             data={
-                'quantityAfter': 1836201906
+                'quantityAfter': 699646382
             },
             where={}
         )

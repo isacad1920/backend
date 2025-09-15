@@ -1,4 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { productService } from '../services/products';
 import { categoriesService } from '../services/categories';
 import type { Product, Category, CreateProductRequest } from '../types';
@@ -14,6 +15,11 @@ import { useOptimisticList } from '../hooks/useOptimisticList';
 import { 
   Plus, Search, Tag, Package, Edit, Trash2, Loader2, Layers3, ArchiveRestore, ArrowUpCircle, ArrowDownCircle, DollarSign
 } from 'lucide-react';
+import { Require } from './Require';
+import { SkeletonTable } from './SkeletonTable';
+import { queryKeys } from '../lib/queryKeys';
+import { useDebouncedValue } from '../hooks/useDebouncedValue';
+import { useUrlQuerySync } from '../hooks/useUrlQuerySync';
 
 interface ProductDraft {
   name: string;
@@ -30,9 +36,9 @@ export const ProductsPage: React.FC = () => {
   const { confirm, dialog: confirmDialog } = useConfirm();
 
   // Data state
-  const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [search, setSearch] = useState('');
+  const debouncedSearch = useDebouncedValue(search, 350);
   const [categoryFilter, setCategoryFilter] = useState<number | 'all'>('all');
   const [categories, setCategories] = useState<Category[]>([]);
   const [page, setPage] = useState(1);
@@ -56,48 +62,73 @@ export const ProductsPage: React.FC = () => {
 
   const totalPages = Math.max(1, Math.ceil(total / size));
 
-  const fetchProducts = useCallback(async (override?: { page?: number; size?: number; search?: string; category?: number | 'all' }) => {
-    setLoading(true); setError(null);
-    try {
+  const queryClient = useQueryClient();
+  const productsQueryKey = queryKeys.products({ page, size, search: debouncedSearch, category: categoryFilter });
+  const { data: productPage, isLoading: loading } = useQuery({
+    queryKey: productsQueryKey,
+    placeholderData: (prev) => prev,
+    queryFn: async () => {
+      setError(null);
       const resp = await productService.getProducts({
-        page: override?.page ?? page,
-        size: override?.size ?? size,
-        q: (override?.search ?? search) || undefined,
-        category: (override?.category ?? categoryFilter) === 'all' ? undefined : (override?.category ?? categoryFilter) as number
+        page,
+        size,
+        q: debouncedSearch || undefined,
+        category: categoryFilter === 'all' ? undefined : categoryFilter as number
       });
       setProducts(resp.items as Product[]);
       setTotal(resp.pagination.total);
       if (!selected && resp.items.length) setSelected(resp.items[0]);
-    } catch (e: any) {
-      setError(e?.message || 'Failed to load products');
-    } finally {
-      setLoading(false);
-    }
-  }, [page, size, search, categoryFilter, selected, setProducts]);
+      return resp;
+    },
+  });
 
   const fetchCategories = useCallback(async () => {
     try {
       const resp = await categoriesService.getCategories({ page:1, size:100 });
       setCategories(resp.items as Category[]);
-    } catch (e) {
-      // silent
-    }
+    } catch (e) { /* silent */ }
   }, []);
 
-  useEffect(() => { fetchProducts(); }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  // products automatically loaded by react-query
   useEffect(() => { fetchCategories(); }, [fetchCategories]);
-  useEffect(() => { const t = setTimeout(() => { setPage(1); fetchProducts({ page:1 }); }, 350); return () => clearTimeout(t); }, [search, categoryFilter, fetchProducts]);
+  useEffect(() => { setPage(1); queryClient.invalidateQueries({ queryKey: ['products'] }); }, [debouncedSearch, categoryFilter, queryClient]);
+
+  // Sync key pagination & search params to URL
+  useUrlQuerySync({
+    state: { page, size, search: debouncedSearch },
+    keys: ['page','size','search'],
+    encode: (k, v) => {
+      if (v == null || v === '' || (k === 'page' && v === 1) || (k === 'size' && v === 25)) return undefined; // omit defaults
+      return String(v);
+    },
+    replace: true,
+  });
 
   const startCreate = () => { setCreateDraft({ name: '', categoryId: typeof categoryFilter === 'number' ? categoryFilter : undefined }); setCreateError(null); setShowCreate(true); };
   const startEdit = (p: Product) => { setSelected(p); setEditDraft({ name: p.name, sku: (p as any).sku, description: (p as any).description, categoryId: (p as any).categoryId, costPrice: (p as any).costPrice, sellingPrice: (p as any).sellingPrice, barcode: (p as any).barcode }); setEditError(null); setShowEdit(true); };
   const startAdjust = (p: Product) => { setSelected(p); setAdjustQty(0); setAdjustReason(''); setShowAdjust(true); };
 
+  const createMutation = useMutation({
+    mutationFn: (payload: CreateProductRequest) => productService.createProduct(payload),
+    onSuccess: (created) => {
+      replaceId(tempIdRef.current!, created);
+      push({ type: 'success', title: 'Product Created', message: created.name });
+      setShowCreate(false);
+      setCreateDraft({ name: '' });
+      queryClient.invalidateQueries({ queryKey: ['products'] });
+    },
+    onError: (err: any) => {
+      rollback();
+      setCreateError(err?.message || 'Failed to create product');
+    },
+    onSettled: () => setCreateSubmitting(false)
+  });
+  const tempIdRef = React.useRef<number | null>(null);
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!createDraft.name.trim()) { setCreateError('Name is required'); return; }
     setCreateSubmitting(true); setCreateError(null);
-    const optimistic: Product = { id: Date.now() * -1, name: createDraft.name.trim(), createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() } as any;
-    addOptimistic(optimistic);
+    const optimistic: Product = { id: Date.now() * -1, name: createDraft.name.trim(), createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() } as any; addOptimistic(optimistic); tempIdRef.current = optimistic.id as any;
     try {
       const createPayload: CreateProductRequest = {
         sku: createDraft.sku || `SKU-${Date.now()}`,
@@ -108,20 +139,28 @@ export const ProductsPage: React.FC = () => {
         sellingPrice: createDraft.sellingPrice || createDraft.costPrice || '0',
         categoryId: createDraft.categoryId || undefined
       };
-      const created = await productService.createProduct(createPayload);
-      replaceId(optimistic.id, created);
-      push({ type: 'success', title: 'Product Created', message: created.name });
-      setShowCreate(false);
-      setCreateDraft({ name: '' });
-      fetchProducts();
+      createMutation.mutate(createPayload);
     } catch (err: any) {
       rollback();
       setCreateError(err?.message || 'Failed to create product');
-    } finally {
-      setCreateSubmitting(false);
     }
   };
 
+  const updateMutation = useMutation({
+    mutationFn: ({ id, payload }: { id: number; payload: Partial<Product> }) => productService.updateProduct(id, payload as any),
+    onSuccess: (updated) => {
+      updateOptimistic((updated as any).id, updated as any);
+      setSelected(updated);
+      push({ type: 'success', title: 'Product Updated', message: (updated as any).name });
+      setShowEdit(false);
+    },
+    onError: (err: any, _vars, ctx: any) => {
+      rollback();
+      setEditError(err?.message || 'Update failed');
+      if (ctx?.original) setSelected(ctx.original);
+    },
+    onSettled: () => setEditSubmitting(false)
+  });
   const handleEdit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!selected) return; if (!editDraft.name.trim()) { setEditError('Name required'); return; }
@@ -129,30 +168,27 @@ export const ProductsPage: React.FC = () => {
     const original = selected;
     updateOptimistic(original.id, { name: editDraft.name.trim(), updatedAt: new Date().toISOString() } as any);
     try {
-  const updatePayload = { ...editDraft } as any; // backend accepts partial Product fields
-  const updated = await productService.updateProduct(original.id, updatePayload);
-      updateOptimistic(original.id, updated as any);
-      setSelected(updated);
-      push({ type: 'success', title: 'Product Updated', message: updated.name });
-      setShowEdit(false);
+      const updatePayload = { ...editDraft } as any; // backend accepts partial Product fields
+  updateMutation.mutate({ id: (original as any).id, payload: updatePayload });
     } catch (err: any) {
       rollback();
       setEditError(err?.message || 'Update failed');
       setSelected(original);
-    } finally {
-      setEditSubmitting(false);
     }
   };
 
+  const deleteMutation = useMutation({
+    mutationFn: (id: number) => productService.deleteProduct(id),
+    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ['products'] }); },
+  });
   const handleDelete = async (p: Product) => {
     const ok = await confirm(); if (!ok) return;
     const backup = [...products];
     removeOptimistic((p as any).id);
     try {
-      await productService.deleteProduct((p as any).id);
+      await deleteMutation.mutateAsync((p as any).id);
       push({ type: 'success', message: 'Product deleted' });
       if (selected?.id === (p as any).id) setSelected(null);
-      fetchProducts();
     } catch (err: any) {
       setProducts(backup);
       push({ type: 'error', title: 'Delete failed', message: err?.message || 'Unable to delete' });
@@ -181,7 +217,11 @@ export const ProductsPage: React.FC = () => {
           <p className="text-white/70">Manage product catalog and stock</p>
         </div>
         <div className="flex items-center gap-2">
-          <Button className="bg-white/20 hover:bg-white/30 text-white border border-white/30" onClick={startCreate}><Plus className="w-4 h-4 mr-2"/>Add Product</Button>
+          <Require anyOf={['products:write']}>
+            <Button className="bg-white/20 hover:bg-white/30 text-white border border-white/30" onClick={startCreate}>
+              <Plus className="w-4 h-4 mr-2"/>Add Product
+            </Button>
+          </Require>
         </div>
       </div>
 
@@ -219,7 +259,7 @@ export const ProductsPage: React.FC = () => {
               </TableHeader>
               <TableBody>
                 {loading && (
-                  <TableRow className="border-white/10"><TableCell colSpan={6} className="py-10 text-center text-white/60"><Loader2 className="w-5 h-5 mr-2 inline animate-spin" /> Loading...</TableCell></TableRow>
+                  <TableRow><TableCell colSpan={6} className="p-0"><SkeletonTable columns={6} rows={6} /></TableCell></TableRow>
                 )}
                 {!loading && error && (
                   <TableRow className="border-white/10"><TableCell colSpan={6} className="py-6 text-center text-red-300 text-sm">{error}</TableCell></TableRow>
@@ -236,9 +276,15 @@ export const ProductsPage: React.FC = () => {
                     <TableCell className="text-white/60 text-sm">{(p as any).sellingPrice ? `$${(p as any).sellingPrice}` : '-'}</TableCell>
                     <TableCell>
                       <div className="flex items-center gap-1">
-                        <Button size="sm" variant="ghost" className="text-white/70 hover:text-white hover:bg-white/10" onClick={(e)=>{ e.stopPropagation(); startEdit(p); }}><Edit className="w-4 h-4" /></Button>
-                        <Button size="sm" variant="ghost" className="text-white/70 hover:text-white hover:bg-white/10" onClick={(e)=>{ e.stopPropagation(); startAdjust(p); }}><ArchiveRestore className="w-4 h-4" /></Button>
-                        <Button size="sm" variant="ghost" className="text-white/70 hover:text-white hover:bg-white/10" onClick={(e)=>{ e.stopPropagation(); handleDelete(p); }}><Trash2 className="w-4 h-4" /></Button>
+                        <Require anyOf={['products:write']}>
+                          <Button size="sm" variant="ghost" className="text-white/70 hover:text-white hover:bg-white/10" onClick={(e)=>{ e.stopPropagation(); startEdit(p); }}><Edit className="w-4 h-4" /></Button>
+                        </Require>
+                        <Require anyOf={['products:write']}>
+                          <Button size="sm" variant="ghost" className="text-white/70 hover:text-white hover:bg-white/10" onClick={(e)=>{ e.stopPropagation(); startAdjust(p); }}><ArchiveRestore className="w-4 h-4" /></Button>
+                        </Require>
+                        <Require anyOf={['products:delete']}>
+                          <Button size="sm" variant="ghost" className="text-white/70 hover:text-white hover:bg-white/10" onClick={(e)=>{ e.stopPropagation(); handleDelete(p); }}><Trash2 className="w-4 h-4" /></Button>
+                        </Require>
                       </div>
                     </TableCell>
                   </TableRow>
@@ -250,25 +296,25 @@ export const ProductsPage: React.FC = () => {
             <Pagination>
               <PaginationContent>
                 <PaginationItem>
-                  <PaginationPrevious href="#" onClick={(e)=>{ e.preventDefault(); if (page>1){ setPage(p=>p-1); fetchProducts({ page: page-1 }); } }} className={page===1?'pointer-events-none opacity-40':''} />
+                  <PaginationPrevious href="#" onClick={(e)=>{ e.preventDefault(); if (page>1){ setPage(p=>p-1); } }} className={page===1?'pointer-events-none opacity-40':''} />
                 </PaginationItem>
                 {[...Array(Math.min(5, totalPages))].map((_, idx) => {
                   const start = Math.max(1, Math.min(page - 2, totalPages - 4));
                   const pn = start + idx; if (pn > totalPages) return null;
                   return (
                     <PaginationItem key={pn}>
-                      <PaginationLink href="#" isActive={pn===page} onClick={(e)=>{ e.preventDefault(); setPage(pn); fetchProducts({ page: pn }); }}>{pn}</PaginationLink>
+                      <PaginationLink href="#" isActive={pn===page} onClick={(e)=>{ e.preventDefault(); setPage(pn); }}>{pn}</PaginationLink>
                     </PaginationItem>
                   );
                 })}
                 <PaginationItem>
-                  <PaginationNext href="#" onClick={(e)=>{ e.preventDefault(); if (page<totalPages){ setPage(p=>p+1); fetchProducts({ page: page+1 }); } }} className={page===totalPages?'pointer-events-none opacity-40':''} />
+                  <PaginationNext href="#" onClick={(e)=>{ e.preventDefault(); if (page<totalPages){ setPage(p=>p+1); } }} className={page===totalPages?'pointer-events-none opacity-40':''} />
                 </PaginationItem>
               </PaginationContent>
             </Pagination>
             <div className="flex items-center gap-2 text-xs text-white/60">
               Rows:
-              {[10,25,50].map(s => <button key={s} onClick={()=>{ setSize(s); setPage(1); fetchProducts({ page:1, size:s }); }} className={`px-2 py-1 rounded border ${size===s?'bg-white/20 border-white/40 text-white':'border-white/20 text-white/70 hover:text-white hover:bg-white/10'}`}>{s}</button>)}
+              {[10,25,50].map(s => <button key={s} onClick={()=>{ setSize(s); setPage(1); }} className={`px-2 py-1 rounded border ${size===s?'bg-white/20 border-white/40 text-white':'border-white/20 text-white/70 hover:text-white hover:bg-white/10'}`}>{s}</button>)}
             </div>
           </div>
         </CardContent>
@@ -292,8 +338,12 @@ export const ProductsPage: React.FC = () => {
               <div className="space-y-0.5"><p className="text-white/60">Updated</p><p className="text-white text-xs">{new Date(selected.updatedAt).toLocaleString()}</p></div>
             </div>
             <div className="flex flex-wrap gap-2 pt-2">
-              <Button size="sm" variant="outline" className="border-white/30 text-white hover:bg-white/10" onClick={()=>startEdit(selected)}><Edit className="w-4 h-4 mr-1" /> Edit</Button>
-              <Button size="sm" variant="outline" className="border-white/30 text-white hover:bg-white/10" onClick={()=>startAdjust(selected)}><Layers3 className="w-4 h-4 mr-1" /> Adjust Stock</Button>
+              <Require anyOf={['products:write']}>
+                <Button size="sm" variant="outline" className="border-white/30 text-white hover:bg-white/10" onClick={()=>startEdit(selected)}><Edit className="w-4 h-4 mr-1" /> Edit</Button>
+              </Require>
+              <Require anyOf={['products:write']}>
+                <Button size="sm" variant="outline" className="border-white/30 text-white hover:bg-white/10" onClick={()=>startAdjust(selected)}><Layers3 className="w-4 h-4 mr-1" /> Adjust Stock</Button>
+              </Require>
             </div>
           </CardContent>
         </Card>

@@ -30,7 +30,8 @@ class AccountService:
         if branch_id is not None:
             where["branchId"] = branch_id
         if active is not None:
-            where["active"] = active
+            # Underlying column is isActive mapped to is_active in DB
+            where["isActive"] = active
         skip = (page - 1) * limit
         total = await self.db.account.count(where=where)
         rows = await self.db.account.find_many(where=where, skip=skip, take=limit, order={"createdAt": "desc"})
@@ -55,10 +56,10 @@ class AccountService:
     async def close_account(self, account_id: int):
         acc = await self.get_account(account_id)
         # Idempotent close: if already inactive, just return
-        if getattr(acc, "active", True) is False:
+        if getattr(acc, "isActive", True) is False:
             return acc
         try:
-            return await self.db.account.update(where={"id": account_id}, data={"active": False})
+            return await self.db.account.update(where={"id": account_id}, data={"isActive": False})
         except Exception as e:
             raise HTTPException(status_code=400, detail=f"Failed to close account: {e}")
 

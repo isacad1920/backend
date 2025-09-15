@@ -154,7 +154,7 @@ async def create_journal_entry(
                 resp = failure_response(message=f"Accounts not found: {missing}", status_code=400, code="VALIDATION_ERROR")
                 resp.headers['x-normalized-error'] = '1'
                 return resp
-            inactive = [a.id for a in accs if getattr(a, "active", True) is False]
+            inactive = [a.id for a in accs if getattr(a, "isActive", True) is False]
             if inactive:
                 resp = failure_response(message=f"Inactive accounts cannot be posted to: {inactive}", status_code=400, code="VALIDATION_ERROR")
                 resp.headers['x-normalized-error'] = '1'
@@ -163,7 +163,7 @@ async def create_journal_entry(
 
         service = create_journal_service(db)
         entry = await service.create_journal_entry(entry_data, created_by_user_id=current_user.id)
-        return ResponseBuilder.success(data=entry, message="Journal entry created successfully")
+        return ResponseBuilder.success(data=entry, message="Journal entry created successfully", status_code=201)
     except ValidationError as e:
         # Provide raw message so middleware uses it directly
         raise HTTPException(status_code=400, detail=str(e))

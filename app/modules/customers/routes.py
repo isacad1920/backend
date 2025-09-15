@@ -51,7 +51,7 @@ async def create_customer(
         parts = name.split(" ", 1)
         data["firstName"] = parts[0] if parts else ""
         data["lastName"] = parts[1] if len(parts) > 1 else ""
-        return success_response(data=data, message="Customer created successfully")
+        return success_response(data=data, message="Customer created successfully", status_code=201)
     except ValueError as e:
         # Treat domain validation errors as 422 to align with Pydantic validation semantics
         msg = str(e)

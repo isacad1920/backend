@@ -9,7 +9,8 @@ from fastapi import Depends, HTTPException, Query, Request, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 
 from app.core.config import UserRole, settings
-from app.core.security import JWTManager, PermissionManager, TokenType, rate_limiter
+from app.core.security import JWTManager, TokenType, rate_limiter
+from app.core.permissions import check_permission as rbac_check_permission, get_user_effective_permissions
 from app.db.prisma import get_db
 
 logger = logging.getLogger(__name__)
@@ -179,41 +180,23 @@ def require_role(*allowed_roles):
 
 # Permission-based dependencies
 def require_permission(*permissions: str):
-    """Create a dependency that requires specific permissions with database-backed overrides."""
-    async def permission_checker(
-        current_user = Depends(get_current_active_user),
-        db = Depends(get_db)
-    ):
-        # Normalize current_user.role robustly and cast to UserRole
-        role_val = getattr(current_user, "role", None)
-        if hasattr(role_val, "value"):
-            role_str = role_val.value
-        else:
-            role_str = str(role_val) if role_val is not None else ""
-        if "." in role_str:
-            role_str = role_str.split(".")[-1]
-        role_str = role_str.upper()
-        try:
-            user_role = UserRole(role_str)
-        except Exception:
-            raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
-                detail="Insufficient permissions"
-            )
-        user_id = int(current_user.id)
-        
-        # Get custom permissions for this user from database
-        custom_permissions = await PermissionManager.get_custom_permissions(user_id, db)
-        
-        for permission in permissions:
-            if not PermissionManager.has_permission(user_role, permission, user_id, custom_permissions):
-                raise HTTPException(
-                    status_code=status.HTTP_403_FORBIDDEN,
-                    detail=f"Permission required: {permission}"
-                )
-        
+    """RBAC permission dependency using normalized tables.
+
+    All permissions are in form 'resource:action'. Any missing permission => 403.
+    """
+    async def permission_checker(current_user=Depends(get_current_active_user), db=Depends(get_db)):
+        # ADMIN short-circuit
+        role_val = getattr(current_user, "role", "")
+        role_name = role_val.value if hasattr(role_val, "value") else str(role_val)
+        if role_name.upper().endswith("ADMIN"):
+            return current_user
+        # Batch effective permissions
+        effective = await get_user_effective_permissions(int(current_user.id), db)
+        for perm in permissions:
+            if perm not in effective:
+                raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=f"Permission required: {perm}")
         return current_user
-    
+
     return permission_checker
 
 # Branch-based dependencies

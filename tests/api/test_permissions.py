@@ -1,136 +1,76 @@
-"""
-Permission management API endpoint tests.
-"""
+"""Tests for the normalized RBAC permission endpoints (no legacy compat)."""
 import pytest
 from httpx import AsyncClient
-
 from app.core.config import settings
 
 
-class TestPermissionEndpoints:
-    """Test permission management endpoints."""
-    
-    @pytest.mark.asyncio
-    async def test_grant_permissions(self, authenticated_client: AsyncClient):
-        """Test granting permissions to a user."""
-        response = await authenticated_client.post(
-            f"{settings.api_v1_str}/admin/permissions/grant",
-            json={
-                "user_id": 2,
-                "permissions": ["products:write", "sales:read"],
-                "reason": "Testing permission grant"
-            }
-        )
-        
-        # May succeed or fail based on admin permissions
-        assert response.status_code in [200, 403, 404]
-    
-    @pytest.mark.asyncio
-    async def test_revoke_permissions(self, authenticated_client: AsyncClient):
-        """Test revoking permissions from a user."""
-        response = await authenticated_client.post(
-            f"{settings.api_v1_str}/admin/permissions/revoke",
-            json={
-                "user_id": 2,
-                "permissions": ["products:write"],
-                "reason": "Testing permission revoke"
-            }
-        )
-        
-        # May succeed or fail based on admin permissions
-        assert response.status_code in [200, 403, 404]
-    
-    @pytest.mark.asyncio
-    async def test_get_user_permissions(self, authenticated_client: AsyncClient):
-        """Test getting user permissions."""
-        response = await authenticated_client.get(
-            f"{settings.api_v1_str}/admin/permissions/user/1",
-            params={"user_role": "ADMIN"}
-        )
-        
-        # May succeed or fail based on admin permissions
-        assert response.status_code in [200, 403, 404]
-    
-    @pytest.mark.asyncio
-    async def test_get_available_permissions(self, authenticated_client: AsyncClient):
-        """Test getting available permissions."""
-        response = await authenticated_client.get(
-            f"{settings.api_v1_str}/admin/permissions/available"
-        )
-        
-        # May succeed or fail based on admin permissions
-        assert response.status_code in [200, 403]
-        
-        if response.status_code == 200:
-            payload = response.json()
-            data = payload.get("data") or payload
-            perms = data.get("permissions") or data.get("grouped_permissions", [])
-            # grouped_permissions may be dict; accept either
-            assert perms is not None
-            if isinstance(perms, dict):
-                assert all(isinstance(v, list) for v in perms.values())
-            else:
-                assert isinstance(perms, list)
-    
-    @pytest.mark.asyncio
-    async def test_bulk_grant_permissions(self, authenticated_client: AsyncClient):
-        """Test bulk granting permissions."""
-        response = await authenticated_client.post(
-            f"{settings.api_v1_str}/admin/permissions/bulk-grant",
-            json={
-                "user_ids": [2, 3],
-                "permissions": ["sales:read"],
-                "reason": "Bulk permission grant test"
-            }
-        )
-        
-        # May succeed or fail based on admin permissions
-        assert response.status_code in [200, 403, 404]
-    
-    @pytest.mark.asyncio
-    async def test_get_audit_logs(self, authenticated_client: AsyncClient):
-        """Test getting permission audit logs."""
-        response = await authenticated_client.get(
-            f"{settings.api_v1_str}/admin/permissions/audit-logs"
-        )
-        
-        # May succeed or fail based on admin permissions
-        assert response.status_code in [200, 403]
-        
-        if response.status_code == 200:
-            payload = response.json()
-            data = payload.get("data") or payload
-            logs = data.get("logs") or data.get("items") or data
-            assert isinstance(logs, list)
-    
-    @pytest.mark.asyncio
-    async def test_get_audit_logs_for_user(self, authenticated_client: AsyncClient):
-        """Test getting permission audit logs for specific user."""
-        response = await authenticated_client.get(
-            f"{settings.api_v1_str}/admin/permissions/audit-logs",
-            params={"user_id": 1}
-        )
-        
-        # May succeed or fail based on admin permissions
-        assert response.status_code in [200, 403]
-    
-    @pytest.mark.asyncio
-    async def test_unauthorized_access(self, async_client: AsyncClient):
-        """Test accessing permission endpoints without authentication."""
-        response = await async_client.get(
-            f"{settings.api_v1_str}/admin/permissions/available"
-        )
-        
-        assert response.status_code == 401
-    
-    @pytest.mark.asyncio
-    async def test_non_admin_access(self, authenticated_client: AsyncClient):
-        """Test accessing permission endpoints without admin privileges."""
-        # This test assumes the authenticated user is not an admin
-        # In real scenarios, you'd use a non-admin user fixture
-        response = await authenticated_client.get(
-            f"{settings.api_v1_str}/admin/permissions/available"
-        )
-        
-        # Should be forbidden if user is not admin, or succeed if user is admin
-        assert response.status_code in [200, 403]
+@pytest.mark.asyncio
+async def test_list_permissions(authenticated_client: AsyncClient):
+    r = await authenticated_client.get(f"{settings.api_v1_str}/permissions")
+    assert r.status_code == 200
+    data = r.json()["data"]
+    assert "permissions" in data
+
+
+@pytest.mark.asyncio
+async def test_create_and_delete_permission(authenticated_client: AsyncClient):
+    create = await authenticated_client.post(f"{settings.api_v1_str}/permissions", json={"resource": "tempres", "action": "tempact"})
+    assert create.status_code == 200
+    pid = create.json()["data"]["id"]
+    delete = await authenticated_client.delete(f"{settings.api_v1_str}/permissions/{pid}")
+    assert delete.status_code == 200
+
+
+@pytest.mark.asyncio
+async def test_role_permission_assignment_flow(authenticated_client: AsyncClient):
+    # create permission
+    cp = await authenticated_client.post(f"{settings.api_v1_str}/permissions", json={"resource": "assign", "action": "read"})
+    assert cp.status_code == 200
+    perm_id = cp.json()["data"]["id"]
+    # assign to role
+    assign = await authenticated_client.post(f"{settings.api_v1_str}/permissions/roles/ADMIN/{perm_id}")
+    assert assign.status_code == 200
+    # list role perms
+    rp = await authenticated_client.get(f"{settings.api_v1_str}/permissions/roles/ADMIN")
+    assert rp.status_code == 200
+    # unassign
+    un = await authenticated_client.delete(f"{settings.api_v1_str}/permissions/roles/ADMIN/{perm_id}")
+    assert un.status_code == 200
+
+
+@pytest.mark.asyncio
+async def test_user_override_flow(authenticated_client: AsyncClient):
+    # Get current user id
+    me = await authenticated_client.get(f"{settings.api_v1_str}/auth/me")
+    assert me.status_code == 200
+    user_id = me.json()["data"]["id"]
+    # Create permission
+    cp = await authenticated_client.post(f"{settings.api_v1_str}/permissions", json={"resource": "ovr", "action": "test"})
+    assert cp.status_code == 200
+    perm_id = cp.json()["data"]["id"]
+    # Apply ALLOW override
+    allow = await authenticated_client.post(f"{settings.api_v1_str}/permissions/users/{user_id}/{perm_id}", json={"type": "ALLOW"})
+    assert allow.status_code == 200
+    # Effective list should contain it
+    eff = await authenticated_client.get(f"{settings.api_v1_str}/permissions/effective/{user_id}")
+    assert eff.status_code == 200
+    # Remove override
+    rem = await authenticated_client.delete(f"{settings.api_v1_str}/permissions/users/{user_id}/{perm_id}")
+    assert rem.status_code == 200
+
+
+@pytest.mark.asyncio
+async def test_user_permission_detail(authenticated_client: AsyncClient):
+    me = await authenticated_client.get(f"{settings.api_v1_str}/auth/me")
+    assert me.status_code == 200
+    user_id = me.json()["data"]["id"]
+    detail = await authenticated_client.get(f"{settings.api_v1_str}/permissions/users/{user_id}")
+    assert detail.status_code == 200
+    payload = detail.json()["data"]
+    assert set(["effective", "role_permissions", "allowed_overrides", "denied_overrides"]).issubset(payload.keys())
+
+
+@pytest.mark.asyncio
+async def test_unauthorized_access(async_client: AsyncClient):
+    r = await async_client.get(f"{settings.api_v1_str}/permissions")
+    assert r.status_code == 401

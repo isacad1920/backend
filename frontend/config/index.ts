@@ -14,13 +14,18 @@ export const config = {
   // API timeouts (in milliseconds)
   api: {
     timeout: 10000, // 10 seconds
-    retries: 3,
+    retries: 3, // idempotent GET retries
+    retryBackoffBaseMs: 250, // exponential backoff base
   },
   
   // Local storage keys
   storage: {
     userKey: 'financialApp_user',
     settingsKey: 'financialApp_settings',
+  },
+  tracing: {
+    enableCorrelationId: true,
+    header: 'x-correlation-id',
   },
 } as const;
 

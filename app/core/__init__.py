@@ -14,7 +14,6 @@ from .security import (
     JWTManager,
     PasswordManager,
     PasswordValidator,
-    PermissionManager,
     SecurityUtils,
 )
 
@@ -32,7 +31,6 @@ __all__ = [
     "get_pagination_params",
     "PasswordManager",
     "JWTManager",
-    "PermissionManager",
     "PasswordValidator",
     "SecurityUtils"
 ]

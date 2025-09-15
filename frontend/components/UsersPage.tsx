@@ -1,4 +1,5 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect } from 'react';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useToast } from '../context/ToastContext';
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
 import { Button } from './ui/button';
@@ -22,7 +23,14 @@ import {
 import { usersService } from '../services/users';
 import { branchesService } from '../services/branches';
 import { Role, type User } from '../types';
-import { useAuth, PermissionGuard } from '../context/AuthContext';
+import { useAuth } from '../context/AuthContext';
+import { Require } from './Require';
+import { mapError } from '../lib/errorMap';
+import { SkeletonTable } from './SkeletonTable';
+import { queryKeys } from '../lib/queryKeys';
+import { useDebouncedValue } from '../hooks/useDebouncedValue';
+import { ErrorState } from './ErrorState';
+import { useUrlQuerySync } from '../hooks/useUrlQuerySync';
 
 // Role color mapping (match backend enum Role names)
 const roleColors: Record<string, string> = {
@@ -46,6 +54,7 @@ export function UsersPage() {
   const { push } = useToast();
   const { hasPermission } = useAuth();
   const [searchTerm, setSearchTerm] = useState('');
+  const debouncedSearch = useDebouncedValue(searchTerm, 300);
   const [roleFilter, setRoleFilter] = useState<'all' | Role>('all');
   const [branchFilter, setBranchFilter] = useState<number | 'all'>('all');
   const [users, setUsers] = useState<EnrichedUser[]>([]);
@@ -53,7 +62,7 @@ export function UsersPage() {
   const [page, setPage] = useState(1);
   const [size, setSize] = useState(10);
   const [total, setTotal] = useState(0);
-  const [loading, setLoading] = useState(false);
+  // loading replaced by react-query isLoading
   const [error, setError] = useState<string | null>(null);
   const [branches, setBranches] = useState<Array<{ id: number; name: string }>>([]);
   const [branchLoading, setBranchLoading] = useState(false);
@@ -84,22 +93,20 @@ export function UsersPage() {
     else if (newUserData.password.trim().length < 6) errors.password = 'Min 6 characters';
     return errors;
   };
-  const debouncedRef = React.useRef<number | null>(null);
-
-  const fetchUsers = useCallback(async (override?: { page?: number; size?: number; term?: string; role?: Role | 'all'; branchId?: number | 'all' }) => {
-    if (!hasPermission('users:view')) return;
-    setLoading(true);
-    setError(null);
-    try {
-      const term = override?.term ?? searchTerm;
-      const role = override?.role ?? roleFilter;
-      const branchId = override?.branchId ?? branchFilter;
+  const queryClient = useQueryClient();
+  const usersQueryKey = queryKeys.users({ page, size, search: debouncedSearch, role: roleFilter, branch: branchFilter });
+  const { isLoading: loading } = useQuery({
+    queryKey: usersQueryKey,
+    enabled: hasPermission('users:view'),
+    placeholderData: (prev) => prev,
+    queryFn: async () => {
+      setError(null);
       const resp = await usersService.getUsers({
-        page: override?.page ?? page,
-        size: override?.size ?? size,
-        q: term ? term : undefined,
-        role: role !== 'all' ? role : undefined,
-        branchId: branchId !== 'all' ? Number(branchId) : undefined
+        page,
+        size,
+  q: debouncedSearch || undefined,
+        role: roleFilter !== 'all' ? roleFilter : undefined,
+        branchId: branchFilter !== 'all' ? Number(branchFilter) : undefined
       });
       const enriched = resp.items.map(u => ({
         ...u,
@@ -109,20 +116,22 @@ export function UsersPage() {
       setUsers(enriched);
       setTotal(resp.pagination.total);
       if (!selectedUser && enriched.length > 0) setSelectedUser(enriched[0]);
-    } catch (e: any) {
-      setError(e?.message || 'Failed to load users');
-    } finally {
-      setLoading(false);
+      return resp;
     }
-  }, [page, size, roleFilter, branchFilter, searchTerm, hasPermission, selectedUser]);
+  });
 
-  useEffect(() => { fetchUsers(); }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  // React to debounced filters
+  useEffect(() => { setPage(1); queryClient.invalidateQueries({ queryKey: ['users'] }); }, [debouncedSearch, roleFilter, branchFilter, queryClient]);
 
-  useEffect(() => {
-    if (debouncedRef.current) window.clearTimeout(debouncedRef.current);
-    debouncedRef.current = window.setTimeout(() => { setPage(1); fetchUsers({ page: 1 }); }, 300);
-    return () => { if (debouncedRef.current) window.clearTimeout(debouncedRef.current); };
-  }, [searchTerm, roleFilter, branchFilter, fetchUsers]);
+  useUrlQuerySync({
+    state: { page, size, search: debouncedSearch },
+    keys: ['page','size','search'],
+    encode: (k, v) => {
+      if (v == null || v === '' || (k === 'page' && v === 1) || (k === 'size' && v === 10)) return undefined;
+      return String(v);
+    },
+    replace: true,
+  });
 
   // Load branches for filter
   useEffect(() => {
@@ -161,92 +170,119 @@ export function UsersPage() {
   const [editError, setEditError] = useState<string | null>(null);
   const [editData, setEditData] = useState<{ firstName: string; lastName: string; email: string; role: Role; branchId?: number | '' } | null>(null);
 
-  const handleCreateUser = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!canCreate) return;
-    const errs = createValidation();
-    if (Object.keys(errs).length) {
-      setCreateTouched({ username: true, email: true, firstName: true, lastName: true, role: true, password: true });
-      return;
-    }
-    setCreateSubmitting(true);
-    setCreateError(null);
-    try {
-      const payload = {
-        username: newUserData.username.trim(),
-        email: newUserData.email.trim(),
-        firstName: newUserData.firstName.trim(),
-        lastName: newUserData.lastName.trim(),
-        role: newUserData.role,
-        branchId: newUserData.branchId || undefined,
-        password: newUserData.password // backend expects raw password per schema
-      } as any;
+  const createUserMutation = useMutation({
+    mutationFn: async (payload: any) => usersService.createUser(payload.realPayload),
+    onMutate: (vars: any) => {
+      setCreateError(null);
+      const errs = createValidation();
+      if (Object.keys(errs).length) {
+        setCreateTouched({ username: true, email: true, firstName: true, lastName: true, role: true, password: true });
+        throw new Error('Validation');
+      }
       const optimistic: EnrichedUser = {
-        id: Date.now() * -1, // temporary negative id
-        username: payload.username,
-        email: payload.email,
-        firstName: payload.firstName,
-        lastName: payload.lastName,
-        role: payload.role,
-        branchId: payload.branchId,
+        id: vars.tempId,
+        username: vars.realPayload.username,
+        email: vars.realPayload.email,
+        firstName: vars.realPayload.firstName,
+        lastName: vars.realPayload.lastName,
+        role: vars.realPayload.role,
+        branchId: vars.realPayload.branchId,
         isActive: true,
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
         status: 'active'
       } as EnrichedUser;
       setUsers(prev => [optimistic, ...prev]);
-      // Fire real request
-      const created = await usersService.createUser(payload);
-      setUsers(prev => prev.map(u => u.id === optimistic.id ? { ...optimistic, ...created } : u));
-      setSelectedUser(created as EnrichedUser);
+      return { tempId: vars.tempId };
+    },
+    onError: (err, _vars, ctx) => {
+      setUsers(prev => prev.filter(u => u.id !== ctx?.tempId));
+      const mapped = mapError(err);
+      setCreateError(mapped.uiMessage);
+      push({ type: mapped.severity === 'error' ? 'error' : 'warning', title: 'Create Failed', message: mapped.uiMessage });
+    },
+    onSuccess: (created: any, _vars, ctx) => {
+      setUsers(prev => prev.map(u => u.id === ctx?.tempId ? { ...u, ...created, id: created.id } : u));
+      setSelectedUser(created);
+      push({ type: 'success', title: 'User Created', message: `User ${created.username || created.email} created.` });
       setShowCreate(false);
-      // refresh total count
-      fetchUsers();
-      push({ type: 'success', title: 'User Created', message: `User ${payload.username || payload.email} created.` });
-    } catch (err: any) {
-      setUsers(prev => prev.filter(u => u.id >= 0)); // remove optimistic on failure
-      setCreateError(err?.message || 'Failed to create user');
-      push({ type: 'error', title: 'Create Failed', message: err?.message || 'Failed to create user' });
-    } finally {
-      setCreateSubmitting(false);
+      queryClient.invalidateQueries({ queryKey: ['users'] });
     }
+  });
+
+  const handleCreateUser = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!canCreate) return;
+    const payload = {
+      username: newUserData.username.trim(),
+      email: newUserData.email.trim(),
+      firstName: newUserData.firstName.trim(),
+      lastName: newUserData.lastName.trim(),
+      role: newUserData.role,
+      branchId: newUserData.branchId || undefined,
+      password: newUserData.password
+    };
+    createUserMutation.mutate({ realPayload: payload, tempId: Date.now() * -1 });
   };
 
   const createErrors = createValidation();
   const showError = (field: string) => createTouched[field] && createErrors[field];
 
-  const toggleUserActive = async (user: EnrichedUser) => {
-    if (!canToggle) return;
-    const updated = { ...user, isActive: !user.isActive, status: !user.isActive ? 'active' : 'inactive' } as EnrichedUser;
-    setUsers(prev => prev.map(u => u.id === user.id ? updated : u));
-    if (selectedUser?.id === user.id) setSelectedUser(updated);
-    try {
-      await usersService.updateUser(user.id, { isActive: updated.isActive } as any);
-      push({ type: 'success', message: `User ${user.username || user.email} ${updated.isActive ? 'activated' : 'deactivated'}.` });
-    } catch (err) {
-      // revert
-      setUsers(prev => prev.map(u => u.id === user.id ? user : u));
-      if (selectedUser?.id === user.id) setSelectedUser(user);
-      push({ type: 'error', title: 'Action Failed', message: 'Could not update status.' });
+  const toggleUserMutation = useMutation({
+    mutationFn: async (vars: { id: number; isActive: boolean }) => usersService.updateUser(vars.id, { isActive: vars.isActive } as any),
+    onMutate: (vars) => {
+      const original = users.find(u => u.id === vars.id);
+      if (!original) return { original: null };
+      const optimistic = { ...original, isActive: vars.isActive, status: vars.isActive ? 'active' : 'inactive' } as EnrichedUser;
+      setUsers(prev => prev.map(u => u.id === vars.id ? optimistic : u));
+      if (selectedUser?.id === vars.id) setSelectedUser(optimistic);
+      return { original };
+    },
+    onError: (err, vars, ctx) => {
+      if (ctx?.original) {
+        setUsers(prev => prev.map(u => u.id === ctx.original!.id ? ctx.original! : u));
+        if (selectedUser?.id === ctx.original!.id) setSelectedUser(ctx.original as any);
+      }
+      const mapped = mapError(err);
+      push({ type: mapped.severity === 'error' ? 'error' : 'warning', title: 'Status Update Failed', message: mapped.uiMessage });
+    },
+    onSuccess: (updated: any) => {
+      setUsers(prev => prev.map(u => u.id === updated.id ? { ...u, ...updated, status: updated.isActive ? 'active':'inactive' } : u));
+      if (selectedUser?.id === updated.id) setSelectedUser(prev => prev ? ({ ...prev, ...updated, status: updated.isActive ? 'active':'inactive' }) : prev);
+      push({ type: 'success', message: `User ${updated.username || updated.email} ${updated.isActive ? 'activated' : 'deactivated'}.` });
     }
+  });
+
+  const toggleUserActive = (user: EnrichedUser) => {
+    if (!canToggle) return;
+    toggleUserMutation.mutate({ id: user.id, isActive: !user.isActive });
   };
 
-  const deleteUser = async (user: EnrichedUser) => {
+  const deleteUserMutation = useMutation({
+    mutationFn: async (id: number) => usersService.deleteUser(id),
+    onMutate: (id) => {
+      const prev = users;
+      setUsers(list => list.filter(u => u.id !== id));
+      if (selectedUser?.id === id) setSelectedUser(null);
+      return { prev };
+    },
+    onError: (err, id, ctx) => {
+      setUsers(ctx?.prev || []);
+      const mapped = mapError(err);
+      push({ type: mapped.severity === 'error' ? 'error' : 'warning', title: 'Delete Failed', message: mapped.uiMessage });
+    },
+    onSuccess: (_res, id) => {
+      setTotal(t => Math.max(0, t - 1));
+      push({ type: 'success', message: 'Deleted user' });
+      if (page > 1 && users.length === 1) setPage(p => p - 1);
+      queryClient.invalidateQueries({ queryKey: ['users'] });
+    }
+  });
+
+  const deleteUser = (user: EnrichedUser) => {
     if (!canDelete) return;
     if (!window.confirm(`Delete user ${user.username || user.email}? This cannot be undone.`)) return;
-    const prev = users;
-    setUsers(prevList => prevList.filter(u => u.id !== user.id));
-    if (selectedUser?.id === user.id) setSelectedUser(null);
-    try {
-      await usersService.deleteUser(user.id);
-      setTotal(t => t - 1);
-      push({ type: 'success', message: `Deleted user ${user.username || user.email}` });
-    } catch (err) {
-      // revert
-      setUsers(prev);
-      if (!selectedUser) setSelectedUser(user);
-      push({ type: 'error', title: 'Delete Failed', message: 'User could not be deleted.' });
-    }
+    deleteUserMutation.mutate(user.id);
   };
 
   // Fetch per-user permissions when selecting a user without loaded permissions
@@ -284,12 +320,12 @@ export function UsersPage() {
           <p className="text-white/70">Manage user accounts and access permissions</p>
         </div>
         <div className="flex space-x-2">
-          <PermissionGuard anyOf={['users:create']} fallback={null}>
+          <Require anyOf={['users:create']}>
             <Button className="bg-white/20 hover:bg-white/30 text-white border border-white/30" onClick={() => setShowCreate(true)}>
               <Plus className="w-4 h-4 mr-2" />
               Add User
             </Button>
-          </PermissionGuard>
+          </Require>
           <Button variant="outline" className="border-white/30 text-white hover:bg-white/10">
             <Settings className="w-4 h-4 mr-2" />
             Bulk Actions
@@ -320,7 +356,7 @@ export function UsersPage() {
                       variant={roleFilter === role ? 'default' : 'outline'}
                       size="sm"
                       className={roleFilter === role ? 'bg-white/20 text-white border-white/30' : 'border-white/30 text-white hover:bg-white/10'}
-                      onClick={() => { setRoleFilter(role as any); fetchUsers({ page:1, role: role as any }); setPage(1); }}
+                      onClick={() => { setRoleFilter(role as any); setPage(1); }}
                     >
                       {role === 'all' ? 'All' : role.replace('_',' ')}
                     </Button>
@@ -328,7 +364,7 @@ export function UsersPage() {
                   <div className="ml-2">
                     <select
                       value={branchFilter}
-                      onChange={(e) => { const val = e.target.value === 'all' ? 'all' : Number(e.target.value); setBranchFilter(val); setPage(1); fetchUsers({ page:1, branchId: val }); }}
+                      onChange={(e) => { const val = e.target.value === 'all' ? 'all' : Number(e.target.value); setBranchFilter(val); setPage(1); }}
                       className="bg-white/10 border border-white/20 rounded px-2 py-1 text-white text-xs focus:outline-none"
                     >
                       <option value="all">All Branches</option>
@@ -354,7 +390,7 @@ export function UsersPage() {
               )}
               {error && (
                 <div className="p-4 mb-4 bg-red-500/10 border border-red-500/20 rounded text-red-300 text-sm">
-                  {error} <Button variant="ghost" size="sm" className="ml-2 text-red-200 hover:text-white" onClick={() => fetchUsers()}>Retry</Button>
+                  {error} <Button variant="ghost" size="sm" className="ml-2 text-red-200 hover:text-white" onClick={() => queryClient.invalidateQueries({ queryKey: ['users'] })}>Retry</Button>
                 </div>
               )}
               <Table>
@@ -371,8 +407,8 @@ export function UsersPage() {
                 <TableBody>
                   {loading && (
                     <TableRow className="border-white/10">
-                      <TableCell colSpan={6} className="py-10 text-center text-white/60">
-                        <Loader2 className="w-5 h-5 mr-2 inline animate-spin" /> Loading users...
+                      <TableCell colSpan={6} className="p-0">
+                        <SkeletonTable columns={6} rows={6} />
                       </TableCell>
                     </TableRow>
                   )}
@@ -415,27 +451,31 @@ export function UsersPage() {
                       <TableCell className="text-white/70 text-xs">{user.permissionCount ?? '—'}</TableCell>
                       <TableCell>
                         <div className="flex space-x-2">
-                          <PermissionGuard anyOf={['users:update']} fallback={null}>
+                          <Require anyOf={['users:update']}>
                             <Button size="sm" variant="ghost" className="text-white/70 hover:text-white hover:bg-white/10">
                               <Edit className="w-4 h-4" />
                             </Button>
-                          </PermissionGuard>
-                          <PermissionGuard anyOf={['users:deactivate','users:activate']} fallback={null}>
+                          </Require>
+                          <Require anyOf={['users:deactivate','users:activate']}>
                             <Button size="sm" variant="ghost" className="text-white/70 hover:text-white hover:bg-white/10" onClick={(e) => { e.stopPropagation(); toggleUserActive(user); }}>
                               {user.isActive ? <UserX className="w-4 h-4" /> : <UserCheck className="w-4 h-4" />}
                             </Button>
-                          </PermissionGuard>
-                          <PermissionGuard anyOf={['users:delete']} fallback={null}>
+                          </Require>
+                          <Require anyOf={['users:delete']}>
                             <Button size="sm" variant="ghost" className="text-white/70 hover:text-white hover:bg-white/10" onClick={(e) => { e.stopPropagation(); deleteUser(user); }}>
                               <Trash2 className="w-4 h-4" />
                             </Button>
-                          </PermissionGuard>
+                          </Require>
                         </div>
                       </TableCell>
                     </TableRow>
                   ))}
                 </TableBody>
               </Table>
+              {/* Error State */}
+              {!loading && error && (
+                <table className="w-full"><tbody><ErrorState message={error} retry={() => queryClient.invalidateQueries({ queryKey: ['users'] })} colSpan={6} /></tbody></table>
+              )}
               {/* Pagination */}
               <div className="flex items-center justify-between mt-4 text-white/70 text-sm">
                 <div>
@@ -447,18 +487,18 @@ export function UsersPage() {
                     variant="outline"
                     disabled={page <= 1 || loading}
                     className="border-white/30 text-white/70 hover:text-white"
-                    onClick={() => { const newPage = page - 1; setPage(newPage); fetchUsers({ page: newPage }); }}
+                    onClick={() => { const newPage = page - 1; setPage(newPage); }}
                   >Prev</Button>
                   <Button
                     size="sm"
                     variant="outline"
                     disabled={page >= Math.ceil(total / size) || loading}
                     className="border-white/30 text-white/70 hover:text-white"
-                    onClick={() => { const newPage = page + 1; setPage(newPage); fetchUsers({ page: newPage }); }}
+                    onClick={() => { const newPage = page + 1; setPage(newPage); }}
                   >Next</Button>
                   <select
                     value={size}
-                    onChange={(e) => { const newSize = Number(e.target.value); setSize(newSize); setPage(1); fetchUsers({ page:1, size: newSize }); }}
+                    onChange={(e) => { const newSize = Number(e.target.value); setSize(newSize); setPage(1); }}
                     className="bg-white/10 border border-white/20 rounded px-2 py-1 text-white text-xs focus:outline-none"
                   >
                     {[10,25,50].map(s => <option key={s} value={s}>{s}/page</option>)}
@@ -549,7 +589,7 @@ export function UsersPage() {
                   <CardTitle className="text-white">Quick Actions</CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-2">
-                  <PermissionGuard anyOf={['users:update']} fallback={null}>
+                  <Require anyOf={['users:update']}>
                     <Button
                       className="w-full bg-white/20 hover:bg-white/30 text-white border border-white/30"
                       onClick={() => {
@@ -568,14 +608,14 @@ export function UsersPage() {
                       <Edit className="w-4 h-4 mr-2" />
                       Edit User
                     </Button>
-                  </PermissionGuard>
-                  <PermissionGuard anyOf={['users:update']} fallback={null}>
+                  </Require>
+                  <Require anyOf={['users:update']}>
                     <Button variant="outline" className="w-full border-white/30 text-white hover:bg-white/10">
                       <Shield className="w-4 h-4 mr-2" />
                       Manage Permissions (Soon)
                     </Button>
-                  </PermissionGuard>
-                  <PermissionGuard anyOf={['users:deactivate','users:activate']} fallback={null}>
+                  </Require>
+                  <Require anyOf={['users:deactivate','users:activate']}>
                     <Button variant="outline" className="w-full border-white/30 text-white hover:bg-white/10" onClick={() => toggleUserActive(selectedUser)}>
                       {selectedUser.isActive ? (
                         <>
@@ -589,12 +629,12 @@ export function UsersPage() {
                         </>
                       )}
                     </Button>
-                  </PermissionGuard>
-                  <PermissionGuard anyOf={['users:delete']} fallback={null}>
+                  </Require>
+                  <Require anyOf={['users:delete']}>
                     <Button variant="destructive" className="w-full bg-red-500/20 hover:bg-red-500/30 text-red-200 border border-red-500/30" onClick={() => deleteUser(selectedUser)}>
                       <Trash2 className="w-4 h-4 mr-2" /> Delete User
                     </Button>
-                  </PermissionGuard>
+                  </Require>
                 </CardContent>
               </Card>
             </>

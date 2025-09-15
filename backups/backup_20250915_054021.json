@@ -1,0 +1,149 @@
+{
+  "meta": {
+    "version": "2.0",
+    "generated_at": "2025-09-14T21:40:21.931245Z",
+    "included_tables": [
+      "users",
+      "branches",
+      "customers",
+      "categories",
+      "products",
+      "stock",
+      "sales",
+      "sale_items",
+      "payments",
+      "system_settings"
+    ],
+    "row_counts": {
+      "users": 1,
+      "branches": 3,
+      "customers": 0,
+      "categories": 4,
+      "products": 0,
+      "stock": 0,
+      "sales": 0,
+      "sale_items": 0,
+      "payments": 0,
+      "system_settings": 0
+    },
+    "checksum": "e7a09a6da765372e5b74eb73913563bb6e41d733c38e0a9d965e6bd0d88b8899"
+  },
+  "tables": {
+    "users": [
+      {
+        "id": 16,
+        "username": "sysadmin",
+        "email": "sysadmin@sofinance.com",
+        "firstName": "Sys",
+        "lastName": "Admin",
+        "hashedPassword": "$2b$12$8Ne09u0mJvQdBCxS4zLb.ul.fdAKVALEg6duWs8SyHB5IOdGriyha",
+        "role": "ADMIN",
+        "isActive": true,
+        "branchId": null,
+        "branch": null,
+        "createdAt": "2025-09-14T21:40:19.988000+00:00",
+        "updatedAt": "2025-09-14T21:40:21.778000+00:00",
+        "auditLogs": null,
+        "permissions": null,
+        "rbacOverrides": null,
+        "notifications": null,
+        "revokedTokens": null,
+        "stockAdjustments": null,
+        "Sale": null,
+        "deletedSales": null,
+        "Payment": null,
+        "Backup": null,
+        "requestedOrders": null,
+        "approvedOrders": null,
+        "sentOrders": null,
+        "receivedOrders": null
+      }
+    ],
+    "branches": [
+      {
+        "id": 1,
+        "name": "Main Branch",
+        "address": "HQ",
+        "phone": "000-0000",
+        "isActive": true,
+        "createdAt": "2025-09-14T21:32:55.877000+00:00",
+        "updatedAt": "2025-09-14T21:32:55.877000+00:00",
+        "users": null,
+        "Sale": null,
+        "Account": null,
+        "BranchOrder": null
+      },
+      {
+        "id": 3,
+        "name": "New Branch",
+        "address": "456 New Street",
+        "phone": "+0987654321",
+        "isActive": true,
+        "createdAt": "2025-09-14T21:39:12.075000+00:00",
+        "updatedAt": "2025-09-14T21:39:12.075000+00:00",
+        "users": null,
+        "Sale": null,
+        "Account": null,
+        "BranchOrder": null
+      },
+      {
+        "id": 2,
+        "name": "Updated Branch Name",
+        "address": "123 Test Street",
+        "phone": "+1234567890",
+        "isActive": true,
+        "createdAt": "2025-09-14T21:39:10.840000+00:00",
+        "updatedAt": "2025-09-14T21:39:13.168000+00:00",
+        "users": null,
+        "Sale": null,
+        "Account": null,
+        "BranchOrder": null
+      }
+    ],
+    "customers": [],
+    "categories": [
+      {
+        "id": 1,
+        "name": "General",
+        "description": "Default category",
+        "status": "ACTIVE",
+        "createdAt": "2025-09-14T21:32:57.416000+00:00",
+        "updatedAt": "2025-09-14T21:32:57.416000+00:00",
+        "products": null
+      },
+      {
+        "id": 3,
+        "name": "New Category",
+        "description": "New category for testing",
+        "status": "ACTIVE",
+        "createdAt": "2025-09-14T21:40:00.455000+00:00",
+        "updatedAt": "2025-09-14T21:40:00.455000+00:00",
+        "products": null
+      },
+      {
+        "id": 2,
+        "name": "Updated Category Name",
+        "description": "Updated description",
+        "status": "ACTIVE",
+        "createdAt": "2025-09-14T21:39:32.802000+00:00",
+        "updatedAt": "2025-09-14T21:40:01.007000+00:00",
+        "products": null
+      },
+      {
+        "id": 4,
+        "name": "Test Category",
+        "description": "Category for testing purposes",
+        "status": "ACTIVE",
+        "createdAt": "2025-09-14T21:40:04.113000+00:00",
+        "updatedAt": "2025-09-14T21:40:04.113000+00:00",
+        "products": null
+      }
+    ],
+    "products": [],
+    "stock": [],
+    "sales": [],
+    "sale_items": [],
+    "payments": [],
+    "system_settings": []
+  }
+}

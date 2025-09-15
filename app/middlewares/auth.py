@@ -14,7 +14,8 @@ from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.types import ASGIApp
 
 from app.core.config import UserRole
-from app.core.security import JWTManager, PermissionManager, TokenType, rate_limiter
+from app.core.security import JWTManager, TokenType, rate_limiter
+from app.core.permissions import get_user_effective_permissions
 from generated.prisma import fields  # Import for proper JSON handling
 
 # No longer needed: db_manager
@@ -63,32 +64,29 @@ class AuthorizationMiddleware(BaseHTTPMiddleware):
         self.route_permissions = route_permissions or {}
     
     async def dispatch(self, request: Request, call_next: Callable) -> Response:
-        """Process request through authorization middleware."""
-        # Skip if no user in request state (public endpoints)
+        """Process request through authorization middleware using RBAC effective permissions."""
+        # Skip if no user in request state (public endpoints / unauthenticated)
         if not hasattr(request.state, "user_id"):
             return await call_next(request)
-        
+
         try:
-            # Check route permissions
             path = request.url.path
             method = request.method
             required_permissions = self._get_required_permissions(path, method)
-            
+
             if required_permissions:
-                user_role = await self._get_user_role(request.state.user_id)
-                if not self._check_permissions(user_role, required_permissions):
+                if not await self._check_permissions(request.state.user_id, required_permissions):
                     return JSONResponse(
                         status_code=status.HTTP_403_FORBIDDEN,
-                        content={"detail": "Insufficient permissions"}
+                        content={"detail": "Insufficient permissions"},
                     )
-        
         except Exception as e:
             logger.error(f"Authorization middleware error: {e}")
             return JSONResponse(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                content={"detail": "Internal authorization error"}
+                content={"detail": "Internal authorization error"},
             )
-        
+
         return await call_next(request)
     
     def _get_required_permissions(self, path: str, method: str) -> list[str]:
@@ -114,32 +112,37 @@ class AuthorizationMiddleware(BaseHTTPMiddleware):
             return path.startswith(pattern_prefix)
         return path == pattern
     
-    async def _get_user_role(self, user_id: str) -> UserRole:
-        """Get user role from database."""
+    async def _check_permissions(self, user_id: str | int, required_permissions: list[str]) -> bool:
+        """Check if user (by id) has all required permissions via RBAC effective set.
+
+        required_permissions should be strings in the form 'resource:action'. Legacy
+        permission names without a ':' will be treated as global action permissions
+        by mapping to '*:name'. This supports a transitional phase while routes are
+        updated to the normalized naming convention.
+        """
         try:
             from ..db.client import prisma
-            uid = int(user_id) if isinstance(user_id, (str, int)) and str(user_id).isdigit() else None
+
+            uid = int(user_id) if str(user_id).isdigit() else None
             if uid is None:
-                return None
-            user = await prisma.user.find_unique(
-                where={"id": uid}
-            )
-            return UserRole(user.role) if user else None
-        except Exception as e:
-            logger.error(f"Failed to get user role: {e}")
-            # Fallback to ADMIN for now to avoid breaking existing functionality
-            return UserRole.ADMIN
-    
-    def _check_permissions(self, user_role: UserRole, required_permissions: list[str]) -> bool:
-        """Check if user has required permissions."""
-        if not user_role:
-            return False
-        
-        for permission in required_permissions:
-            if not PermissionManager.has_permission(user_role, permission):
                 return False
-        
-        return True
+
+            user = await prisma.user.find_unique(where={"id": uid})
+            if not user:
+                return False
+
+            # ADMIN short-circuit (mirrors core.permissions logic)
+            if UserRole(user.role) == UserRole.ADMIN:
+                return True
+
+            effective = await get_user_effective_permissions(user.id, prisma)
+
+            # Normalize any legacy names (no resource) to wildcard resource pattern
+            needed = [p if ":" in p else f"*:{p}" for p in required_permissions]
+            return all(p in effective or (p.startswith("*:") and p.split(":",1)[1] in {e.split(":",1)[1] for e in effective if e.startswith("*:")}) for p in needed)
+        except Exception as e:
+            logger.error(f"RBAC permission check failed: {e}")
+            return False
 
 class RateLimitMiddleware(BaseHTTPMiddleware):
     """Rate limiting middleware."""

@@ -9,7 +9,8 @@ from fastapi.security import HTTPBearer
 from app.core.audit import AuditAction, AuditSeverity
 from app.core.audit_decorator import audit_log
 from app.core.config import UserRole
-from app.core.dependencies import get_current_active_user, require_role
+from app.core.dependencies import get_current_active_user, require_role  # role still used in a few legacy spots
+from app.core.authorization import require_permissions
 from app.core.exceptions import (
     AlreadyExistsError,
     APIError,
@@ -50,7 +51,12 @@ category_router = APIRouter(prefix="/categories", tags=["📂 Categories"])
 
 # Product routes
 # Product routes
-@product_router.post("/", response_model=ProductResponseSchema, status_code=status.HTTP_201_CREATED)
+@product_router.post(
+    "/",
+    response_model=ProductResponseSchema,
+    status_code=status.HTTP_201_CREATED,
+    dependencies=[Depends(require_permissions('products:write'))]
+)
 @audit_log(AuditAction.CREATE, "product", AuditSeverity.INFO)
 async def create_product(
     product_data: ProductCreateSchema,
@@ -75,7 +81,8 @@ async def create_product(
     "/",
     response_model=ProductListResponseSchema,
     summary="List products",
-    description="Get paginated list of products"
+    description="Get paginated list of products",
+    dependencies=[Depends(require_permissions('products:read'))]
 )
 async def list_products(
     page: int = Query(1, ge=1, description="Page number"),
@@ -133,8 +140,8 @@ async def list_products(
     "/stats",
     response_model=ProductStatsSchema,
     summary="Get product statistics",
-    description="Get product statistics (Admin/Manager/Inventory Clerk)",
-    dependencies=[Depends(require_role([UserRole.ADMIN, UserRole.MANAGER, UserRole.INVENTORY_CLERK]))]
+    description="Get product statistics (permission: products:read)",
+    dependencies=[Depends(require_permissions('products:read'))]
 )
 async def get_product_statistics(
     db = Depends(get_db)
@@ -154,6 +161,7 @@ async def get_product_statistics(
     "/statistics",
     response_model=ProductStatsSchema,
     summary="Get product statistics (alias)",
+    dependencies=[Depends(require_permissions('products:read'))]
 )
 async def get_product_statistics_alias(
     current_user = Depends(get_current_active_user),
@@ -170,7 +178,8 @@ async def get_product_statistics_alias(
 @product_router.get(
     "/{product_id}",
     summary="Get product",
-    description="Get product details by ID"
+    description="Get product details by ID",
+    dependencies=[Depends(require_permissions('products:read'))]
 )
 async def get_product(
     product_id: int,
@@ -209,8 +218,8 @@ async def get_product(
     "/{product_id}",
     response_model=ProductResponseSchema,
     summary="Update product",
-    description="Update product details (Admin/Manager/Inventory Clerk)",
-    dependencies=[Depends(require_role([UserRole.ADMIN, UserRole.MANAGER, UserRole.INVENTORY_CLERK]))]
+    description="Update product details",
+    dependencies=[Depends(require_permissions('products:write'))]
 )
 async def update_product(
     product_id: int,
@@ -238,8 +247,8 @@ async def update_product(
     "/{product_id}",
     status_code=status.HTTP_204_NO_CONTENT,
     summary="Delete product",
-    description="Delete product (Admin/Manager)",
-    dependencies=[Depends(require_role([UserRole.ADMIN, UserRole.MANAGER]))]
+    description="Delete product",
+    dependencies=[Depends(require_permissions('products:delete'))]
 )
 async def delete_product(
     product_id: int,
@@ -263,8 +272,8 @@ async def delete_product(
 @product_router.post(
     "/stock/adjust",
     summary="Adjust stock",
-    description="Adjust product stock (Admin/Manager/Inventory Clerk)",
-    dependencies=[Depends(require_role([UserRole.ADMIN, UserRole.MANAGER, UserRole.INVENTORY_CLERK]))]
+    description="Adjust product stock",
+    dependencies=[Depends(require_permissions('inventory:write'))]
 )
 async def adjust_stock(
     adjustment: StockAdjustmentSchema,
@@ -288,7 +297,7 @@ async def adjust_stock(
 @product_router.post(
     "/{product_id}/adjust-stock",
     summary="Adjust stock for a product",
-    dependencies=[Depends(require_role([UserRole.ADMIN, UserRole.MANAGER, UserRole.INVENTORY_CLERK]))]
+    dependencies=[Depends(require_permissions('inventory:write'))]
 )
 async def adjust_stock_for_product(
     product_id: int,
@@ -322,8 +331,8 @@ async def adjust_stock_for_product(
 @product_router.post(
     "/stock/bulk-adjust",
     summary="Bulk adjust stock",
-    description="Bulk adjust stock for multiple products (Admin/Manager/Inventory Clerk)",
-    dependencies=[Depends(require_role([UserRole.ADMIN, UserRole.MANAGER, UserRole.INVENTORY_CLERK]))]
+    description="Bulk adjust stock for multiple products",
+    dependencies=[Depends(require_permissions('inventory:write'))]
 )
 async def bulk_adjust_stock(
     bulk_adjustment: BulkStockAdjustmentSchema,
@@ -367,8 +376,8 @@ async def bulk_adjust_stock(
     response_model=CategoryResponseSchema,
     status_code=status.HTTP_201_CREATED,
     summary="Create category",
-    description="Create a new category (Admin/Manager)",
-    dependencies=[Depends(require_role([UserRole.ADMIN, UserRole.MANAGER]))]
+    description="Create a new category",
+    dependencies=[Depends(require_permissions('categories:write'))]
 )
 async def create_category(
     category_data: CategoryCreateSchema,
@@ -391,7 +400,8 @@ async def create_category(
 @category_router.get(
     "/",
     summary="List categories",
-    description="Get list of categories"
+    description="Get list of categories",
+    dependencies=[Depends(require_permissions('categories:read'))]
 )
 async def list_categories(
     page: int = Query(1, ge=1, description="Page number"),
@@ -430,7 +440,8 @@ async def list_categories(
 @category_router.get(
     "/{category_id}",
     summary="Get category",
-    description="Get category details by ID"
+    description="Get category details by ID",
+    dependencies=[Depends(require_permissions('categories:read'))]
 )
 async def get_category(
     category_id: int,
@@ -460,8 +471,8 @@ async def get_category(
     "/{category_id}",
     response_model=CategoryResponseSchema,
     summary="Update category",
-    description="Update category details (Admin/Manager)",
-    dependencies=[Depends(require_role([UserRole.ADMIN, UserRole.MANAGER]))]
+    description="Update category details",
+    dependencies=[Depends(require_permissions('categories:write'))]
 )
 async def update_category(
     category_id: int,
@@ -490,8 +501,8 @@ async def update_category(
     "/{category_id}",
     status_code=status.HTTP_204_NO_CONTENT,
     summary="Delete category",
-    description="Delete category (Admin/Manager)",
-    dependencies=[Depends(require_role([UserRole.ADMIN, UserRole.MANAGER]))]
+    description="Delete category",
+    dependencies=[Depends(require_permissions('categories:delete'))]
 )
 async def delete_category(
     category_id: int,

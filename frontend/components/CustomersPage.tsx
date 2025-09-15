@@ -1,4 +1,5 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect } from 'react';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
@@ -7,10 +8,15 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '.
 import { Avatar, AvatarFallback, AvatarImage } from './ui/avatar';
 import { Plus, Search, Users, DollarSign, ShoppingCart, Calendar, Eye, Edit, Mail, Phone, Loader2, Trash2, AlertTriangle } from 'lucide-react';
 import { customerService } from '../services/customers';
+import { mapError } from '../lib/errorMap';
+import { SkeletonTable } from './SkeletonTable';
+import { queryKeys } from '../lib/queryKeys';
+import { useDebouncedValue } from '../hooks/useDebouncedValue';
+import { useUrlQuerySync } from '../hooks/useUrlQuerySync';
 import type { Customer, CreateCustomerRequest, CustomerType, CustomerStatus } from '../types';
 import { Currency, CustomerType as CTEnum } from '../types';
 import { useAuth } from '../context/AuthContext';
-import { PermissionGuard } from '../context/AuthContext';
+import { Require } from './Require';
 import { useToast } from '../context/ToastContext';
 import { useConfirm } from './ConfirmDialog';
 
@@ -28,14 +34,14 @@ export function CustomersPage() {
   const { push } = useToast();
   const { confirm, dialog: confirmDialog } = useConfirm();
   const [searchTerm, setSearchTerm] = useState('');
+  const debouncedSearch = useDebouncedValue(searchTerm, 300);
   const [statusFilter, setStatusFilter] = useState('all');
   const [typeFilter, setTypeFilter] = useState<'all' | CustomerType>('all');
   const [selectedCustomer, setSelectedCustomer] = useState<EnrichedCustomer | null>(null);
   const [customers, setCustomers] = useState<EnrichedCustomer[]>([]);
   const [createOpen, setCreateOpen] = useState(false);
   const [editOpen, setEditOpen] = useState(false);
-  const [createSubmitting, setCreateSubmitting] = useState(false);
-  const [editSubmitting, setEditSubmitting] = useState(false);
+  // Mutation derived UI states (removed explicit useState setters)
   const [deleteSubmitting, setDeleteSubmitting] = useState<number | null>(null);
   const [createError, setCreateError] = useState<string | null>(null);
   const [editError, setEditError] = useState<string | null>(null);
@@ -45,47 +51,45 @@ export function CustomersPage() {
   const [page, setPage] = useState(1);
   const [size, setSize] = useState(10);
   const [total, setTotal] = useState(0);
-  const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [balanceLoadingId, setBalanceLoadingId] = useState<number | null>(null);
   const balanceLoadedRef = React.useRef<Set<number>>(new Set());
 
   const debouncedFetchRef = React.useRef<number | null>(null);
 
-  const fetchCustomers = useCallback(async (override?: { page?: number; size?: number; term?: string }) => {
-    if (!hasPermission('customers:view')) return;
-    setLoading(true);
-    setError(null);
-    try {
-      const searchVal = override?.term ?? searchTerm;
+  const queryClient = useQueryClient();
+  const customersQueryKey = queryKeys.customers({ page, size, search: debouncedSearch, type: typeFilter, status: statusFilter });
+  const { isLoading: loading } = useQuery({
+    queryKey: customersQueryKey,
+    enabled: hasPermission('customers:view'),
+    placeholderData: (prev) => prev,
+    queryFn: async () => {
+      setError(null);
       const resp = await customerService.getCustomers({
-        page: override?.page ?? page,
-        size: override?.size ?? size,
-        q: (searchVal ? searchVal : undefined),
+        page,
+        size,
+  q: debouncedSearch || undefined,
         type: typeFilter === 'all' ? undefined : typeFilter,
         status: statusFilter === 'all' ? undefined : statusFilter.toUpperCase() as CustomerStatus
       });
       setCustomers(resp.items as EnrichedCustomer[]);
       setTotal(resp.pagination.total);
-    } catch (e: any) {
-      setError(e?.message || 'Failed to load customers');
-    } finally {
-      setLoading(false);
+      return resp;
     }
-  }, [page, size, searchTerm, hasPermission, typeFilter, statusFilter]);
+  });
 
-  // Initial load
-  useEffect(() => { fetchCustomers(); }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  // React to debounced search / filter changes
+  useEffect(() => { setPage(1); queryClient.invalidateQueries({ queryKey: ['customers'] }); }, [debouncedSearch, typeFilter, statusFilter, queryClient]);
 
-  // Debounce search term changes
-  useEffect(() => {
-    if (debouncedFetchRef.current) window.clearTimeout(debouncedFetchRef.current);
-    debouncedFetchRef.current = window.setTimeout(() => {
-      fetchCustomers({ page: 1 });
-      setPage(1);
-    }, 300);
-    return () => { if (debouncedFetchRef.current) window.clearTimeout(debouncedFetchRef.current); };
-  }, [searchTerm, fetchCustomers]);
+  useUrlQuerySync({
+    state: { page, size, search: debouncedSearch },
+    keys: ['page','size','search'],
+    encode: (k, v) => {
+      if (v == null || v === '' || (k === 'page' && v === 1) || (k === 'size' && v === 10)) return undefined;
+      return String(v);
+    },
+    replace: true,
+  });
 
   const filteredCustomers = customers; // server side filters now include status/type
 
@@ -126,57 +130,115 @@ export function CustomersPage() {
   const startCreate = () => { setNewCustomer({ customerNumber: `CUST-${Date.now()}`, name: '', type: CTEnum.INDIVIDUAL, creditLimit: '0', currency: Currency.USD }); setCreateError(null); setCreateOpen(true); };
   const startEdit = (c: EnrichedCustomer) => { setSelectedCustomer(c); setEditDraft({ name: c.name, email: c.email, phone: (c as any).phone, address: c.address, type: c.type, creditLimit: c.creditLimit, currency: c.currency, isActive: c.isActive }); setEditError(null); setEditOpen(true); };
 
-  const handleCreate = async (e: React.FormEvent) => {
-    e.preventDefault(); if (!newCustomer.name.trim()) { setCreateError('Name required'); return; }
-    setCreateSubmitting(true); setCreateError(null);
-  const optimistic: EnrichedCustomer = { id: Date.now()*-1, customerNumber: newCustomer.customerNumber || `CUST-${Date.now()}`, name: newCustomer.name.trim(), email: newCustomer.email, phone: newCustomer.phone, address: (newCustomer as any).address, type: newCustomer.type, creditLimit: newCustomer.creditLimit || '0', currency: newCustomer.currency, isActive: true, createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() } as any;
-    setCustomers(prev => [optimistic, ...prev]);
-    try {
-      const created = await customerService.createCustomer({ ...newCustomer, name: optimistic.name, customerNumber: optimistic.customerNumber });
-      setCustomers(prev => prev.map(c => c.id === optimistic.id ? ({ ...optimistic, ...created }) : c));
+  const createCustomerMutation = useMutation({
+    mutationFn: async (payload: CreateCustomerRequest & { tempId: number }) => {
+      const { tempId, ...rest } = payload as any;
+      return customerService.createCustomer(rest);
+    },
+    onMutate: async (vars: any) => {
+      setCreateError(null);
+      if (!vars.name?.trim()) {
+        setCreateError('Name required');
+        throw new Error('Validation');
+      }
+      const optimistic: EnrichedCustomer = {
+        id: vars.tempId,
+        customerNumber: vars.customerNumber,
+        name: vars.name.trim(),
+        email: vars.email,
+        phone: vars.phone,
+        address: (vars as any).address,
+        type: vars.type,
+        creditLimit: vars.creditLimit || '0',
+        currency: vars.currency,
+        isActive: true,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString()
+      } as any;
+      setCustomers(prev => [optimistic, ...prev]);
+      return { tempId: vars.tempId };
+    },
+    onError: (err, _vars, ctx) => {
+      setCustomers(prev => prev.filter(c => c.id !== ctx?.tempId));
+      const mapped = mapError(err);
+      setCreateError(mapped.uiMessage);
+      push({ type: mapped.severity === 'error' ? 'error' : 'warning', title: 'Create Failed', message: mapped.uiMessage });
+    },
+    onSuccess: (created: any, _vars, ctx) => {
+      setCustomers(prev => prev.map(c => c.id === ctx?.tempId ? ({ ...c, ...created, id: created.id }) : c));
       push({ type: 'success', title: 'Customer Created', message: created.name });
-  setCreateOpen(false); setNewCustomer({ customerNumber: '', name: '', type: CTEnum.INDIVIDUAL, creditLimit: '0', currency: Currency.USD });
-      fetchCustomers();
-    } catch (err: any) {
-      setCustomers(prev => prev.filter(c => c.id !== optimistic.id));
-      setCreateError(err?.message || 'Create failed');
-    } finally { setCreateSubmitting(false); }
+      setCreateOpen(false);
+      setNewCustomer({ customerNumber: '', name: '', type: CTEnum.INDIVIDUAL, creditLimit: '0', currency: Currency.USD });
+      queryClient.invalidateQueries({ queryKey: ['customers'] });
+    }
+  });
+
+  const handleCreate = (e: React.FormEvent) => {
+    e.preventDefault();
+    const tempId = Date.now() * -1;
+    createCustomerMutation.mutate({ ...newCustomer, name: newCustomer.name.trim(), customerNumber: newCustomer.customerNumber || `CUST-${Date.now()}`, tempId });
   };
 
-  const handleEdit = async (e: React.FormEvent) => {
-    e.preventDefault(); if (!selectedCustomer || !editDraft) return; if (!editDraft.name?.trim()) { setEditError('Name required'); return; }
-    setEditSubmitting(true); setEditError(null);
-    const original = selectedCustomer;
-    const optimistic = { ...selectedCustomer, ...editDraft, name: editDraft.name.trim(), updatedAt: new Date().toISOString() } as EnrichedCustomer;
-    setCustomers(prev => prev.map(c => c.id === original.id ? optimistic : c));
-    setSelectedCustomer(optimistic);
-    try {
-      const updated = await customerService.updateCustomer(original.id, { name: optimistic.name, email: optimistic.email, phone: (optimistic as any).phone, address: optimistic.address, type: optimistic.type, creditLimit: optimistic.creditLimit, currency: optimistic.currency });
-      setCustomers(prev => prev.map(c => c.id === original.id ? ({ ...optimistic, ...updated }) : c));
-      setSelectedCustomer(prev => prev && prev.id === original.id ? ({ ...optimistic, ...updated }) : prev);
+  const updateCustomerMutation = useMutation({
+    mutationFn: async (vars: { id: number; data: Partial<Customer> }) => customerService.updateCustomer(vars.id, vars.data as any),
+    onMutate: (vars) => {
+      setEditError(null);
+      const original = customers.find(c => c.id === vars.id);
+      if (!original) return { original: null };
+      const optimistic = { ...original, ...vars.data, name: (vars.data.name || original.name).trim(), updatedAt: new Date().toISOString() } as EnrichedCustomer;
+      setCustomers(prev => prev.map(c => c.id === vars.id ? optimistic : c));
+      if (selectedCustomer?.id === vars.id) setSelectedCustomer(optimistic);
+      return { original };
+    },
+    onError: (err, vars, ctx) => {
+      if (ctx?.original) {
+        setCustomers(prev => prev.map(c => c.id === ctx.original!.id ? ctx.original! : c));
+        if (selectedCustomer?.id === ctx.original!.id) setSelectedCustomer(ctx.original as any);
+      }
+      const mapped = mapError(err);
+      setEditError(mapped.uiMessage);
+      push({ type: mapped.severity === 'error' ? 'error' : 'warning', title: 'Update Failed', message: mapped.uiMessage });
+    },
+    onSuccess: (updated: any) => {
+      setCustomers(prev => prev.map(c => c.id === updated.id ? ({ ...c, ...updated }) : c));
+      if (selectedCustomer?.id === updated.id) setSelectedCustomer(prev => prev ? ({ ...prev, ...updated }) : prev);
       push({ type: 'success', title: 'Customer Updated', message: updated.name });
       setEditOpen(false);
-    } catch (err: any) {
-      setCustomers(prev => prev.map(c => c.id === original.id ? original : c));
-      setSelectedCustomer(original);
-      setEditError(err?.message || 'Update failed');
-    } finally { setEditSubmitting(false); }
+      queryClient.invalidateQueries({ queryKey: ['customers'] });
+    }
+  });
+
+  const handleEdit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!selectedCustomer || !editDraft) return;
+    if (!editDraft.name?.trim()) { setEditError('Name required'); return; }
+    updateCustomerMutation.mutate({ id: selectedCustomer.id, data: { ...editDraft, name: editDraft.name.trim() } });
   };
+
+  const deleteCustomerMutation = useMutation({
+    mutationFn: async (id: number) => customerService.deleteCustomer(id),
+    onMutate: async (id) => {
+      setDeleteSubmitting(id);
+      const prev = customers;
+      setCustomers(list => list.filter(c => c.id !== id));
+      if (selectedCustomer?.id === id) setSelectedCustomer(null);
+      return { prev };
+    },
+    onError: (err, id, ctx) => {
+      setCustomers(ctx?.prev || []);
+      const mapped = mapError(err);
+      push({ type: mapped.severity === 'error' ? 'error' : 'warning', title: 'Delete Failed', message: mapped.uiMessage });
+    },
+    onSuccess: () => {
+      push({ type: 'success', message: 'Customer deleted' });
+      queryClient.invalidateQueries({ queryKey: ['customers'] });
+    },
+    onSettled: () => setDeleteSubmitting(null)
+  });
 
   const handleDelete = async (c: EnrichedCustomer) => {
     const ok = await confirm(); if (!ok) return;
-    setDeleteSubmitting(c.id);
-    const prev = customers;
-    setCustomers(list => list.filter(x => x.id !== c.id));
-    if (selectedCustomer?.id === c.id) setSelectedCustomer(null);
-    try {
-      await customerService.deleteCustomer(c.id);
-      push({ type: 'success', message: 'Customer deleted' });
-      fetchCustomers();
-    } catch (err: any) {
-      setCustomers(prev);
-      push({ type: 'error', title: 'Delete Failed', message: err?.message || 'Unable to delete customer' });
-    } finally { setDeleteSubmitting(null); }
+    deleteCustomerMutation.mutate(c.id);
   };
 
   return (
@@ -188,11 +250,11 @@ export function CustomersPage() {
           <p className="text-white/70">Manage your customer relationships and accounts</p>
         </div>
         <div className="flex space-x-2">
-          <PermissionGuard anyOf={['customers:create']} fallback={null}>
+          <Require anyOf={['customers:create']}>
             <Button className="bg-white/20 hover:bg-white/30 text-white border border-white/30" onClick={startCreate}>
               <Plus className="w-4 h-4 mr-2" /> Add Customer
             </Button>
-          </PermissionGuard>
+          </Require>
           <Button variant="outline" className="border-white/30 text-white hover:bg-white/10">
             Import CSV
           </Button>
@@ -268,12 +330,12 @@ export function CustomersPage() {
                   />
                 </div>
                 <div className="flex space-x-2">
-                  <select value={statusFilter} onChange={e=>{ setStatusFilter(e.target.value); setPage(1); fetchCustomers({ page:1 }); }} className="bg-white/10 border-white/20 text-white text-xs rounded px-2 py-2">
+                  <select value={statusFilter} onChange={e=>{ setStatusFilter(e.target.value); setPage(1); }} className="bg-white/10 border-white/20 text-white text-xs rounded px-2 py-2">
                     <option value="all">All Status</option>
                     <option value="ACTIVE">Active</option>
                     <option value="INACTIVE">Inactive</option>
                   </select>
-                  <select value={typeFilter} onChange={e=> { setTypeFilter(e.target.value as any); setPage(1); fetchCustomers({ page:1 }); }} className="bg-white/10 border-white/20 text-white text-xs rounded px-2 py-2">
+                  <select value={typeFilter} onChange={e=> { setTypeFilter(e.target.value as any); setPage(1); }} className="bg-white/10 border-white/20 text-white text-xs rounded px-2 py-2">
                     <option value="all">All Types</option>
                     <option value="INDIVIDUAL">Individual</option>
                     <option value="COMPANY">Company</option>
@@ -291,7 +353,7 @@ export function CustomersPage() {
             <CardContent>
               {error && (
                 <div className="p-4 mb-4 bg-red-500/10 border border-red-500/20 rounded text-red-300 text-sm">
-                  {error} <Button variant="ghost" size="sm" className="ml-2 text-red-200 hover:text-white" onClick={() => fetchCustomers()}>Retry</Button>
+                  {error} <Button variant="ghost" size="sm" className="ml-2 text-red-200 hover:text-white" onClick={() => queryClient.invalidateQueries({ queryKey: ['customers'] })}>Retry</Button>
                 </div>
               )}
               <Table>
@@ -308,11 +370,7 @@ export function CustomersPage() {
                 </TableHeader>
                 <TableBody>
                   {loading && (
-                    <TableRow className="border-white/10">
-                      <TableCell colSpan={7} className="py-10 text-center text-white/60">
-                        <Loader2 className="w-5 h-5 mr-2 inline animate-spin" /> Loading customers...
-                      </TableCell>
-                    </TableRow>
+                    <TableRow><TableCell colSpan={7} className="p-0"><SkeletonTable columns={7} rows={6} /></TableCell></TableRow>
                   )}
                   {!loading && filteredCustomers.length === 0 && !error && (
                     <TableRow className="border-white/10">
@@ -368,16 +426,16 @@ export function CustomersPage() {
                           <Button size="sm" variant="ghost" className="text-white/70 hover:text-white hover:bg-white/10">
                             <Eye className="w-4 h-4" />
                           </Button>
-                          <PermissionGuard anyOf={['customers:update']} fallback={null}>
+                          <Require anyOf={['customers:update']}>
                             <Button size="sm" variant="ghost" className="text-white/70 hover:text-white hover:bg-white/10" onClick={(e)=>{ e.stopPropagation(); startEdit(customer); }}>
                               <Edit className="w-4 h-4" />
                             </Button>
-                          </PermissionGuard>
-                          <PermissionGuard anyOf={['customers:delete']} fallback={null}>
+                          </Require>
+                          <Require anyOf={['customers:delete']}>
                             <Button disabled={deleteSubmitting===customer.id} size="sm" variant="ghost" className="text-white/70 hover:text-white hover:bg-white/10" onClick={(e)=>{ e.stopPropagation(); handleDelete(customer); }}>
                               {deleteSubmitting===customer.id ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
                             </Button>
-                          </PermissionGuard>
+                          </Require>
                         </div>
                       </TableCell>
                     </TableRow>
@@ -395,18 +453,18 @@ export function CustomersPage() {
                     variant="outline"
                     disabled={page <= 1 || loading}
                     className="border-white/30 text-white/70 hover:text-white"
-                    onClick={() => { const newPage = page - 1; setPage(newPage); fetchCustomers({ page: newPage }); }}
+                    onClick={() => { const newPage = page - 1; setPage(newPage); }}
                   >Prev</Button>
                   <Button
                     size="sm"
                     variant="outline"
                     disabled={page >= Math.ceil(total / size) || loading}
                     className="border-white/30 text-white/70 hover:text-white"
-                    onClick={() => { const newPage = page + 1; setPage(newPage); fetchCustomers({ page: newPage }); }}
+                    onClick={() => { const newPage = page + 1; setPage(newPage); }}
                   >Next</Button>
                   <select
                     value={size}
-                    onChange={(e) => { const newSize = Number(e.target.value); setSize(newSize); setPage(1); fetchCustomers({ page: 1, size: newSize }); }}
+                    onChange={(e) => { const newSize = Number(e.target.value); setSize(newSize); setPage(1); }}
                     className="bg-white/10 border border-white/20 rounded px-2 py-1 text-white text-xs focus:outline-none"
                   >
                     {[10,25,50].map(s => <option key={s} value={s}>{s}/page</option>)}
@@ -587,8 +645,8 @@ export function CustomersPage() {
                 </div>
               </div>
               <div className="p-4 border-t border-white/10 flex items-center justify-end gap-2 bg-black/20 rounded-b-lg">
-                <Button type="button" variant="ghost" className="text-white/70 hover:text-white" onClick={()=> setCreateOpen(false)} disabled={createSubmitting}>Cancel</Button>
-                <Button type="submit" className="bg-white/20 hover:bg-white/30 text-white border border-white/30" disabled={createSubmitting}>{createSubmitting ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Create'}</Button>
+                <Button type="button" variant="ghost" className="text-white/70 hover:text-white" onClick={()=> setCreateOpen(false)} disabled={createCustomerMutation.isPending}>Cancel</Button>
+                <Button type="submit" className="bg-white/20 hover:bg-white/30 text-white border border-white/30" disabled={createCustomerMutation.isPending}>{createCustomerMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Create'}</Button>
               </div>
             </form>
           </div>
@@ -638,8 +696,8 @@ export function CustomersPage() {
                 </div>
               </div>
               <div className="p-4 border-t border-white/10 flex items-center justify-end gap-2 bg-black/20 rounded-b-lg">
-                <Button type="button" variant="ghost" className="text-white/70 hover:text-white" onClick={()=> setEditOpen(false)} disabled={editSubmitting}>Cancel</Button>
-                <Button type="submit" className="bg-white/20 hover:bg-white/30 text-white border border-white/30" disabled={editSubmitting}>{editSubmitting ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Save'}</Button>
+                <Button type="button" variant="ghost" className="text-white/70 hover:text-white" onClick={()=> setEditOpen(false)} disabled={updateCustomerMutation.isPending}>Cancel</Button>
+                <Button type="submit" className="bg-white/20 hover:bg-white/30 text-white border border-white/30" disabled={updateCustomerMutation.isPending}>{updateCustomerMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Save'}</Button>
               </div>
             </form>
           </div>

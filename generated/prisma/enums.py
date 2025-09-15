@@ -41,6 +41,10 @@ from typing_extensions import LiteralString
 from enum import Enum
 
 
+class PermissionType(str, Enum):
+    ALLOW = 'ALLOW'
+    DENY = 'DENY'
+
 class CategoryStatus(str, Enum):
     ACTIVE = 'ACTIVE'
     INACTIVE = 'INACTIVE'

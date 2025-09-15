@@ -72,7 +72,7 @@ class User(bases.BaseUser):
     createdAt: datetime.datetime
     updatedAt: datetime.datetime
     auditLogs: Optional[List['models.AuditLog']] = None
-    permissions: Optional[List['models.UserPermission']] = None
+    rbacOverrides: Optional[List['models.UserPermissionOverride']] = None
     notifications: Optional[List['models.Notification']] = None
     revokedTokens: Optional[List['models.RevokedToken']] = None
     stockAdjustments: Optional[List['models.StockAdjustment']] = None
@@ -194,14 +194,14 @@ class User(bases.BaseUser):
         _created_partial_types.add(name)
 
 
-class UserPermission(bases.BaseUserPermission):
-    """Represents a UserPermission record"""
+class Permission(bases.BasePermission):
+    """Represents a Permission record"""
 
     id: _int
-    user: Optional['models.User'] = None
-    userId: _int
     resource: _str
-    actions: 'fields.Json'
+    action: _str
+    roles: Optional[List['models.RolePermission']] = None
+    users: Optional[List['models.UserPermissionOverride']] = None
     createdAt: datetime.datetime
     updatedAt: datetime.datetime
 
@@ -210,11 +210,11 @@ class UserPermission(bases.BaseUserPermission):
     @staticmethod
     def create_partial(
         name: str,
-        include: Optional[Iterable['types.UserPermissionKeys']] = None,
-        exclude: Optional[Iterable['types.UserPermissionKeys']] = None,
-        required: Optional[Iterable['types.UserPermissionKeys']] = None,
-        optional: Optional[Iterable['types.UserPermissionKeys']] = None,
-        relations: Optional[Mapping['types.UserPermissionRelationalFieldKeys', str]] = None,
+        include: Optional[Iterable['types.PermissionKeys']] = None,
+        exclude: Optional[Iterable['types.PermissionKeys']] = None,
+        required: Optional[Iterable['types.PermissionKeys']] = None,
+        optional: Optional[Iterable['types.PermissionKeys']] = None,
+        relations: Optional[Mapping['types.PermissionRelationalFieldKeys', str]] = None,
         exclude_relational_fields: bool = False,
     ) -> None:
         if not os.environ.get('PRISMA_GENERATOR_INVOCATION'):
@@ -241,26 +241,26 @@ class UserPermission(bases.BaseUserPermission):
                 'exclude_relational_fields and relations are mutually exclusive'
             )
 
-        fields: Dict['types.UserPermissionKeys', PartialModelField] = OrderedDict()
+        fields: Dict['types.PermissionKeys', PartialModelField] = OrderedDict()
 
         try:
             if include:
                 for field in include:
-                    fields[field] = _UserPermission_fields[field].copy()
+                    fields[field] = _Permission_fields[field].copy()
             elif exclude:
                 for field in exclude:
-                    if field not in _UserPermission_fields:
+                    if field not in _Permission_fields:
                         raise KeyError(field)
 
                 fields = {
                     key: data.copy()
-                    for key, data in _UserPermission_fields.items()
+                    for key, data in _Permission_fields.items()
                     if key not in exclude
                 }
             else:
                 fields = {
                     key: data.copy()
-                    for key, data in _UserPermission_fields.items()
+                    for key, data in _Permission_fields.items()
                 }
 
             if required:
@@ -275,13 +275,13 @@ class UserPermission(bases.BaseUserPermission):
                 fields = {
                     key: data
                     for key, data in fields.items()
-                    if key not in _UserPermission_relational_fields
+                    if key not in _Permission_relational_fields
                 }
 
             if relations:
                 for field, type_ in relations.items():
-                    if field not in _UserPermission_relational_fields:
-                        raise errors.UnknownRelationalFieldError('UserPermission', field)
+                    if field not in _Permission_relational_fields:
+                        raise errors.UnknownRelationalFieldError('Permission', field)
 
                     # TODO: this method of validating types is not ideal
                     # as it means we cannot two create partial types that
@@ -300,7 +300,7 @@ class UserPermission(bases.BaseUserPermission):
                         info['type'] = f'\'partials.{type_}\''
         except KeyError as exc:
             raise ValueError(
-                f'{exc.args[0]} is not a valid UserPermission / {name} field.'
+                f'{exc.args[0]} is not a valid Permission / {name} field.'
             ) from None
 
         models = partial_models_ctx.get()
@@ -308,7 +308,246 @@ class UserPermission(bases.BaseUserPermission):
             {
                 'name': name,
                 'fields': cast(Mapping[str, PartialModelField], fields),
-                'from_model': 'UserPermission',
+                'from_model': 'Permission',
+            }
+        )
+        _created_partial_types.add(name)
+
+
+class RolePermission(bases.BaseRolePermission):
+    """Represents a RolePermission record"""
+
+    id: _int
+    role: 'enums.Role'
+    permission: Optional['models.Permission'] = None
+    permissionId: _int
+    createdAt: datetime.datetime
+
+
+
+    @staticmethod
+    def create_partial(
+        name: str,
+        include: Optional[Iterable['types.RolePermissionKeys']] = None,
+        exclude: Optional[Iterable['types.RolePermissionKeys']] = None,
+        required: Optional[Iterable['types.RolePermissionKeys']] = None,
+        optional: Optional[Iterable['types.RolePermissionKeys']] = None,
+        relations: Optional[Mapping['types.RolePermissionRelationalFieldKeys', str]] = None,
+        exclude_relational_fields: bool = False,
+    ) -> None:
+        if not os.environ.get('PRISMA_GENERATOR_INVOCATION'):
+            raise RuntimeError(
+                'Attempted to create a partial type outside of client generation.'
+            )
+
+        if name in _created_partial_types:
+            raise ValueError(f'Partial type "{name}" has already been created.')
+
+        if include is not None:
+            if exclude is not None:
+                raise TypeError('Exclude and include are mutually exclusive.')
+            if exclude_relational_fields is True:
+                raise TypeError('Include and exclude_relational_fields=True are mutually exclusive.')
+
+        if required and optional:
+            shared = set(required) & set(optional)
+            if shared:
+                raise ValueError(f'Cannot make the same field(s) required and optional {shared}')
+
+        if exclude_relational_fields and relations:
+            raise ValueError(
+                'exclude_relational_fields and relations are mutually exclusive'
+            )
+
+        fields: Dict['types.RolePermissionKeys', PartialModelField] = OrderedDict()
+
+        try:
+            if include:
+                for field in include:
+                    fields[field] = _RolePermission_fields[field].copy()
+            elif exclude:
+                for field in exclude:
+                    if field not in _RolePermission_fields:
+                        raise KeyError(field)
+
+                fields = {
+                    key: data.copy()
+                    for key, data in _RolePermission_fields.items()
+                    if key not in exclude
+                }
+            else:
+                fields = {
+                    key: data.copy()
+                    for key, data in _RolePermission_fields.items()
+                }
+
+            if required:
+                for field in required:
+                    fields[field]['optional'] = False
+
+            if optional:
+                for field in optional:
+                    fields[field]['optional'] = True
+
+            if exclude_relational_fields:
+                fields = {
+                    key: data
+                    for key, data in fields.items()
+                    if key not in _RolePermission_relational_fields
+                }
+
+            if relations:
+                for field, type_ in relations.items():
+                    if field not in _RolePermission_relational_fields:
+                        raise errors.UnknownRelationalFieldError('RolePermission', field)
+
+                    # TODO: this method of validating types is not ideal
+                    # as it means we cannot two create partial types that
+                    # reference each other
+                    if type_ not in _created_partial_types:
+                        raise ValueError(
+                            f'Unknown partial type: "{type_}". '
+                            f'Did you remember to generate the {type_} type before this one?'
+                        )
+
+                    # TODO: support non prisma.partials models
+                    info = fields[field]
+                    if info['is_list']:
+                        info['type'] = f'List[\'partials.{type_}\']'
+                    else:
+                        info['type'] = f'\'partials.{type_}\''
+        except KeyError as exc:
+            raise ValueError(
+                f'{exc.args[0]} is not a valid RolePermission / {name} field.'
+            ) from None
+
+        models = partial_models_ctx.get()
+        models.append(
+            {
+                'name': name,
+                'fields': cast(Mapping[str, PartialModelField], fields),
+                'from_model': 'RolePermission',
+            }
+        )
+        _created_partial_types.add(name)
+
+
+class UserPermissionOverride(bases.BaseUserPermissionOverride):
+    """Represents a UserPermissionOverride record"""
+
+    id: _int
+    user: Optional['models.User'] = None
+    userId: _int
+    permission: Optional['models.Permission'] = None
+    permissionId: _int
+    type: 'enums.PermissionType'
+    createdAt: datetime.datetime
+    updatedAt: datetime.datetime
+
+
+
+    @staticmethod
+    def create_partial(
+        name: str,
+        include: Optional[Iterable['types.UserPermissionOverrideKeys']] = None,
+        exclude: Optional[Iterable['types.UserPermissionOverrideKeys']] = None,
+        required: Optional[Iterable['types.UserPermissionOverrideKeys']] = None,
+        optional: Optional[Iterable['types.UserPermissionOverrideKeys']] = None,
+        relations: Optional[Mapping['types.UserPermissionOverrideRelationalFieldKeys', str]] = None,
+        exclude_relational_fields: bool = False,
+    ) -> None:
+        if not os.environ.get('PRISMA_GENERATOR_INVOCATION'):
+            raise RuntimeError(
+                'Attempted to create a partial type outside of client generation.'
+            )
+
+        if name in _created_partial_types:
+            raise ValueError(f'Partial type "{name}" has already been created.')
+
+        if include is not None:
+            if exclude is not None:
+                raise TypeError('Exclude and include are mutually exclusive.')
+            if exclude_relational_fields is True:
+                raise TypeError('Include and exclude_relational_fields=True are mutually exclusive.')
+
+        if required and optional:
+            shared = set(required) & set(optional)
+            if shared:
+                raise ValueError(f'Cannot make the same field(s) required and optional {shared}')
+
+        if exclude_relational_fields and relations:
+            raise ValueError(
+                'exclude_relational_fields and relations are mutually exclusive'
+            )
+
+        fields: Dict['types.UserPermissionOverrideKeys', PartialModelField] = OrderedDict()
+
+        try:
+            if include:
+                for field in include:
+                    fields[field] = _UserPermissionOverride_fields[field].copy()
+            elif exclude:
+                for field in exclude:
+                    if field not in _UserPermissionOverride_fields:
+                        raise KeyError(field)
+
+                fields = {
+                    key: data.copy()
+                    for key, data in _UserPermissionOverride_fields.items()
+                    if key not in exclude
+                }
+            else:
+                fields = {
+                    key: data.copy()
+                    for key, data in _UserPermissionOverride_fields.items()
+                }
+
+            if required:
+                for field in required:
+                    fields[field]['optional'] = False
+
+            if optional:
+                for field in optional:
+                    fields[field]['optional'] = True
+
+            if exclude_relational_fields:
+                fields = {
+                    key: data
+                    for key, data in fields.items()
+                    if key not in _UserPermissionOverride_relational_fields
+                }
+
+            if relations:
+                for field, type_ in relations.items():
+                    if field not in _UserPermissionOverride_relational_fields:
+                        raise errors.UnknownRelationalFieldError('UserPermissionOverride', field)
+
+                    # TODO: this method of validating types is not ideal
+                    # as it means we cannot two create partial types that
+                    # reference each other
+                    if type_ not in _created_partial_types:
+                        raise ValueError(
+                            f'Unknown partial type: "{type_}". '
+                            f'Did you remember to generate the {type_} type before this one?'
+                        )
+
+                    # TODO: support non prisma.partials models
+                    info = fields[field]
+                    if info['is_list']:
+                        info['type'] = f'List[\'partials.{type_}\']'
+                    else:
+                        info['type'] = f'\'partials.{type_}\''
+        except KeyError as exc:
+            raise ValueError(
+                f'{exc.args[0]} is not a valid UserPermissionOverride / {name} field.'
+            ) from None
+
+        models = partial_models_ctx.get()
+        models.append(
+            {
+                'name': name,
+                'fields': cast(Mapping[str, PartialModelField], fields),
+                'from_model': 'UserPermissionOverride',
             }
         )
         _created_partial_types.add(name)
@@ -1801,9 +2040,9 @@ class Account(bases.BaseAccount):
     type: 'enums.AccountType'
     currency: 'enums.Currency'
     balance: decimal.Decimal
-    active: _bool
     branchId: Optional[_int] = None
     branch: Optional['models.Branch'] = None
+    isActive: _bool
     createdAt: datetime.datetime
     updatedAt: datetime.datetime
     entries: Optional[List['models.JournalEntryLine']] = None
@@ -3116,7 +3355,7 @@ class StockAdjustment(bases.BaseStockAdjustment):
 _User_relational_fields: Set[str] = {
         'branch',
         'auditLogs',
-        'permissions',
+        'rbacOverrides',
         'notifications',
         'revokedTokens',
         'stockAdjustments',
@@ -3235,11 +3474,11 @@ _User_fields: Dict['types.UserKeys', PartialModelField] = OrderedDict(
             'is_relational': True,
             'documentation': None,
         }),
-        ('permissions', {
-            'name': 'permissions',
+        ('rbacOverrides', {
+            'name': 'rbacOverrides',
             'is_list': True,
             'optional': True,
-            'type': 'List[\'models.UserPermission\']',
+            'type': 'List[\'models.UserPermissionOverride\']',
             'is_relational': True,
             'documentation': None,
         }),
@@ -3334,10 +3573,124 @@ _User_fields: Dict['types.UserKeys', PartialModelField] = OrderedDict(
     ],
 )
 
-_UserPermission_relational_fields: Set[str] = {
-        'user',
+_Permission_relational_fields: Set[str] = {
+        'roles',
+        'users',
     }
-_UserPermission_fields: Dict['types.UserPermissionKeys', PartialModelField] = OrderedDict(
+_Permission_fields: Dict['types.PermissionKeys', PartialModelField] = OrderedDict(
+    [
+        ('id', {
+            'name': 'id',
+            'is_list': False,
+            'optional': False,
+            'type': '_int',
+            'is_relational': False,
+            'documentation': None,
+        }),
+        ('resource', {
+            'name': 'resource',
+            'is_list': False,
+            'optional': False,
+            'type': '_str',
+            'is_relational': False,
+            'documentation': None,
+        }),
+        ('action', {
+            'name': 'action',
+            'is_list': False,
+            'optional': False,
+            'type': '_str',
+            'is_relational': False,
+            'documentation': None,
+        }),
+        ('roles', {
+            'name': 'roles',
+            'is_list': True,
+            'optional': True,
+            'type': 'List[\'models.RolePermission\']',
+            'is_relational': True,
+            'documentation': None,
+        }),
+        ('users', {
+            'name': 'users',
+            'is_list': True,
+            'optional': True,
+            'type': 'List[\'models.UserPermissionOverride\']',
+            'is_relational': True,
+            'documentation': None,
+        }),
+        ('createdAt', {
+            'name': 'createdAt',
+            'is_list': False,
+            'optional': False,
+            'type': 'datetime.datetime',
+            'is_relational': False,
+            'documentation': None,
+        }),
+        ('updatedAt', {
+            'name': 'updatedAt',
+            'is_list': False,
+            'optional': False,
+            'type': 'datetime.datetime',
+            'is_relational': False,
+            'documentation': None,
+        }),
+    ],
+)
+
+_RolePermission_relational_fields: Set[str] = {
+        'permission',
+    }
+_RolePermission_fields: Dict['types.RolePermissionKeys', PartialModelField] = OrderedDict(
+    [
+        ('id', {
+            'name': 'id',
+            'is_list': False,
+            'optional': False,
+            'type': '_int',
+            'is_relational': False,
+            'documentation': None,
+        }),
+        ('role', {
+            'name': 'role',
+            'is_list': False,
+            'optional': False,
+            'type': 'enums.Role',
+            'is_relational': False,
+            'documentation': None,
+        }),
+        ('permission', {
+            'name': 'permission',
+            'is_list': False,
+            'optional': True,
+            'type': 'models.Permission',
+            'is_relational': True,
+            'documentation': None,
+        }),
+        ('permissionId', {
+            'name': 'permissionId',
+            'is_list': False,
+            'optional': False,
+            'type': '_int',
+            'is_relational': False,
+            'documentation': None,
+        }),
+        ('createdAt', {
+            'name': 'createdAt',
+            'is_list': False,
+            'optional': False,
+            'type': 'datetime.datetime',
+            'is_relational': False,
+            'documentation': None,
+        }),
+    ],
+)
+
+_UserPermissionOverride_relational_fields: Set[str] = {
+        'user',
+        'permission',
+    }
+_UserPermissionOverride_fields: Dict['types.UserPermissionOverrideKeys', PartialModelField] = OrderedDict(
     [
         ('id', {
             'name': 'id',
@@ -3363,19 +3716,27 @@ _UserPermission_fields: Dict['types.UserPermissionKeys', PartialModelField] = Or
             'is_relational': False,
             'documentation': None,
         }),
-        ('resource', {
-            'name': 'resource',
+        ('permission', {
+            'name': 'permission',
+            'is_list': False,
+            'optional': True,
+            'type': 'models.Permission',
+            'is_relational': True,
+            'documentation': None,
+        }),
+        ('permissionId', {
+            'name': 'permissionId',
             'is_list': False,
             'optional': False,
-            'type': '_str',
+            'type': '_int',
             'is_relational': False,
             'documentation': None,
         }),
-        ('actions', {
-            'name': 'actions',
+        ('type', {
+            'name': 'type',
             'is_list': False,
             'optional': False,
-            'type': 'fields.Json',
+            'type': 'enums.PermissionType',
             'is_relational': False,
             'documentation': None,
         }),
@@ -4549,14 +4910,6 @@ _Account_fields: Dict['types.AccountKeys', PartialModelField] = OrderedDict(
             'is_relational': False,
             'documentation': None,
         }),
-        ('active', {
-            'name': 'active',
-            'is_list': False,
-            'optional': False,
-            'type': '_bool',
-            'is_relational': False,
-            'documentation': None,
-        }),
         ('branchId', {
             'name': 'branchId',
             'is_list': False,
@@ -4571,6 +4924,14 @@ _Account_fields: Dict['types.AccountKeys', PartialModelField] = OrderedDict(
             'optional': True,
             'type': 'models.Branch',
             'is_relational': True,
+            'documentation': None,
+        }),
+        ('isActive', {
+            'name': 'isActive',
+            'is_list': False,
+            'optional': False,
+            'type': '_bool',
+            'is_relational': False,
             'documentation': None,
         }),
         ('createdAt', {
@@ -5572,7 +5933,9 @@ from . import models, actions
 
 # required to support relationships between models
 model_rebuild(User)
-model_rebuild(UserPermission)
+model_rebuild(Permission)
+model_rebuild(RolePermission)
+model_rebuild(UserPermissionOverride)
 model_rebuild(Branch)
 model_rebuild(Product)
 model_rebuild(Category)

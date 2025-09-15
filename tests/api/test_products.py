@@ -82,7 +82,9 @@ class TestProductEndpoints:
         )
         
         if response.status_code == 201:
-            data = response.json()
+            payload = response.json()
+            data = payload.get("data") if isinstance(payload, dict) else payload
+            assert isinstance(data, dict)
             assert "id" in data
             assert data["name"] == product_data["name"]
             assert data["sku"] == product_data["sku"]

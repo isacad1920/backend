@@ -1,15 +1,16 @@
 import React, { createContext, useContext, useEffect, useState, useCallback } from 'react';
 import { authService } from '../services/auth';
+import { usePermissions } from './PermissionsContext';
 import type { StoredAuthSession, User, PermissionCode } from '../types';
 
 interface AuthContextValue {
   user: User | null;
-  permissions: PermissionCode[];
+  permissions: PermissionCode[]; // Deprecated: will be removed once PermissionsContext fully adopted
   session: StoredAuthSession | null;
   loading: boolean;
   login: (username: string, password: string) => Promise<void>;
   logout: () => Promise<void>;
-  hasPermission: (perm: PermissionCode | PermissionCode[]) => boolean;
+  hasPermission: (perm: PermissionCode | PermissionCode[]) => boolean; // Deprecated wrapper
   isAuthenticated: boolean;
 }
 
@@ -85,9 +86,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, [refreshTimer]);
 
   const hasPermission = useCallback((perm: PermissionCode | PermissionCode[]) => {
+    // Thin wrapper retained for backward compatibility; new code should use PermissionsContext
     const list = Array.isArray(perm) ? perm : [perm];
     if (!session) return false;
-    if (session.permissions.includes('all')) return true; // superuser meta permission
+    if (session.permissions.includes('all')) return true;
     return list.every(p => session.permissions.includes(p));
   }, [session]);
 
@@ -113,12 +115,13 @@ export function useAuth(): AuthContextValue {
 
 // Optional guard component
 export const PermissionGuard: React.FC<{ anyOf?: PermissionCode[]; allOf?: PermissionCode[]; children: React.ReactNode; fallback?: React.ReactNode }> = ({ anyOf, allOf, children, fallback = null }) => {
-  const { permissions } = useAuth();
-  const allow = (() => {
+  // New implementation uses PermissionsContext; keeps backward compatibility signature
+  const { permissions } = usePermissions();
+  const allow = React.useMemo(() => {
     if (permissions.includes('all')) return true;
     if (allOf && !allOf.every(p => permissions.includes(p))) return false;
     if (anyOf && !anyOf.some(p => permissions.includes(p))) return false;
     return true;
-  })();
+  }, [permissions, anyOf, allOf]);
   return allow ? <>{children}</> : <>{fallback}</>;
 };

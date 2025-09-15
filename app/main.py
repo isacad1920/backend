@@ -43,7 +43,6 @@ from app.modules.inventory import router as inventory_router
 from app.modules.journal import router as journal_router
 from app.modules.notifications import router as notifications_router
 from app.modules.permissions import (
-    legacy_router as permissions_legacy_router,
     router as permissions_router,
 )
 from app.modules.products import category_router, product_router
@@ -988,19 +987,6 @@ app.include_router(
 )
 
 # Backward compatibility: also expose under /admin (hidden from docs)
-app.include_router(
-    permissions_router,
-    prefix=f"{settings.api_v1_str}/admin",
-    tags=["🛡️ Permissions & Admin"],
-    include_in_schema=False,
-)
-
-app.include_router(
-    permissions_legacy_router,
-    prefix=settings.api_v1_str,
-    tags=["🛡️ Permissions & Admin"],
-    include_in_schema=False,
-)
 
 # ================================
 # BUSINESS CORE MODULES

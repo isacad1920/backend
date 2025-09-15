@@ -71,7 +71,9 @@ ChildType = Union['AbstractNode', str]
 ITERABLES: Tuple[Type[Any], ...] = (list, tuple, set)
 PRISMA_MODELS: Set[str] = {
     'User',
-    'UserPermission',
+    'Permission',
+    'RolePermission',
+    'UserPermissionOverride',
     'Branch',
     'Product',
     'Category',
@@ -101,7 +103,7 @@ RELATIONAL_FIELD_MAPPINGS: Dict[str, Dict[str, str]] = {
     'User': {
         'branch': 'Branch',
         'auditLogs': 'AuditLog',
-        'permissions': 'UserPermission',
+        'rbacOverrides': 'UserPermissionOverride',
         'notifications': 'Notification',
         'revokedTokens': 'RevokedToken',
         'stockAdjustments': 'StockAdjustment',
@@ -114,8 +116,16 @@ RELATIONAL_FIELD_MAPPINGS: Dict[str, Dict[str, str]] = {
         'sentOrders': 'BranchOrder',
         'receivedOrders': 'BranchOrder',
     },
-    'UserPermission': {
+    'Permission': {
+        'roles': 'RolePermission',
+        'users': 'UserPermissionOverride',
+    },
+    'RolePermission': {
+        'permission': 'Permission',
+    },
+    'UserPermissionOverride': {
         'user': 'User',
+        'permission': 'Permission',
     },
     'Branch': {
         'users': 'User',

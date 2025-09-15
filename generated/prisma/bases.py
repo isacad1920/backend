@@ -84,14 +84,34 @@ class BaseUser(_PrismaModel):
         return actions.UserActions[_PrismaModelT](client or get_client(), cls)
 
 
-class BaseUserPermission(_PrismaModel):
-    __prisma_model__: ClassVar[Literal['UserPermission']] = 'UserPermission'
+class BasePermission(_PrismaModel):
+    __prisma_model__: ClassVar[Literal['Permission']] = 'Permission'
 
     @classmethod
-    def prisma(cls: Type[_PrismaModelT], client: Optional['Prisma'] = None) -> 'actions.UserPermissionActions[_PrismaModelT]':
+    def prisma(cls: Type[_PrismaModelT], client: Optional['Prisma'] = None) -> 'actions.PermissionActions[_PrismaModelT]':
         from .client import get_client
 
-        return actions.UserPermissionActions[_PrismaModelT](client or get_client(), cls)
+        return actions.PermissionActions[_PrismaModelT](client or get_client(), cls)
+
+
+class BaseRolePermission(_PrismaModel):
+    __prisma_model__: ClassVar[Literal['RolePermission']] = 'RolePermission'
+
+    @classmethod
+    def prisma(cls: Type[_PrismaModelT], client: Optional['Prisma'] = None) -> 'actions.RolePermissionActions[_PrismaModelT]':
+        from .client import get_client
+
+        return actions.RolePermissionActions[_PrismaModelT](client or get_client(), cls)
+
+
+class BaseUserPermissionOverride(_PrismaModel):
+    __prisma_model__: ClassVar[Literal['UserPermissionOverride']] = 'UserPermissionOverride'
+
+    @classmethod
+    def prisma(cls: Type[_PrismaModelT], client: Optional['Prisma'] = None) -> 'actions.UserPermissionOverrideActions[_PrismaModelT]':
+        from .client import get_client
+
+        return actions.UserPermissionOverrideActions[_PrismaModelT](client or get_client(), cls)
 
 
 class BaseBranch(_PrismaModel):

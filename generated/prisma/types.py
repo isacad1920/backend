@@ -727,6 +727,49 @@ DecimalListUpdate = Union[
     _DecimalListUpdatePush,
 ]
 
+class _PermissionTypeListFilterEqualsInput(TypedDict):
+    equals: Optional[List['enums.PermissionType']]
+
+
+class _PermissionTypeListFilterHasInput(TypedDict):
+    has: 'enums.PermissionType'
+
+
+class _PermissionTypeListFilterHasEveryInput(TypedDict):
+    has_every: List['enums.PermissionType']
+
+
+class _PermissionTypeListFilterHasSomeInput(TypedDict):
+    has_some: List['enums.PermissionType']
+
+
+class _PermissionTypeListFilterIsEmptyInput(TypedDict):
+    is_empty: bool
+
+
+PermissionTypeListFilter = Union[
+    _PermissionTypeListFilterHasInput,
+    _PermissionTypeListFilterEqualsInput,
+    _PermissionTypeListFilterHasSomeInput,
+    _PermissionTypeListFilterIsEmptyInput,
+    _PermissionTypeListFilterHasEveryInput,
+]
+
+
+class _PermissionTypeListUpdateSet(TypedDict):
+    set: List['enums.PermissionType']
+
+
+class _PermissionTypeListUpdatePush(TypedDict):
+    push: List['enums.PermissionType']
+
+
+PermissionTypeListUpdate = Union[
+    List['enums.PermissionType'],
+    _PermissionTypeListUpdateSet,
+    _PermissionTypeListUpdatePush,
+]
+
 class _CategoryStatusListFilterEqualsInput(TypedDict):
     equals: Optional[List['enums.CategoryStatus']]
 
@@ -1558,7 +1601,7 @@ class UserOptionalCreateInput(TypedDict, total=False):
     createdAt: datetime.datetime
     updatedAt: datetime.datetime
     auditLogs: 'AuditLogCreateManyNestedWithoutRelationsInput'
-    permissions: 'UserPermissionCreateManyNestedWithoutRelationsInput'
+    rbacOverrides: 'UserPermissionOverrideCreateManyNestedWithoutRelationsInput'
     notifications: 'NotificationCreateManyNestedWithoutRelationsInput'
     revokedTokens: 'RevokedTokenCreateManyNestedWithoutRelationsInput'
     stockAdjustments: 'StockAdjustmentCreateManyNestedWithoutRelationsInput'
@@ -1657,7 +1700,7 @@ class UserUpdateInput(TypedDict, total=False):
     createdAt: datetime.datetime
     updatedAt: datetime.datetime
     auditLogs: 'AuditLogUpdateManyWithoutRelationsInput'
-    permissions: 'UserPermissionUpdateManyWithoutRelationsInput'
+    rbacOverrides: 'UserPermissionOverrideUpdateManyWithoutRelationsInput'
     notifications: 'NotificationUpdateManyWithoutRelationsInput'
     revokedTokens: 'RevokedTokenUpdateManyWithoutRelationsInput'
     stockAdjustments: 'StockAdjustmentUpdateManyWithoutRelationsInput'
@@ -1846,7 +1889,7 @@ class UserInclude(TypedDict, total=False):
     """User relational arguments"""
     branch: Union[bool, 'BranchArgsFromUser']
     auditLogs: Union[bool, 'FindManyAuditLogArgsFromUser']
-    permissions: Union[bool, 'FindManyUserPermissionArgsFromUser']
+    rbacOverrides: Union[bool, 'FindManyUserPermissionOverrideArgsFromUser']
     notifications: Union[bool, 'FindManyNotificationArgsFromUser']
     revokedTokens: Union[bool, 'FindManyRevokedTokenArgsFromUser']
     stockAdjustments: Union[bool, 'FindManyStockAdjustmentArgsFromUser']
@@ -1864,7 +1907,7 @@ class UserIncludeFromUser(TypedDict, total=False):
     """Relational arguments for User"""
     branch: Union[bool, 'BranchArgsFromUser']
     auditLogs: Union[bool, 'FindManyAuditLogArgsFromUser']
-    permissions: Union[bool, 'FindManyUserPermissionArgsFromUser']
+    rbacOverrides: Union[bool, 'FindManyUserPermissionOverrideArgsFromUser']
     notifications: Union[bool, 'FindManyNotificationArgsFromUser']
     revokedTokens: Union[bool, 'FindManyRevokedTokenArgsFromUser']
     stockAdjustments: Union[bool, 'FindManyStockAdjustmentArgsFromUser']
@@ -1894,25 +1937,69 @@ class FindManyUserArgsFromUser(TypedDict, total=False):
     include: 'UserIncludeFromUser'
 
 
-class UserPermissionIncludeFromUser(TypedDict, total=False):
+class PermissionIncludeFromUser(TypedDict, total=False):
     """Relational arguments for User"""
-    user: Union[bool, 'UserArgsFromUser']
+    roles: Union[bool, 'FindManyRolePermissionArgsFromUser']
+    users: Union[bool, 'FindManyUserPermissionOverrideArgsFromUser']
 
 
-class UserPermissionArgsFromUser(TypedDict, total=False):
+class PermissionArgsFromUser(TypedDict, total=False):
     """Arguments for User"""
-    include: 'UserPermissionIncludeFromUserPermission'
+    include: 'PermissionIncludeFromPermission'
 
 
-class FindManyUserPermissionArgsFromUser(TypedDict, total=False):
+class FindManyPermissionArgsFromUser(TypedDict, total=False):
     """Arguments for User"""
     take: int
     skip: int
-    order_by: Union['UserPermissionOrderByInput', List['UserPermissionOrderByInput']]
-    where: 'UserPermissionWhereInput'
-    cursor: 'UserPermissionWhereUniqueInput'
-    distinct: List['UserPermissionScalarFieldKeys']
-    include: 'UserPermissionIncludeFromUserPermission'
+    order_by: Union['PermissionOrderByInput', List['PermissionOrderByInput']]
+    where: 'PermissionWhereInput'
+    cursor: 'PermissionWhereUniqueInput'
+    distinct: List['PermissionScalarFieldKeys']
+    include: 'PermissionIncludeFromPermission'
+
+
+class RolePermissionIncludeFromUser(TypedDict, total=False):
+    """Relational arguments for User"""
+    permission: Union[bool, 'PermissionArgsFromUser']
+
+
+class RolePermissionArgsFromUser(TypedDict, total=False):
+    """Arguments for User"""
+    include: 'RolePermissionIncludeFromRolePermission'
+
+
+class FindManyRolePermissionArgsFromUser(TypedDict, total=False):
+    """Arguments for User"""
+    take: int
+    skip: int
+    order_by: Union['RolePermissionOrderByInput', List['RolePermissionOrderByInput']]
+    where: 'RolePermissionWhereInput'
+    cursor: 'RolePermissionWhereUniqueInput'
+    distinct: List['RolePermissionScalarFieldKeys']
+    include: 'RolePermissionIncludeFromRolePermission'
+
+
+class UserPermissionOverrideIncludeFromUser(TypedDict, total=False):
+    """Relational arguments for User"""
+    user: Union[bool, 'UserArgsFromUser']
+    permission: Union[bool, 'PermissionArgsFromUser']
+
+
+class UserPermissionOverrideArgsFromUser(TypedDict, total=False):
+    """Arguments for User"""
+    include: 'UserPermissionOverrideIncludeFromUserPermissionOverride'
+
+
+class FindManyUserPermissionOverrideArgsFromUser(TypedDict, total=False):
+    """Arguments for User"""
+    take: int
+    skip: int
+    order_by: Union['UserPermissionOverrideOrderByInput', List['UserPermissionOverrideOrderByInput']]
+    where: 'UserPermissionOverrideWhereInput'
+    cursor: 'UserPermissionOverrideWhereUniqueInput'
+    distinct: List['UserPermissionOverrideScalarFieldKeys']
+    include: 'UserPermissionOverrideIncludeFromUserPermissionOverride'
 
 
 class BranchIncludeFromUser(TypedDict, total=False):
@@ -2451,7 +2538,7 @@ class UserWhereInput(TypedDict, total=False):
     createdAt: Union[datetime.datetime, 'types.DateTimeFilter']
     updatedAt: Union[datetime.datetime, 'types.DateTimeFilter']
     auditLogs: 'AuditLogListRelationFilter'
-    permissions: 'UserPermissionListRelationFilter'
+    rbacOverrides: 'UserPermissionOverrideListRelationFilter'
     notifications: 'NotificationListRelationFilter'
     revokedTokens: 'RevokedTokenListRelationFilter'
     stockAdjustments: 'StockAdjustmentListRelationFilter'
@@ -2638,7 +2725,7 @@ UserKeys = Literal[
     'createdAt',
     'updatedAt',
     'auditLogs',
-    'permissions',
+    'rbacOverrides',
     'notifications',
     'revokedTokens',
     'stockAdjustments',
@@ -2669,7 +2756,7 @@ UserScalarFieldKeysT = TypeVar('UserScalarFieldKeysT', bound=UserScalarFieldKeys
 UserRelationalFieldKeys = Literal[
         'branch',
         'auditLogs',
-        'permissions',
+        'rbacOverrides',
         'notifications',
         'revokedTokens',
         'stockAdjustments',
@@ -2683,222 +2770,234 @@ UserRelationalFieldKeys = Literal[
         'receivedOrders',
     ]
 
-# UserPermission types
+# Permission types
 
-class UserPermissionOptionalCreateInput(TypedDict, total=False):
-    """Optional arguments to the UserPermission create method"""
+class PermissionOptionalCreateInput(TypedDict, total=False):
+    """Optional arguments to the Permission create method"""
     id: _int
-    user: 'UserCreateNestedWithoutRelationsInput'
-    userId: _int
+    roles: 'RolePermissionCreateManyNestedWithoutRelationsInput'
+    users: 'UserPermissionOverrideCreateManyNestedWithoutRelationsInput'
     createdAt: datetime.datetime
     updatedAt: datetime.datetime
 
 
-class UserPermissionCreateInput(UserPermissionOptionalCreateInput):
-    """Required arguments to the UserPermission create method"""
+class PermissionCreateInput(PermissionOptionalCreateInput):
+    """Required arguments to the Permission create method"""
     resource: _str
-    actions: 'fields.Json'
+    action: _str
 
 
 # TODO: remove this in favour of without explicit relations
 # e.g. PostCreateWithoutAuthorInput
 
-class UserPermissionOptionalCreateWithoutRelationsInput(TypedDict, total=False):
-    """Optional arguments to the UserPermission create method, without relations"""
+class PermissionOptionalCreateWithoutRelationsInput(TypedDict, total=False):
+    """Optional arguments to the Permission create method, without relations"""
     id: _int
-    userId: _int
     createdAt: datetime.datetime
     updatedAt: datetime.datetime
 
 
-class UserPermissionCreateWithoutRelationsInput(UserPermissionOptionalCreateWithoutRelationsInput):
-    """Required arguments to the UserPermission create method, without relations"""
+class PermissionCreateWithoutRelationsInput(PermissionOptionalCreateWithoutRelationsInput):
+    """Required arguments to the Permission create method, without relations"""
     resource: _str
-    actions: 'fields.Json'
+    action: _str
 
 
-class UserPermissionCreateNestedWithoutRelationsInput(TypedDict, total=False):
-    create: 'UserPermissionCreateWithoutRelationsInput'
-    connect: 'UserPermissionWhereUniqueInput'
+class PermissionCreateNestedWithoutRelationsInput(TypedDict, total=False):
+    create: 'PermissionCreateWithoutRelationsInput'
+    connect: 'PermissionWhereUniqueInput'
 
 
-class UserPermissionCreateManyNestedWithoutRelationsInput(TypedDict, total=False):
-    create: Union['UserPermissionCreateWithoutRelationsInput', List['UserPermissionCreateWithoutRelationsInput']]
-    connect: Union['UserPermissionWhereUniqueInput', List['UserPermissionWhereUniqueInput']]
+class PermissionCreateManyNestedWithoutRelationsInput(TypedDict, total=False):
+    create: Union['PermissionCreateWithoutRelationsInput', List['PermissionCreateWithoutRelationsInput']]
+    connect: Union['PermissionWhereUniqueInput', List['PermissionWhereUniqueInput']]
 
 
-_UserPermissionWhereUnique_id_Input = TypedDict(
-    '_UserPermissionWhereUnique_id_Input',
+_PermissionWhereUnique_id_Input = TypedDict(
+    '_PermissionWhereUnique_id_Input',
     {
         'id': '_int',
     },
     total=True
 )
 
-UserPermissionWhereUniqueInput = _UserPermissionWhereUnique_id_Input
+_PermissionCompoundresource_actionKeyInner = TypedDict(
+    '_PermissionCompoundresource_actionKeyInner',
+    {
+        'resource': '_str',
+        'action': '_str',
+    },
+    total=True
+)
+
+_PermissionCompoundresource_actionKey = TypedDict(
+    '_PermissionCompoundresource_actionKey',
+    {
+        'resource_action': '_PermissionCompoundresource_actionKeyInner',
+    },
+    total=True
+)
+
+PermissionWhereUniqueInput = Union[
+    '_PermissionWhereUnique_id_Input',
+    '_PermissionCompoundresource_actionKey',
+]
 
 
-class UserPermissionUpdateInput(TypedDict, total=False):
+class PermissionUpdateInput(TypedDict, total=False):
     """Optional arguments for updating a record"""
     id: Union[AtomicIntInput, _int]
-    user: 'UserUpdateOneWithoutRelationsInput'
     resource: _str
-    actions: 'fields.Json'
+    action: _str
+    roles: 'RolePermissionUpdateManyWithoutRelationsInput'
+    users: 'UserPermissionOverrideUpdateManyWithoutRelationsInput'
     createdAt: datetime.datetime
     updatedAt: datetime.datetime
 
 
-class UserPermissionUpdateManyMutationInput(TypedDict, total=False):
+class PermissionUpdateManyMutationInput(TypedDict, total=False):
     """Arguments for updating many records"""
     id: Union[AtomicIntInput, _int]
     resource: _str
-    actions: 'fields.Json'
+    action: _str
     createdAt: datetime.datetime
     updatedAt: datetime.datetime
 
 
-class UserPermissionUpdateManyWithoutRelationsInput(TypedDict, total=False):
-    create: List['UserPermissionCreateWithoutRelationsInput']
-    connect: List['UserPermissionWhereUniqueInput']
-    set: List['UserPermissionWhereUniqueInput']
-    disconnect: List['UserPermissionWhereUniqueInput']
-    delete: List['UserPermissionWhereUniqueInput']
+class PermissionUpdateManyWithoutRelationsInput(TypedDict, total=False):
+    create: List['PermissionCreateWithoutRelationsInput']
+    connect: List['PermissionWhereUniqueInput']
+    set: List['PermissionWhereUniqueInput']
+    disconnect: List['PermissionWhereUniqueInput']
+    delete: List['PermissionWhereUniqueInput']
 
     # TODO
-    # update: List['UserPermissionUpdateWithWhereUniqueWithoutRelationsInput']
-    # updateMany: List['UserPermissionUpdateManyWithWhereUniqueWithoutRelationsInput']
-    # deleteMany: List['UserPermissionScalarWhereInput']
-    # upsert: List['UserPermissionUpserteWithWhereUniqueWithoutRelationsInput']
-    # connectOrCreate: List['UserPermissionCreateOrConnectWithoutRelationsInput']
+    # update: List['PermissionUpdateWithWhereUniqueWithoutRelationsInput']
+    # updateMany: List['PermissionUpdateManyWithWhereUniqueWithoutRelationsInput']
+    # deleteMany: List['PermissionScalarWhereInput']
+    # upsert: List['PermissionUpserteWithWhereUniqueWithoutRelationsInput']
+    # connectOrCreate: List['PermissionCreateOrConnectWithoutRelationsInput']
 
 
-class UserPermissionUpdateOneWithoutRelationsInput(TypedDict, total=False):
-    create: 'UserPermissionCreateWithoutRelationsInput'
-    connect: 'UserPermissionWhereUniqueInput'
+class PermissionUpdateOneWithoutRelationsInput(TypedDict, total=False):
+    create: 'PermissionCreateWithoutRelationsInput'
+    connect: 'PermissionWhereUniqueInput'
     disconnect: bool
     delete: bool
 
     # TODO
-    # update: 'UserPermissionUpdateInput'
-    # upsert: 'UserPermissionUpsertWithoutRelationsInput'
-    # connectOrCreate: 'UserPermissionCreateOrConnectWithoutRelationsInput'
+    # update: 'PermissionUpdateInput'
+    # upsert: 'PermissionUpsertWithoutRelationsInput'
+    # connectOrCreate: 'PermissionCreateOrConnectWithoutRelationsInput'
 
 
-class UserPermissionUpsertInput(TypedDict):
-    create: 'UserPermissionCreateInput'
-    update: 'UserPermissionUpdateInput'  # pyright: ignore[reportIncompatibleMethodOverride]
+class PermissionUpsertInput(TypedDict):
+    create: 'PermissionCreateInput'
+    update: 'PermissionUpdateInput'  # pyright: ignore[reportIncompatibleMethodOverride]
 
 
-_UserPermission_id_OrderByInput = TypedDict(
-    '_UserPermission_id_OrderByInput',
+_Permission_id_OrderByInput = TypedDict(
+    '_Permission_id_OrderByInput',
     {
         'id': 'SortOrder',
     },
     total=True
 )
 
-_UserPermission_userId_OrderByInput = TypedDict(
-    '_UserPermission_userId_OrderByInput',
-    {
-        'userId': 'SortOrder',
-    },
-    total=True
-)
-
-_UserPermission_resource_OrderByInput = TypedDict(
-    '_UserPermission_resource_OrderByInput',
+_Permission_resource_OrderByInput = TypedDict(
+    '_Permission_resource_OrderByInput',
     {
         'resource': 'SortOrder',
     },
     total=True
 )
 
-_UserPermission_actions_OrderByInput = TypedDict(
-    '_UserPermission_actions_OrderByInput',
+_Permission_action_OrderByInput = TypedDict(
+    '_Permission_action_OrderByInput',
     {
-        'actions': 'SortOrder',
+        'action': 'SortOrder',
     },
     total=True
 )
 
-_UserPermission_createdAt_OrderByInput = TypedDict(
-    '_UserPermission_createdAt_OrderByInput',
+_Permission_createdAt_OrderByInput = TypedDict(
+    '_Permission_createdAt_OrderByInput',
     {
         'createdAt': 'SortOrder',
     },
     total=True
 )
 
-_UserPermission_updatedAt_OrderByInput = TypedDict(
-    '_UserPermission_updatedAt_OrderByInput',
+_Permission_updatedAt_OrderByInput = TypedDict(
+    '_Permission_updatedAt_OrderByInput',
     {
         'updatedAt': 'SortOrder',
     },
     total=True
 )
 
-UserPermissionOrderByInput = Union[
-    '_UserPermission_id_OrderByInput',
-    '_UserPermission_userId_OrderByInput',
-    '_UserPermission_resource_OrderByInput',
-    '_UserPermission_actions_OrderByInput',
-    '_UserPermission_createdAt_OrderByInput',
-    '_UserPermission_updatedAt_OrderByInput',
+PermissionOrderByInput = Union[
+    '_Permission_id_OrderByInput',
+    '_Permission_resource_OrderByInput',
+    '_Permission_action_OrderByInput',
+    '_Permission_createdAt_OrderByInput',
+    '_Permission_updatedAt_OrderByInput',
 ]
 
 
 
-# recursive UserPermission types
+# recursive Permission types
 # TODO: cleanup these types
 
 
 
-UserPermissionRelationFilter = TypedDict(
-    'UserPermissionRelationFilter',
+PermissionRelationFilter = TypedDict(
+    'PermissionRelationFilter',
     {
-        'is': 'UserPermissionWhereInput',
-        'is_not': 'UserPermissionWhereInput',
+        'is': 'PermissionWhereInput',
+        'is_not': 'PermissionWhereInput',
     },
     total=False,
 )
 
 
-class UserPermissionListRelationFilter(TypedDict, total=False):
-    some: 'UserPermissionWhereInput'
-    none: 'UserPermissionWhereInput'
-    every: 'UserPermissionWhereInput'
+class PermissionListRelationFilter(TypedDict, total=False):
+    some: 'PermissionWhereInput'
+    none: 'PermissionWhereInput'
+    every: 'PermissionWhereInput'
 
 
-class UserPermissionInclude(TypedDict, total=False):
-    """UserPermission relational arguments"""
-    user: Union[bool, 'UserArgsFromUserPermission']
+class PermissionInclude(TypedDict, total=False):
+    """Permission relational arguments"""
+    roles: Union[bool, 'FindManyRolePermissionArgsFromPermission']
+    users: Union[bool, 'FindManyUserPermissionOverrideArgsFromPermission']
 
 
-class UserIncludeFromUserPermission(TypedDict, total=False):
-    """Relational arguments for UserPermission"""
-    branch: Union[bool, 'BranchArgsFromUserPermission']
-    auditLogs: Union[bool, 'FindManyAuditLogArgsFromUserPermission']
-    permissions: Union[bool, 'FindManyUserPermissionArgsFromUserPermission']
-    notifications: Union[bool, 'FindManyNotificationArgsFromUserPermission']
-    revokedTokens: Union[bool, 'FindManyRevokedTokenArgsFromUserPermission']
-    stockAdjustments: Union[bool, 'FindManyStockAdjustmentArgsFromUserPermission']
-    Sale: Union[bool, 'FindManySaleArgsFromUserPermission']
-    deletedSales: Union[bool, 'FindManySaleArgsFromUserPermission']
-    Payment: Union[bool, 'FindManyPaymentArgsFromUserPermission']
-    Backup: Union[bool, 'FindManyBackupArgsFromUserPermission']
-    requestedOrders: Union[bool, 'FindManyBranchOrderArgsFromUserPermission']
-    approvedOrders: Union[bool, 'FindManyBranchOrderArgsFromUserPermission']
-    sentOrders: Union[bool, 'FindManyBranchOrderArgsFromUserPermission']
-    receivedOrders: Union[bool, 'FindManyBranchOrderArgsFromUserPermission']
+class UserIncludeFromPermission(TypedDict, total=False):
+    """Relational arguments for Permission"""
+    branch: Union[bool, 'BranchArgsFromPermission']
+    auditLogs: Union[bool, 'FindManyAuditLogArgsFromPermission']
+    rbacOverrides: Union[bool, 'FindManyUserPermissionOverrideArgsFromPermission']
+    notifications: Union[bool, 'FindManyNotificationArgsFromPermission']
+    revokedTokens: Union[bool, 'FindManyRevokedTokenArgsFromPermission']
+    stockAdjustments: Union[bool, 'FindManyStockAdjustmentArgsFromPermission']
+    Sale: Union[bool, 'FindManySaleArgsFromPermission']
+    deletedSales: Union[bool, 'FindManySaleArgsFromPermission']
+    Payment: Union[bool, 'FindManyPaymentArgsFromPermission']
+    Backup: Union[bool, 'FindManyBackupArgsFromPermission']
+    requestedOrders: Union[bool, 'FindManyBranchOrderArgsFromPermission']
+    approvedOrders: Union[bool, 'FindManyBranchOrderArgsFromPermission']
+    sentOrders: Union[bool, 'FindManyBranchOrderArgsFromPermission']
+    receivedOrders: Union[bool, 'FindManyBranchOrderArgsFromPermission']
 
 
-class UserArgsFromUserPermission(TypedDict, total=False):
-    """Arguments for UserPermission"""
+class UserArgsFromPermission(TypedDict, total=False):
+    """Arguments for Permission"""
     include: 'UserIncludeFromUser'
 
 
-class FindManyUserArgsFromUserPermission(TypedDict, total=False):
-    """Arguments for UserPermission"""
+class FindManyUserArgsFromPermission(TypedDict, total=False):
+    """Arguments for Permission"""
     take: int
     skip: int
     order_by: Union['UserOrderByInput', List['UserOrderByInput']]
@@ -2908,42 +3007,86 @@ class FindManyUserArgsFromUserPermission(TypedDict, total=False):
     include: 'UserIncludeFromUser'
 
 
-class UserPermissionIncludeFromUserPermission(TypedDict, total=False):
-    """Relational arguments for UserPermission"""
-    user: Union[bool, 'UserArgsFromUserPermission']
+class PermissionIncludeFromPermission(TypedDict, total=False):
+    """Relational arguments for Permission"""
+    roles: Union[bool, 'FindManyRolePermissionArgsFromPermission']
+    users: Union[bool, 'FindManyUserPermissionOverrideArgsFromPermission']
 
 
-class UserPermissionArgsFromUserPermission(TypedDict, total=False):
-    """Arguments for UserPermission"""
-    include: 'UserPermissionIncludeFromUserPermission'
+class PermissionArgsFromPermission(TypedDict, total=False):
+    """Arguments for Permission"""
+    include: 'PermissionIncludeFromPermission'
 
 
-class FindManyUserPermissionArgsFromUserPermission(TypedDict, total=False):
-    """Arguments for UserPermission"""
+class FindManyPermissionArgsFromPermission(TypedDict, total=False):
+    """Arguments for Permission"""
     take: int
     skip: int
-    order_by: Union['UserPermissionOrderByInput', List['UserPermissionOrderByInput']]
-    where: 'UserPermissionWhereInput'
-    cursor: 'UserPermissionWhereUniqueInput'
-    distinct: List['UserPermissionScalarFieldKeys']
-    include: 'UserPermissionIncludeFromUserPermission'
+    order_by: Union['PermissionOrderByInput', List['PermissionOrderByInput']]
+    where: 'PermissionWhereInput'
+    cursor: 'PermissionWhereUniqueInput'
+    distinct: List['PermissionScalarFieldKeys']
+    include: 'PermissionIncludeFromPermission'
 
 
-class BranchIncludeFromUserPermission(TypedDict, total=False):
-    """Relational arguments for UserPermission"""
-    users: Union[bool, 'FindManyUserArgsFromUserPermission']
-    Sale: Union[bool, 'FindManySaleArgsFromUserPermission']
-    Account: Union[bool, 'FindManyAccountArgsFromUserPermission']
-    BranchOrder: Union[bool, 'FindManyBranchOrderArgsFromUserPermission']
+class RolePermissionIncludeFromPermission(TypedDict, total=False):
+    """Relational arguments for Permission"""
+    permission: Union[bool, 'PermissionArgsFromPermission']
 
 
-class BranchArgsFromUserPermission(TypedDict, total=False):
-    """Arguments for UserPermission"""
+class RolePermissionArgsFromPermission(TypedDict, total=False):
+    """Arguments for Permission"""
+    include: 'RolePermissionIncludeFromRolePermission'
+
+
+class FindManyRolePermissionArgsFromPermission(TypedDict, total=False):
+    """Arguments for Permission"""
+    take: int
+    skip: int
+    order_by: Union['RolePermissionOrderByInput', List['RolePermissionOrderByInput']]
+    where: 'RolePermissionWhereInput'
+    cursor: 'RolePermissionWhereUniqueInput'
+    distinct: List['RolePermissionScalarFieldKeys']
+    include: 'RolePermissionIncludeFromRolePermission'
+
+
+class UserPermissionOverrideIncludeFromPermission(TypedDict, total=False):
+    """Relational arguments for Permission"""
+    user: Union[bool, 'UserArgsFromPermission']
+    permission: Union[bool, 'PermissionArgsFromPermission']
+
+
+class UserPermissionOverrideArgsFromPermission(TypedDict, total=False):
+    """Arguments for Permission"""
+    include: 'UserPermissionOverrideIncludeFromUserPermissionOverride'
+
+
+class FindManyUserPermissionOverrideArgsFromPermission(TypedDict, total=False):
+    """Arguments for Permission"""
+    take: int
+    skip: int
+    order_by: Union['UserPermissionOverrideOrderByInput', List['UserPermissionOverrideOrderByInput']]
+    where: 'UserPermissionOverrideWhereInput'
+    cursor: 'UserPermissionOverrideWhereUniqueInput'
+    distinct: List['UserPermissionOverrideScalarFieldKeys']
+    include: 'UserPermissionOverrideIncludeFromUserPermissionOverride'
+
+
+class BranchIncludeFromPermission(TypedDict, total=False):
+    """Relational arguments for Permission"""
+    users: Union[bool, 'FindManyUserArgsFromPermission']
+    Sale: Union[bool, 'FindManySaleArgsFromPermission']
+    Account: Union[bool, 'FindManyAccountArgsFromPermission']
+    BranchOrder: Union[bool, 'FindManyBranchOrderArgsFromPermission']
+
+
+class BranchArgsFromPermission(TypedDict, total=False):
+    """Arguments for Permission"""
     include: 'BranchIncludeFromBranch'
 
 
-class FindManyBranchArgsFromUserPermission(TypedDict, total=False):
-    """Arguments for UserPermission"""
+class FindManyBranchArgsFromPermission(TypedDict, total=False):
+    """Arguments for Permission"""
     take: int
     skip: int
     order_by: Union['BranchOrderByInput', List['BranchOrderByInput']]
@@ -2953,20 +3096,20 @@ class FindManyBranchArgsFromUserPermission(TypedDict, total=False):
     include: 'BranchIncludeFromBranch'
 
 
-class ProductIncludeFromUserPermission(TypedDict, total=False):
-    """Relational arguments for UserPermission"""
-    category: Union[bool, 'CategoryArgsFromUserPermission']
-    stocks: Union[bool, 'FindManyStockArgsFromUserPermission']
-    stockAdjustments: Union[bool, 'FindManyStockAdjustmentArgsFromUserPermission']
+class ProductIncludeFromPermission(TypedDict, total=False):
+    """Relational arguments for Permission"""
+    category: Union[bool, 'CategoryArgsFromPermission']
+    stocks: Union[bool, 'FindManyStockArgsFromPermission']
+    stockAdjustments: Union[bool, 'FindManyStockAdjustmentArgsFromPermission']
 
 
-class ProductArgsFromUserPermission(TypedDict, total=False):
-    """Arguments for UserPermission"""
+class ProductArgsFromPermission(TypedDict, total=False):
+    """Arguments for Permission"""
     include: 'ProductIncludeFromProduct'
 
 
-class FindManyProductArgsFromUserPermission(TypedDict, total=False):
-    """Arguments for UserPermission"""
+class FindManyProductArgsFromPermission(TypedDict, total=False):
+    """Arguments for Permission"""
     take: int
     skip: int
     order_by: Union['ProductOrderByInput', List['ProductOrderByInput']]
@@ -2976,18 +3119,18 @@ class FindManyProductArgsFromUserPermission(TypedDict, total=False):
     include: 'ProductIncludeFromProduct'
 
 
-class CategoryIncludeFromUserPermission(TypedDict, total=False):
-    """Relational arguments for UserPermission"""
-    products: Union[bool, 'FindManyProductArgsFromUserPermission']
+class CategoryIncludeFromPermission(TypedDict, total=False):
+    """Relational arguments for Permission"""
+    products: Union[bool, 'FindManyProductArgsFromPermission']
 
 
-class CategoryArgsFromUserPermission(TypedDict, total=False):
-    """Arguments for UserPermission"""
+class CategoryArgsFromPermission(TypedDict, total=False):
+    """Arguments for Permission"""
     include: 'CategoryIncludeFromCategory'
 
 
-class FindManyCategoryArgsFromUserPermission(TypedDict, total=False):
-    """Arguments for UserPermission"""
+class FindManyCategoryArgsFromPermission(TypedDict, total=False):
+    """Arguments for Permission"""
     take: int
     skip: int
     order_by: Union['CategoryOrderByInput', List['CategoryOrderByInput']]
@@ -2997,20 +3140,20 @@ class FindManyCategoryArgsFromUserPermission(TypedDict, total=False):
     include: 'CategoryIncludeFromCategory'
 
 
-class StockIncludeFromUserPermission(TypedDict, total=False):
-    """Relational arguments for UserPermission"""
-    product: Union[bool, 'ProductArgsFromUserPermission']
-    SaleItem: Union[bool, 'FindManySaleItemArgsFromUserPermission']
-    BranchOrderItem: Union[bool, 'FindManyBranchOrderItemArgsFromUserPermission']
+class StockIncludeFromPermission(TypedDict, total=False):
+    """Relational arguments for Permission"""
+    product: Union[bool, 'ProductArgsFromPermission']
+    SaleItem: Union[bool, 'FindManySaleItemArgsFromPermission']
+    BranchOrderItem: Union[bool, 'FindManyBranchOrderItemArgsFromPermission']
 
 
-class StockArgsFromUserPermission(TypedDict, total=False):
-    """Arguments for UserPermission"""
+class StockArgsFromPermission(TypedDict, total=False):
+    """Arguments for Permission"""
     include: 'StockIncludeFromStock'
 
 
-class FindManyStockArgsFromUserPermission(TypedDict, total=False):
-    """Arguments for UserPermission"""
+class FindManyStockArgsFromPermission(TypedDict, total=False):
+    """Arguments for Permission"""
     take: int
     skip: int
     order_by: Union['StockOrderByInput', List['StockOrderByInput']]
@@ -3020,18 +3163,18 @@ class FindManyStockArgsFromUserPermission(TypedDict, total=False):
     include: 'StockIncludeFromStock'
 
 
-class CustomerIncludeFromUserPermission(TypedDict, total=False):
-    """Relational arguments for UserPermission"""
-    Sale: Union[bool, 'FindManySaleArgsFromUserPermission']
+class CustomerIncludeFromPermission(TypedDict, total=False):
+    """Relational arguments for Permission"""
+    Sale: Union[bool, 'FindManySaleArgsFromPermission']
 
 
-class CustomerArgsFromUserPermission(TypedDict, total=False):
-    """Arguments for UserPermission"""
+class CustomerArgsFromPermission(TypedDict, total=False):
+    """Arguments for Permission"""
     include: 'CustomerIncludeFromCustomer'
 
 
-class FindManyCustomerArgsFromUserPermission(TypedDict, total=False):
-    """Arguments for UserPermission"""
+class FindManyCustomerArgsFromPermission(TypedDict, total=False):
+    """Arguments for Permission"""
     take: int
     skip: int
     order_by: Union['CustomerOrderByInput', List['CustomerOrderByInput']]
@@ -3041,24 +3184,24 @@ class FindManyCustomerArgsFromUserPermission(TypedDict, total=False):
     include: 'CustomerIncludeFromCustomer'
 
 
-class SaleIncludeFromUserPermission(TypedDict, total=False):
-    """Relational arguments for UserPermission"""
-    branch: Union[bool, 'BranchArgsFromUserPermission']
-    customer: Union[bool, 'CustomerArgsFromUserPermission']
-    user: Union[bool, 'UserArgsFromUserPermission']
-    items: Union[bool, 'FindManySaleItemArgsFromUserPermission']
-    payments: Union[bool, 'FindManyPaymentArgsFromUserPermission']
-    returns: Union[bool, 'FindManyReturnSaleArgsFromUserPermission']
-    deletedBy: Union[bool, 'UserArgsFromUserPermission']
+class SaleIncludeFromPermission(TypedDict, total=False):
+    """Relational arguments for Permission"""
+    branch: Union[bool, 'BranchArgsFromPermission']
+    customer: Union[bool, 'CustomerArgsFromPermission']
+    user: Union[bool, 'UserArgsFromPermission']
+    items: Union[bool, 'FindManySaleItemArgsFromPermission']
+    payments: Union[bool, 'FindManyPaymentArgsFromPermission']
+    returns: Union[bool, 'FindManyReturnSaleArgsFromPermission']
+    deletedBy: Union[bool, 'UserArgsFromPermission']
 
 
-class SaleArgsFromUserPermission(TypedDict, total=False):
-    """Arguments for UserPermission"""
+class SaleArgsFromPermission(TypedDict, total=False):
+    """Arguments for Permission"""
     include: 'SaleIncludeFromSale'
 
 
-class FindManySaleArgsFromUserPermission(TypedDict, total=False):
-    """Arguments for UserPermission"""
+class FindManySaleArgsFromPermission(TypedDict, total=False):
+    """Arguments for Permission"""
     take: int
     skip: int
     order_by: Union['SaleOrderByInput', List['SaleOrderByInput']]
@@ -3068,20 +3211,20 @@ class FindManySaleArgsFromUserPermission(TypedDict, total=False):
     include: 'SaleIncludeFromSale'
 
 
-class SaleItemIncludeFromUserPermission(TypedDict, total=False):
-    """Relational arguments for UserPermission"""
-    sale: Union[bool, 'SaleArgsFromUserPermission']
-    stock: Union[bool, 'StockArgsFromUserPermission']
-    ReturnItem: Union[bool, 'FindManyReturnItemArgsFromUserPermission']
+class SaleItemIncludeFromPermission(TypedDict, total=False):
+    """Relational arguments for Permission"""
+    sale: Union[bool, 'SaleArgsFromPermission']
+    stock: Union[bool, 'StockArgsFromPermission']
+    ReturnItem: Union[bool, 'FindManyReturnItemArgsFromPermission']
 
 
-class SaleItemArgsFromUserPermission(TypedDict, total=False):
-    """Arguments for UserPermission"""
+class SaleItemArgsFromPermission(TypedDict, total=False):
+    """Arguments for Permission"""
     include: 'SaleItemIncludeFromSaleItem'
 
 
-class FindManySaleItemArgsFromUserPermission(TypedDict, total=False):
-    """Arguments for UserPermission"""
+class FindManySaleItemArgsFromPermission(TypedDict, total=False):
+    """Arguments for Permission"""
     take: int
     skip: int
     order_by: Union['SaleItemOrderByInput', List['SaleItemOrderByInput']]
@@ -3091,20 +3234,20 @@ class FindManySaleItemArgsFromUserPermission(TypedDict, total=False):
     include: 'SaleItemIncludeFromSaleItem'
 
 
-class ReturnSaleIncludeFromUserPermission(TypedDict, total=False):
-    """Relational arguments for UserPermission"""
-    original: Union[bool, 'SaleArgsFromUserPermission']
-    items: Union[bool, 'FindManyReturnItemArgsFromUserPermission']
-    refund: Union[bool, 'FindManyPaymentArgsFromUserPermission']
+class ReturnSaleIncludeFromPermission(TypedDict, total=False):
+    """Relational arguments for Permission"""
+    original: Union[bool, 'SaleArgsFromPermission']
+    items: Union[bool, 'FindManyReturnItemArgsFromPermission']
+    refund: Union[bool, 'FindManyPaymentArgsFromPermission']
 
 
-class ReturnSaleArgsFromUserPermission(TypedDict, total=False):
-    """Arguments for UserPermission"""
+class ReturnSaleArgsFromPermission(TypedDict, total=False):
+    """Arguments for Permission"""
     include: 'ReturnSaleIncludeFromReturnSale'
 
 
-class FindManyReturnSaleArgsFromUserPermission(TypedDict, total=False):
-    """Arguments for UserPermission"""
+class FindManyReturnSaleArgsFromPermission(TypedDict, total=False):
+    """Arguments for Permission"""
     take: int
     skip: int
     order_by: Union['ReturnSaleOrderByInput', List['ReturnSaleOrderByInput']]
@@ -3114,19 +3257,19 @@ class FindManyReturnSaleArgsFromUserPermission(TypedDict, total=False):
     include: 'ReturnSaleIncludeFromReturnSale'
 
 
-class ReturnItemIncludeFromUserPermission(TypedDict, total=False):
-    """Relational arguments for UserPermission"""
-    returnSale: Union[bool, 'ReturnSaleArgsFromUserPermission']
-    saleItem: Union[bool, 'SaleItemArgsFromUserPermission']
+class ReturnItemIncludeFromPermission(TypedDict, total=False):
+    """Relational arguments for Permission"""
+    returnSale: Union[bool, 'ReturnSaleArgsFromPermission']
+    saleItem: Union[bool, 'SaleItemArgsFromPermission']
 
 
-class ReturnItemArgsFromUserPermission(TypedDict, total=False):
-    """Arguments for UserPermission"""
+class ReturnItemArgsFromPermission(TypedDict, total=False):
+    """Arguments for Permission"""
     include: 'ReturnItemIncludeFromReturnItem'
 
 
-class FindManyReturnItemArgsFromUserPermission(TypedDict, total=False):
-    """Arguments for UserPermission"""
+class FindManyReturnItemArgsFromPermission(TypedDict, total=False):
+    """Arguments for Permission"""
     take: int
     skip: int
     order_by: Union['ReturnItemOrderByInput', List['ReturnItemOrderByInput']]
@@ -3136,21 +3279,21 @@ class FindManyReturnItemArgsFromUserPermission(TypedDict, total=False):
     include: 'ReturnItemIncludeFromReturnItem'
 
 
-class PaymentIncludeFromUserPermission(TypedDict, total=False):
-    """Relational arguments for UserPermission"""
-    sale: Union[bool, 'SaleArgsFromUserPermission']
-    account: Union[bool, 'AccountArgsFromUserPermission']
-    returnSale: Union[bool, 'ReturnSaleArgsFromUserPermission']
-    user: Union[bool, 'UserArgsFromUserPermission']
+class PaymentIncludeFromPermission(TypedDict, total=False):
+    """Relational arguments for Permission"""
+    sale: Union[bool, 'SaleArgsFromPermission']
+    account: Union[bool, 'AccountArgsFromPermission']
+    returnSale: Union[bool, 'ReturnSaleArgsFromPermission']
+    user: Union[bool, 'UserArgsFromPermission']
 
 
-class PaymentArgsFromUserPermission(TypedDict, total=False):
-    """Arguments for UserPermission"""
+class PaymentArgsFromPermission(TypedDict, total=False):
+    """Arguments for Permission"""
     include: 'PaymentIncludeFromPayment'
 
 
-class FindManyPaymentArgsFromUserPermission(TypedDict, total=False):
-    """Arguments for UserPermission"""
+class FindManyPaymentArgsFromPermission(TypedDict, total=False):
+    """Arguments for Permission"""
     take: int
     skip: int
     order_by: Union['PaymentOrderByInput', List['PaymentOrderByInput']]
@@ -3160,18 +3303,18 @@ class FindManyPaymentArgsFromUserPermission(TypedDict, total=False):
     include: 'PaymentIncludeFromPayment'
 
 
-class JournalEntryIncludeFromUserPermission(TypedDict, total=False):
-    """Relational arguments for UserPermission"""
-    lines: Union[bool, 'FindManyJournalEntryLineArgsFromUserPermission']
+class JournalEntryIncludeFromPermission(TypedDict, total=False):
+    """Relational arguments for Permission"""
+    lines: Union[bool, 'FindManyJournalEntryLineArgsFromPermission']
 
 
-class JournalEntryArgsFromUserPermission(TypedDict, total=False):
-    """Arguments for UserPermission"""
+class JournalEntryArgsFromPermission(TypedDict, total=False):
+    """Arguments for Permission"""
     include: 'JournalEntryIncludeFromJournalEntry'
 
 
-class FindManyJournalEntryArgsFromUserPermission(TypedDict, total=False):
-    """Arguments for UserPermission"""
+class FindManyJournalEntryArgsFromPermission(TypedDict, total=False):
+    """Arguments for Permission"""
     take: int
     skip: int
     order_by: Union['JournalEntryOrderByInput', List['JournalEntryOrderByInput']]
@@ -3181,19 +3324,19 @@ class FindManyJournalEntryArgsFromUserPermission(TypedDict, total=False):
     include: 'JournalEntryIncludeFromJournalEntry'
 
 
-class JournalEntryLineIncludeFromUserPermission(TypedDict, total=False):
-    """Relational arguments for UserPermission"""
-    entry: Union[bool, 'JournalEntryArgsFromUserPermission']
-    account: Union[bool, 'AccountArgsFromUserPermission']
+class JournalEntryLineIncludeFromPermission(TypedDict, total=False):
+    """Relational arguments for Permission"""
+    entry: Union[bool, 'JournalEntryArgsFromPermission']
+    account: Union[bool, 'AccountArgsFromPermission']
 
 
-class JournalEntryLineArgsFromUserPermission(TypedDict, total=False):
-    """Arguments for UserPermission"""
+class JournalEntryLineArgsFromPermission(TypedDict, total=False):
+    """Arguments for Permission"""
     include: 'JournalEntryLineIncludeFromJournalEntryLine'
 
 
-class FindManyJournalEntryLineArgsFromUserPermission(TypedDict, total=False):
-    """Arguments for UserPermission"""
+class FindManyJournalEntryLineArgsFromPermission(TypedDict, total=False):
+    """Arguments for Permission"""
     take: int
     skip: int
     order_by: Union['JournalEntryLineOrderByInput', List['JournalEntryLineOrderByInput']]
@@ -3203,22 +3346,22 @@ class FindManyJournalEntryLineArgsFromUserPermission(TypedDict, total=False):
     include: 'JournalEntryLineIncludeFromJournalEntryLine'
 
 
-class AccountIncludeFromUserPermission(TypedDict, total=False):
-    """Relational arguments for UserPermission"""
-    branch: Union[bool, 'BranchArgsFromUserPermission']
-    entries: Union[bool, 'FindManyJournalEntryLineArgsFromUserPermission']
-    payments: Union[bool, 'FindManyPaymentArgsFromUserPermission']
-    outgoingTransfers: Union[bool, 'FindManyAccountTransferArgsFromUserPermission']
-    incomingTransfers: Union[bool, 'FindManyAccountTransferArgsFromUserPermission']
+class AccountIncludeFromPermission(TypedDict, total=False):
+    """Relational arguments for Permission"""
+    branch: Union[bool, 'BranchArgsFromPermission']
+    entries: Union[bool, 'FindManyJournalEntryLineArgsFromPermission']
+    payments: Union[bool, 'FindManyPaymentArgsFromPermission']
+    outgoingTransfers: Union[bool, 'FindManyAccountTransferArgsFromPermission']
+    incomingTransfers: Union[bool, 'FindManyAccountTransferArgsFromPermission']
 
 
-class AccountArgsFromUserPermission(TypedDict, total=False):
-    """Arguments for UserPermission"""
+class AccountArgsFromPermission(TypedDict, total=False):
+    """Arguments for Permission"""
     include: 'AccountIncludeFromAccount'
 
 
-class FindManyAccountArgsFromUserPermission(TypedDict, total=False):
-    """Arguments for UserPermission"""
+class FindManyAccountArgsFromPermission(TypedDict, total=False):
+    """Arguments for Permission"""
     take: int
     skip: int
     order_by: Union['AccountOrderByInput', List['AccountOrderByInput']]
@@ -3228,19 +3371,19 @@ class FindManyAccountArgsFromUserPermission(TypedDict, total=False):
     include: 'AccountIncludeFromAccount'
 
 
-class AccountTransferIncludeFromUserPermission(TypedDict, total=False):
-    """Relational arguments for UserPermission"""
-    fromAccount: Union[bool, 'AccountArgsFromUserPermission']
-    toAccount: Union[bool, 'AccountArgsFromUserPermission']
+class AccountTransferIncludeFromPermission(TypedDict, total=False):
+    """Relational arguments for Permission"""
+    fromAccount: Union[bool, 'AccountArgsFromPermission']
+    toAccount: Union[bool, 'AccountArgsFromPermission']
 
 
-class AccountTransferArgsFromUserPermission(TypedDict, total=False):
-    """Arguments for UserPermission"""
+class AccountTransferArgsFromPermission(TypedDict, total=False):
+    """Arguments for Permission"""
     include: 'AccountTransferIncludeFromAccountTransfer'
 
 
-class FindManyAccountTransferArgsFromUserPermission(TypedDict, total=False):
-    """Arguments for UserPermission"""
+class FindManyAccountTransferArgsFromPermission(TypedDict, total=False):
+    """Arguments for Permission"""
     take: int
     skip: int
     order_by: Union['AccountTransferOrderByInput', List['AccountTransferOrderByInput']]
@@ -3250,23 +3393,23 @@ class FindManyAccountTransferArgsFromUserPermission(TypedDict, total=False):
     include: 'AccountTransferIncludeFromAccountTransfer'
 
 
-class BranchOrderIncludeFromUserPermission(TypedDict, total=False):
-    """Relational arguments for UserPermission"""
-    branch: Union[bool, 'BranchArgsFromUserPermission']
-    requestedBy: Union[bool, 'UserArgsFromUserPermission']
-    approvedBy: Union[bool, 'UserArgsFromUserPermission']
-    sentBy: Union[bool, 'UserArgsFromUserPermission']
-    receivedBy: Union[bool, 'UserArgsFromUserPermission']
-    items: Union[bool, 'FindManyBranchOrderItemArgsFromUserPermission']
+class BranchOrderIncludeFromPermission(TypedDict, total=False):
+    """Relational arguments for Permission"""
+    branch: Union[bool, 'BranchArgsFromPermission']
+    requestedBy: Union[bool, 'UserArgsFromPermission']
+    approvedBy: Union[bool, 'UserArgsFromPermission']
+    sentBy: Union[bool, 'UserArgsFromPermission']
+    receivedBy: Union[bool, 'UserArgsFromPermission']
+    items: Union[bool, 'FindManyBranchOrderItemArgsFromPermission']
 
 
-class BranchOrderArgsFromUserPermission(TypedDict, total=False):
-    """Arguments for UserPermission"""
+class BranchOrderArgsFromPermission(TypedDict, total=False):
+    """Arguments for Permission"""
     include: 'BranchOrderIncludeFromBranchOrder'
 
 
-class FindManyBranchOrderArgsFromUserPermission(TypedDict, total=False):
-    """Arguments for UserPermission"""
+class FindManyBranchOrderArgsFromPermission(TypedDict, total=False):
+    """Arguments for Permission"""
     take: int
     skip: int
     order_by: Union['BranchOrderOrderByInput', List['BranchOrderOrderByInput']]
@@ -3276,19 +3419,19 @@ class FindManyBranchOrderArgsFromUserPermission(TypedDict, total=False):
     include: 'BranchOrderIncludeFromBranchOrder'
 
 
-class BranchOrderItemIncludeFromUserPermission(TypedDict, total=False):
-    """Relational arguments for UserPermission"""
-    branchOrder: Union[bool, 'BranchOrderArgsFromUserPermission']
-    stock: Union[bool, 'StockArgsFromUserPermission']
+class BranchOrderItemIncludeFromPermission(TypedDict, total=False):
+    """Relational arguments for Permission"""
+    branchOrder: Union[bool, 'BranchOrderArgsFromPermission']
+    stock: Union[bool, 'StockArgsFromPermission']
 
 
-class BranchOrderItemArgsFromUserPermission(TypedDict, total=False):
-    """Arguments for UserPermission"""
+class BranchOrderItemArgsFromPermission(TypedDict, total=False):
+    """Arguments for Permission"""
     include: 'BranchOrderItemIncludeFromBranchOrderItem'
 
 
-class FindManyBranchOrderItemArgsFromUserPermission(TypedDict, total=False):
-    """Arguments for UserPermission"""
+class FindManyBranchOrderItemArgsFromPermission(TypedDict, total=False):
+    """Arguments for Permission"""
     take: int
     skip: int
     order_by: Union['BranchOrderItemOrderByInput', List['BranchOrderItemOrderByInput']]
@@ -3298,18 +3441,18 @@ class FindManyBranchOrderItemArgsFromUserPermission(TypedDict, total=False):
     include: 'BranchOrderItemIncludeFromBranchOrderItem'
 
 
-class AuditLogIncludeFromUserPermission(TypedDict, total=False):
-    """Relational arguments for UserPermission"""
-    user: Union[bool, 'UserArgsFromUserPermission']
+class AuditLogIncludeFromPermission(TypedDict, total=False):
+    """Relational arguments for Permission"""
+    user: Union[bool, 'UserArgsFromPermission']
 
 
-class AuditLogArgsFromUserPermission(TypedDict, total=False):
-    """Arguments for UserPermission"""
+class AuditLogArgsFromPermission(TypedDict, total=False):
+    """Arguments for Permission"""
     include: 'AuditLogIncludeFromAuditLog'
 
 
-class FindManyAuditLogArgsFromUserPermission(TypedDict, total=False):
-    """Arguments for UserPermission"""
+class FindManyAuditLogArgsFromPermission(TypedDict, total=False):
+    """Arguments for Permission"""
     take: int
     skip: int
     order_by: Union['AuditLogOrderByInput', List['AuditLogOrderByInput']]
@@ -3319,17 +3462,17 @@ class FindManyAuditLogArgsFromUserPermission(TypedDict, total=False):
     include: 'AuditLogIncludeFromAuditLog'
 
 
-class SystemInfoIncludeFromUserPermission(TypedDict, total=False):
-    """Relational arguments for UserPermission"""
+class SystemInfoIncludeFromPermission(TypedDict, total=False):
+    """Relational arguments for Permission"""
 
 
-class SystemInfoArgsFromUserPermission(TypedDict, total=False):
-    """Arguments for UserPermission"""
+class SystemInfoArgsFromPermission(TypedDict, total=False):
+    """Arguments for Permission"""
     include: 'SystemInfoIncludeFromSystemInfo'
 
 
-class FindManySystemInfoArgsFromUserPermission(TypedDict, total=False):
-    """Arguments for UserPermission"""
+class FindManySystemInfoArgsFromPermission(TypedDict, total=False):
+    """Arguments for Permission"""
     take: int
     skip: int
     order_by: Union['SystemInfoOrderByInput', List['SystemInfoOrderByInput']]
@@ -3339,18 +3482,18 @@ class FindManySystemInfoArgsFromUserPermission(TypedDict, total=False):
     include: 'SystemInfoIncludeFromSystemInfo'
 
 
-class BackupIncludeFromUserPermission(TypedDict, total=False):
-    """Relational arguments for UserPermission"""
-    createdBy: Union[bool, 'UserArgsFromUserPermission']
+class BackupIncludeFromPermission(TypedDict, total=False):
+    """Relational arguments for Permission"""
+    createdBy: Union[bool, 'UserArgsFromPermission']
 
 
-class BackupArgsFromUserPermission(TypedDict, total=False):
-    """Arguments for UserPermission"""
+class BackupArgsFromPermission(TypedDict, total=False):
+    """Arguments for Permission"""
     include: 'BackupIncludeFromBackup'
 
 
-class FindManyBackupArgsFromUserPermission(TypedDict, total=False):
-    """Arguments for UserPermission"""
+class FindManyBackupArgsFromPermission(TypedDict, total=False):
+    """Arguments for Permission"""
     take: int
     skip: int
     order_by: Union['BackupOrderByInput', List['BackupOrderByInput']]
@@ -3360,18 +3503,18 @@ class FindManyBackupArgsFromUserPermission(TypedDict, total=False):
     include: 'BackupIncludeFromBackup'
 
 
-class RevokedTokenIncludeFromUserPermission(TypedDict, total=False):
-    """Relational arguments for UserPermission"""
-    user: Union[bool, 'UserArgsFromUserPermission']
+class RevokedTokenIncludeFromPermission(TypedDict, total=False):
+    """Relational arguments for Permission"""
+    user: Union[bool, 'UserArgsFromPermission']
 
 
-class RevokedTokenArgsFromUserPermission(TypedDict, total=False):
-    """Arguments for UserPermission"""
+class RevokedTokenArgsFromPermission(TypedDict, total=False):
+    """Arguments for Permission"""
     include: 'RevokedTokenIncludeFromRevokedToken'
 
 
-class FindManyRevokedTokenArgsFromUserPermission(TypedDict, total=False):
-    """Arguments for UserPermission"""
+class FindManyRevokedTokenArgsFromPermission(TypedDict, total=False):
+    """Arguments for Permission"""
     take: int
     skip: int
     order_by: Union['RevokedTokenOrderByInput', List['RevokedTokenOrderByInput']]
@@ -3381,17 +3524,17 @@ class FindManyRevokedTokenArgsFromUserPermission(TypedDict, total=False):
     include: 'RevokedTokenIncludeFromRevokedToken'
 
 
-class SystemSettingIncludeFromUserPermission(TypedDict, total=False):
-    """Relational arguments for UserPermission"""
+class SystemSettingIncludeFromPermission(TypedDict, total=False):
+    """Relational arguments for Permission"""
 
 
-class SystemSettingArgsFromUserPermission(TypedDict, total=False):
-    """Arguments for UserPermission"""
+class SystemSettingArgsFromPermission(TypedDict, total=False):
+    """Arguments for Permission"""
     include: 'SystemSettingIncludeFromSystemSetting'
 
 
-class FindManySystemSettingArgsFromUserPermission(TypedDict, total=False):
-    """Arguments for UserPermission"""
+class FindManySystemSettingArgsFromPermission(TypedDict, total=False):
+    """Arguments for Permission"""
     take: int
     skip: int
     order_by: Union['SystemSettingOrderByInput', List['SystemSettingOrderByInput']]
@@ -3401,18 +3544,18 @@ class FindManySystemSettingArgsFromUserPermission(TypedDict, total=False):
     include: 'SystemSettingIncludeFromSystemSetting'
 
 
-class NotificationIncludeFromUserPermission(TypedDict, total=False):
-    """Relational arguments for UserPermission"""
-    user: Union[bool, 'UserArgsFromUserPermission']
+class NotificationIncludeFromPermission(TypedDict, total=False):
+    """Relational arguments for Permission"""
+    user: Union[bool, 'UserArgsFromPermission']
 
 
-class NotificationArgsFromUserPermission(TypedDict, total=False):
-    """Arguments for UserPermission"""
+class NotificationArgsFromPermission(TypedDict, total=False):
+    """Arguments for Permission"""
     include: 'NotificationIncludeFromNotification'
 
 
-class FindManyNotificationArgsFromUserPermission(TypedDict, total=False):
-    """Arguments for UserPermission"""
+class FindManyNotificationArgsFromPermission(TypedDict, total=False):
+    """Arguments for Permission"""
     take: int
     skip: int
     order_by: Union['NotificationOrderByInput', List['NotificationOrderByInput']]
@@ -3422,19 +3565,19 @@ class FindManyNotificationArgsFromUserPermission(TypedDict, total=False):
     include: 'NotificationIncludeFromNotification'
 
 
-class StockAdjustmentIncludeFromUserPermission(TypedDict, total=False):
-    """Relational arguments for UserPermission"""
-    product: Union[bool, 'ProductArgsFromUserPermission']
-    createdBy: Union[bool, 'UserArgsFromUserPermission']
+class StockAdjustmentIncludeFromPermission(TypedDict, total=False):
+    """Relational arguments for Permission"""
+    product: Union[bool, 'ProductArgsFromPermission']
+    createdBy: Union[bool, 'UserArgsFromPermission']
 
 
-class StockAdjustmentArgsFromUserPermission(TypedDict, total=False):
-    """Arguments for UserPermission"""
+class StockAdjustmentArgsFromPermission(TypedDict, total=False):
+    """Arguments for Permission"""
     include: 'StockAdjustmentIncludeFromStockAdjustment'
 
 
-class FindManyStockAdjustmentArgsFromUserPermission(TypedDict, total=False):
-    """Arguments for UserPermission"""
+class FindManyStockAdjustmentArgsFromPermission(TypedDict, total=False):
+    """Arguments for Permission"""
     take: int
     skip: int
     order_by: Union['StockAdjustmentOrderByInput', List['StockAdjustmentOrderByInput']]
@@ -3446,123 +3589,114 @@ class FindManyStockAdjustmentArgsFromUserPermission(TypedDict, total=False):
 
 
 
-FindManyUserPermissionArgs = FindManyUserPermissionArgsFromUserPermission
-FindFirstUserPermissionArgs = FindManyUserPermissionArgsFromUserPermission
+FindManyPermissionArgs = FindManyPermissionArgsFromPermission
+FindFirstPermissionArgs = FindManyPermissionArgsFromPermission
 
 
-class UserPermissionWhereInput(TypedDict, total=False):
-    """UserPermission arguments for searching"""
+class PermissionWhereInput(TypedDict, total=False):
+    """Permission arguments for searching"""
     id: Union[_int, 'types.IntFilter']
-    user: 'UserRelationFilter'
-    userId: Union[_int, 'types.IntFilter']
     resource: Union[_str, 'types.StringFilter']
-    actions: Union['fields.Json', 'types.JsonFilter']
+    action: Union[_str, 'types.StringFilter']
+    roles: 'RolePermissionListRelationFilter'
+    users: 'UserPermissionOverrideListRelationFilter'
     createdAt: Union[datetime.datetime, 'types.DateTimeFilter']
     updatedAt: Union[datetime.datetime, 'types.DateTimeFilter']
 
-    # should be noted that AND and NOT should be Union['UserPermissionWhereInput', List['UserPermissionWhereInput']]
+    # should be noted that AND and NOT should be Union['PermissionWhereInput', List['PermissionWhereInput']]
     # but this causes mypy to hang :/
-    AND: List['UserPermissionWhereInput']
-    OR: List['UserPermissionWhereInput']
-    NOT: List['UserPermissionWhereInput']
+    AND: List['PermissionWhereInput']
+    OR: List['PermissionWhereInput']
+    NOT: List['PermissionWhereInput']
 
 
 
-# aggregate UserPermission types
+# aggregate Permission types
 
 
-class UserPermissionScalarWhereWithAggregatesInput(TypedDict, total=False):
-    """UserPermission arguments for searching"""
+class PermissionScalarWhereWithAggregatesInput(TypedDict, total=False):
+    """Permission arguments for searching"""
     id: Union[_int, 'types.IntWithAggregatesFilter']
-    userId: Union[_int, 'types.IntWithAggregatesFilter']
     resource: Union[_str, 'types.StringWithAggregatesFilter']
-    actions: Union['fields.Json', 'types.JsonWithAggregatesFilter']
+    action: Union[_str, 'types.StringWithAggregatesFilter']
     createdAt: Union[datetime.datetime, 'types.DateTimeWithAggregatesFilter']
     updatedAt: Union[datetime.datetime, 'types.DateTimeWithAggregatesFilter']
 
-    AND: List['UserPermissionScalarWhereWithAggregatesInput']
-    OR: List['UserPermissionScalarWhereWithAggregatesInput']
-    NOT: List['UserPermissionScalarWhereWithAggregatesInput']
+    AND: List['PermissionScalarWhereWithAggregatesInput']
+    OR: List['PermissionScalarWhereWithAggregatesInput']
+    NOT: List['PermissionScalarWhereWithAggregatesInput']
 
 
 
-class UserPermissionGroupByOutput(TypedDict, total=False):
+class PermissionGroupByOutput(TypedDict, total=False):
     id: _int
-    userId: _int
     resource: _str
-    actions: 'fields.Json'
+    action: _str
     createdAt: datetime.datetime
     updatedAt: datetime.datetime
-    _sum: 'UserPermissionSumAggregateOutput'
-    _avg: 'UserPermissionAvgAggregateOutput'
-    _min: 'UserPermissionMinAggregateOutput'
-    _max: 'UserPermissionMaxAggregateOutput'
-    _count: 'UserPermissionCountAggregateOutput'
+    _sum: 'PermissionSumAggregateOutput'
+    _avg: 'PermissionAvgAggregateOutput'
+    _min: 'PermissionMinAggregateOutput'
+    _max: 'PermissionMaxAggregateOutput'
+    _count: 'PermissionCountAggregateOutput'
 
 
-class UserPermissionAvgAggregateOutput(TypedDict, total=False):
-    """UserPermission output for aggregating averages"""
+class PermissionAvgAggregateOutput(TypedDict, total=False):
+    """Permission output for aggregating averages"""
     id: float
-    userId: float
 
 
-class UserPermissionSumAggregateOutput(TypedDict, total=False):
-    """UserPermission output for aggregating sums"""
+class PermissionSumAggregateOutput(TypedDict, total=False):
+    """Permission output for aggregating sums"""
     id: _int
-    userId: _int
 
 
-class UserPermissionScalarAggregateOutput(TypedDict, total=False):
-    """UserPermission output including scalar fields"""
+class PermissionScalarAggregateOutput(TypedDict, total=False):
+    """Permission output including scalar fields"""
     id: _int
-    userId: _int
     resource: _str
-    actions: 'fields.Json'
+    action: _str
     createdAt: datetime.datetime
     updatedAt: datetime.datetime
 
 
-UserPermissionMinAggregateOutput = UserPermissionScalarAggregateOutput
-UserPermissionMaxAggregateOutput = UserPermissionScalarAggregateOutput
+PermissionMinAggregateOutput = PermissionScalarAggregateOutput
+PermissionMaxAggregateOutput = PermissionScalarAggregateOutput
 
 
-class UserPermissionMaxAggregateInput(TypedDict, total=False):
-    """UserPermission input for aggregating by max"""
+class PermissionMaxAggregateInput(TypedDict, total=False):
+    """Permission input for aggregating by max"""
     id: bool
-    userId: bool
     resource: bool
-    actions: bool
+    action: bool
     createdAt: bool
     updatedAt: bool
 
 
-class UserPermissionMinAggregateInput(TypedDict, total=False):
-    """UserPermission input for aggregating by min"""
+class PermissionMinAggregateInput(TypedDict, total=False):
+    """Permission input for aggregating by min"""
     id: bool
-    userId: bool
     resource: bool
-    actions: bool
+    action: bool
     createdAt: bool
     updatedAt: bool
 
 
-class UserPermissionNumberAggregateInput(TypedDict, total=False):
-    """UserPermission input for aggregating numbers"""
+class PermissionNumberAggregateInput(TypedDict, total=False):
+    """Permission input for aggregating numbers"""
     id: bool
-    userId: bool
 
 
-UserPermissionAvgAggregateInput = UserPermissionNumberAggregateInput
-UserPermissionSumAggregateInput = UserPermissionNumberAggregateInput
+PermissionAvgAggregateInput = PermissionNumberAggregateInput
+PermissionSumAggregateInput = PermissionNumberAggregateInput
 
 
-UserPermissionCountAggregateInput = TypedDict(
-    'UserPermissionCountAggregateInput',
+PermissionCountAggregateInput = TypedDict(
+    'PermissionCountAggregateInput',
     {
         'id': bool,
-        'userId': bool,
         'resource': bool,
-        'actions': bool,
+        'action': bool,
         'createdAt': bool,
         'updatedAt': bool,
         '_all': bool,
@@ -3570,13 +3704,12 @@ UserPermissionCountAggregateInput = TypedDict(
     total=False,
 )
 
-UserPermissionCountAggregateOutput = TypedDict(
-    'UserPermissionCountAggregateOutput',
+PermissionCountAggregateOutput = TypedDict(
+    'PermissionCountAggregateOutput',
     {
         'id': int,
-        'userId': int,
         'resource': int,
-        'actions': int,
+        'action': int,
         'createdAt': int,
         'updatedAt': int,
         '_all': int,
@@ -3585,27 +3718,1966 @@ UserPermissionCountAggregateOutput = TypedDict(
 )
 
 
-UserPermissionKeys = Literal[
+PermissionKeys = Literal[
+    'id',
+    'resource',
+    'action',
+    'roles',
+    'users',
+    'createdAt',
+    'updatedAt',
+]
+PermissionScalarFieldKeys = Literal[
+    'id',
+    'resource',
+    'action',
+    'createdAt',
+    'updatedAt',
+]
+PermissionScalarFieldKeysT = TypeVar('PermissionScalarFieldKeysT', bound=PermissionScalarFieldKeys)
+
+PermissionRelationalFieldKeys = Literal[
+        'roles',
+        'users',
+    ]
+
+# RolePermission types
+
+class RolePermissionOptionalCreateInput(TypedDict, total=False):
+    """Optional arguments to the RolePermission create method"""
+    id: _int
+    permission: 'PermissionCreateNestedWithoutRelationsInput'
+    permissionId: _int
+    createdAt: datetime.datetime
+
+
+class RolePermissionCreateInput(RolePermissionOptionalCreateInput):
+    """Required arguments to the RolePermission create method"""
+    role: 'enums.Role'
+
+
+# TODO: remove this in favour of without explicit relations
+# e.g. PostCreateWithoutAuthorInput
+
+class RolePermissionOptionalCreateWithoutRelationsInput(TypedDict, total=False):
+    """Optional arguments to the RolePermission create method, without relations"""
+    id: _int
+    permissionId: _int
+    createdAt: datetime.datetime
+
+
+class RolePermissionCreateWithoutRelationsInput(RolePermissionOptionalCreateWithoutRelationsInput):
+    """Required arguments to the RolePermission create method, without relations"""
+    role: 'enums.Role'
+
+
+class RolePermissionCreateNestedWithoutRelationsInput(TypedDict, total=False):
+    create: 'RolePermissionCreateWithoutRelationsInput'
+    connect: 'RolePermissionWhereUniqueInput'
+
+
+class RolePermissionCreateManyNestedWithoutRelationsInput(TypedDict, total=False):
+    create: Union['RolePermissionCreateWithoutRelationsInput', List['RolePermissionCreateWithoutRelationsInput']]
+    connect: Union['RolePermissionWhereUniqueInput', List['RolePermissionWhereUniqueInput']]
+
+
+_RolePermissionWhereUnique_id_Input = TypedDict(
+    '_RolePermissionWhereUnique_id_Input',
+    {
+        'id': '_int',
+    },
+    total=True
+)
+
+_RolePermissionCompoundrole_permissionIdKeyInner = TypedDict(
+    '_RolePermissionCompoundrole_permissionIdKeyInner',
+    {
+        'role': 'enums.Role',
+        'permissionId': '_int',
+    },
+    total=True
+)
+
+_RolePermissionCompoundrole_permissionIdKey = TypedDict(
+    '_RolePermissionCompoundrole_permissionIdKey',
+    {
+        'role_permissionId': '_RolePermissionCompoundrole_permissionIdKeyInner',
+    },
+    total=True
+)
+
+RolePermissionWhereUniqueInput = Union[
+    '_RolePermissionWhereUnique_id_Input',
+    '_RolePermissionCompoundrole_permissionIdKey',
+]
+
+
+class RolePermissionUpdateInput(TypedDict, total=False):
+    """Optional arguments for updating a record"""
+    id: Union[AtomicIntInput, _int]
+    role: 'enums.Role'
+    permission: 'PermissionUpdateOneWithoutRelationsInput'
+    createdAt: datetime.datetime
+
+
+class RolePermissionUpdateManyMutationInput(TypedDict, total=False):
+    """Arguments for updating many records"""
+    id: Union[AtomicIntInput, _int]
+    role: 'enums.Role'
+    createdAt: datetime.datetime
+
+
+class RolePermissionUpdateManyWithoutRelationsInput(TypedDict, total=False):
+    create: List['RolePermissionCreateWithoutRelationsInput']
+    connect: List['RolePermissionWhereUniqueInput']
+    set: List['RolePermissionWhereUniqueInput']
+    disconnect: List['RolePermissionWhereUniqueInput']
+    delete: List['RolePermissionWhereUniqueInput']
+
+    # TODO
+    # update: List['RolePermissionUpdateWithWhereUniqueWithoutRelationsInput']
+    # updateMany: List['RolePermissionUpdateManyWithWhereUniqueWithoutRelationsInput']
+    # deleteMany: List['RolePermissionScalarWhereInput']
+    # upsert: List['RolePermissionUpserteWithWhereUniqueWithoutRelationsInput']
+    # connectOrCreate: List['RolePermissionCreateOrConnectWithoutRelationsInput']
+
+
+class RolePermissionUpdateOneWithoutRelationsInput(TypedDict, total=False):
+    create: 'RolePermissionCreateWithoutRelationsInput'
+    connect: 'RolePermissionWhereUniqueInput'
+    disconnect: bool
+    delete: bool
+
+    # TODO
+    # update: 'RolePermissionUpdateInput'
+    # upsert: 'RolePermissionUpsertWithoutRelationsInput'
+    # connectOrCreate: 'RolePermissionCreateOrConnectWithoutRelationsInput'
+
+
+class RolePermissionUpsertInput(TypedDict):
+    create: 'RolePermissionCreateInput'
+    update: 'RolePermissionUpdateInput'  # pyright: ignore[reportIncompatibleMethodOverride]
+
+
+_RolePermission_id_OrderByInput = TypedDict(
+    '_RolePermission_id_OrderByInput',
+    {
+        'id': 'SortOrder',
+    },
+    total=True
+)
+
+_RolePermission_role_OrderByInput = TypedDict(
+    '_RolePermission_role_OrderByInput',
+    {
+        'role': 'SortOrder',
+    },
+    total=True
+)
+
+_RolePermission_permissionId_OrderByInput = TypedDict(
+    '_RolePermission_permissionId_OrderByInput',
+    {
+        'permissionId': 'SortOrder',
+    },
+    total=True
+)
+
+_RolePermission_createdAt_OrderByInput = TypedDict(
+    '_RolePermission_createdAt_OrderByInput',
+    {
+        'createdAt': 'SortOrder',
+    },
+    total=True
+)
+
+RolePermissionOrderByInput = Union[
+    '_RolePermission_id_OrderByInput',
+    '_RolePermission_role_OrderByInput',
+    '_RolePermission_permissionId_OrderByInput',
+    '_RolePermission_createdAt_OrderByInput',
+]
+
+
+
+# recursive RolePermission types
+# TODO: cleanup these types
+
+
+
+RolePermissionRelationFilter = TypedDict(
+    'RolePermissionRelationFilter',
+    {
+        'is': 'RolePermissionWhereInput',
+        'is_not': 'RolePermissionWhereInput',
+    },
+    total=False,
+)
+
+
+class RolePermissionListRelationFilter(TypedDict, total=False):
+    some: 'RolePermissionWhereInput'
+    none: 'RolePermissionWhereInput'
+    every: 'RolePermissionWhereInput'
+
+
+class RolePermissionInclude(TypedDict, total=False):
+    """RolePermission relational arguments"""
+    permission: Union[bool, 'PermissionArgsFromRolePermission']
+
+
+class UserIncludeFromRolePermission(TypedDict, total=False):
+    """Relational arguments for RolePermission"""
+    branch: Union[bool, 'BranchArgsFromRolePermission']
+    auditLogs: Union[bool, 'FindManyAuditLogArgsFromRolePermission']
+    rbacOverrides: Union[bool, 'FindManyUserPermissionOverrideArgsFromRolePermission']
+    notifications: Union[bool, 'FindManyNotificationArgsFromRolePermission']
+    revokedTokens: Union[bool, 'FindManyRevokedTokenArgsFromRolePermission']
+    stockAdjustments: Union[bool, 'FindManyStockAdjustmentArgsFromRolePermission']
+    Sale: Union[bool, 'FindManySaleArgsFromRolePermission']
+    deletedSales: Union[bool, 'FindManySaleArgsFromRolePermission']
+    Payment: Union[bool, 'FindManyPaymentArgsFromRolePermission']
+    Backup: Union[bool, 'FindManyBackupArgsFromRolePermission']
+    requestedOrders: Union[bool, 'FindManyBranchOrderArgsFromRolePermission']
+    approvedOrders: Union[bool, 'FindManyBranchOrderArgsFromRolePermission']
+    sentOrders: Union[bool, 'FindManyBranchOrderArgsFromRolePermission']
+    receivedOrders: Union[bool, 'FindManyBranchOrderArgsFromRolePermission']
+
+
+class UserArgsFromRolePermission(TypedDict, total=False):
+    """Arguments for RolePermission"""
+    include: 'UserIncludeFromUser'
+
+
+class FindManyUserArgsFromRolePermission(TypedDict, total=False):
+    """Arguments for RolePermission"""
+    take: int
+    skip: int
+    order_by: Union['UserOrderByInput', List['UserOrderByInput']]
+    where: 'UserWhereInput'
+    cursor: 'UserWhereUniqueInput'
+    distinct: List['UserScalarFieldKeys']
+    include: 'UserIncludeFromUser'
+
+
+class PermissionIncludeFromRolePermission(TypedDict, total=False):
+    """Relational arguments for RolePermission"""
+    roles: Union[bool, 'FindManyRolePermissionArgsFromRolePermission']
+    users: Union[bool, 'FindManyUserPermissionOverrideArgsFromRolePermission']
+
+
+class PermissionArgsFromRolePermission(TypedDict, total=False):
+    """Arguments for RolePermission"""
+    include: 'PermissionIncludeFromPermission'
+
+
+class FindManyPermissionArgsFromRolePermission(TypedDict, total=False):
+    """Arguments for RolePermission"""
+    take: int
+    skip: int
+    order_by: Union['PermissionOrderByInput', List['PermissionOrderByInput']]
+    where: 'PermissionWhereInput'
+    cursor: 'PermissionWhereUniqueInput'
+    distinct: List['PermissionScalarFieldKeys']
+    include: 'PermissionIncludeFromPermission'
+
+
+class RolePermissionIncludeFromRolePermission(TypedDict, total=False):
+    """Relational arguments for RolePermission"""
+    permission: Union[bool, 'PermissionArgsFromRolePermission']
+
+
+class RolePermissionArgsFromRolePermission(TypedDict, total=False):
+    """Arguments for RolePermission"""
+    include: 'RolePermissionIncludeFromRolePermission'
+
+
+class FindManyRolePermissionArgsFromRolePermission(TypedDict, total=False):
+    """Arguments for RolePermission"""
+    take: int
+    skip: int
+    order_by: Union['RolePermissionOrderByInput', List['RolePermissionOrderByInput']]
+    where: 'RolePermissionWhereInput'
+    cursor: 'RolePermissionWhereUniqueInput'
+    distinct: List['RolePermissionScalarFieldKeys']
+    include: 'RolePermissionIncludeFromRolePermission'
+
+
+class UserPermissionOverrideIncludeFromRolePermission(TypedDict, total=False):
+    """Relational arguments for RolePermission"""
+    user: Union[bool, 'UserArgsFromRolePermission']
+    permission: Union[bool, 'PermissionArgsFromRolePermission']
+
+
+class UserPermissionOverrideArgsFromRolePermission(TypedDict, total=False):
+    """Arguments for RolePermission"""
+    include: 'UserPermissionOverrideIncludeFromUserPermissionOverride'
+
+
+class FindManyUserPermissionOverrideArgsFromRolePermission(TypedDict, total=False):
+    """Arguments for RolePermission"""
+    take: int
+    skip: int
+    order_by: Union['UserPermissionOverrideOrderByInput', List['UserPermissionOverrideOrderByInput']]
+    where: 'UserPermissionOverrideWhereInput'
+    cursor: 'UserPermissionOverrideWhereUniqueInput'
+    distinct: List['UserPermissionOverrideScalarFieldKeys']
+    include: 'UserPermissionOverrideIncludeFromUserPermissionOverride'
+
+
+class BranchIncludeFromRolePermission(TypedDict, total=False):
+    """Relational arguments for RolePermission"""
+    users: Union[bool, 'FindManyUserArgsFromRolePermission']
+    Sale: Union[bool, 'FindManySaleArgsFromRolePermission']
+    Account: Union[bool, 'FindManyAccountArgsFromRolePermission']
+    BranchOrder: Union[bool, 'FindManyBranchOrderArgsFromRolePermission']
+
+
+class BranchArgsFromRolePermission(TypedDict, total=False):
+    """Arguments for RolePermission"""
+    include: 'BranchIncludeFromBranch'
+
+
+class FindManyBranchArgsFromRolePermission(TypedDict, total=False):
+    """Arguments for RolePermission"""
+    take: int
+    skip: int
+    order_by: Union['BranchOrderByInput', List['BranchOrderByInput']]
+    where: 'BranchWhereInput'
+    cursor: 'BranchWhereUniqueInput'
+    distinct: List['BranchScalarFieldKeys']
+    include: 'BranchIncludeFromBranch'
+
+
+class ProductIncludeFromRolePermission(TypedDict, total=False):
+    """Relational arguments for RolePermission"""
+    category: Union[bool, 'CategoryArgsFromRolePermission']
+    stocks: Union[bool, 'FindManyStockArgsFromRolePermission']
+    stockAdjustments: Union[bool, 'FindManyStockAdjustmentArgsFromRolePermission']
+
+
+class ProductArgsFromRolePermission(TypedDict, total=False):
+    """Arguments for RolePermission"""
+    include: 'ProductIncludeFromProduct'
+
+
+class FindManyProductArgsFromRolePermission(TypedDict, total=False):
+    """Arguments for RolePermission"""
+    take: int
+    skip: int
+    order_by: Union['ProductOrderByInput', List['ProductOrderByInput']]
+    where: 'ProductWhereInput'
+    cursor: 'ProductWhereUniqueInput'
+    distinct: List['ProductScalarFieldKeys']
+    include: 'ProductIncludeFromProduct'
+
+
+class CategoryIncludeFromRolePermission(TypedDict, total=False):
+    """Relational arguments for RolePermission"""
+    products: Union[bool, 'FindManyProductArgsFromRolePermission']
+
+
+class CategoryArgsFromRolePermission(TypedDict, total=False):
+    """Arguments for RolePermission"""
+    include: 'CategoryIncludeFromCategory'
+
+
+class FindManyCategoryArgsFromRolePermission(TypedDict, total=False):
+    """Arguments for RolePermission"""
+    take: int
+    skip: int
+    order_by: Union['CategoryOrderByInput', List['CategoryOrderByInput']]
+    where: 'CategoryWhereInput'
+    cursor: 'CategoryWhereUniqueInput'
+    distinct: List['CategoryScalarFieldKeys']
+    include: 'CategoryIncludeFromCategory'
+
+
+class StockIncludeFromRolePermission(TypedDict, total=False):
+    """Relational arguments for RolePermission"""
+    product: Union[bool, 'ProductArgsFromRolePermission']
+    SaleItem: Union[bool, 'FindManySaleItemArgsFromRolePermission']
+    BranchOrderItem: Union[bool, 'FindManyBranchOrderItemArgsFromRolePermission']
+
+
+class StockArgsFromRolePermission(TypedDict, total=False):
+    """Arguments for RolePermission"""
+    include: 'StockIncludeFromStock'
+
+
+class FindManyStockArgsFromRolePermission(TypedDict, total=False):
+    """Arguments for RolePermission"""
+    take: int
+    skip: int
+    order_by: Union['StockOrderByInput', List['StockOrderByInput']]
+    where: 'StockWhereInput'
+    cursor: 'StockWhereUniqueInput'
+    distinct: List['StockScalarFieldKeys']
+    include: 'StockIncludeFromStock'
+
+
+class CustomerIncludeFromRolePermission(TypedDict, total=False):
+    """Relational arguments for RolePermission"""
+    Sale: Union[bool, 'FindManySaleArgsFromRolePermission']
+
+
+class CustomerArgsFromRolePermission(TypedDict, total=False):
+    """Arguments for RolePermission"""
+    include: 'CustomerIncludeFromCustomer'
+
+
+class FindManyCustomerArgsFromRolePermission(TypedDict, total=False):
+    """Arguments for RolePermission"""
+    take: int
+    skip: int
+    order_by: Union['CustomerOrderByInput', List['CustomerOrderByInput']]
+    where: 'CustomerWhereInput'
+    cursor: 'CustomerWhereUniqueInput'
+    distinct: List['CustomerScalarFieldKeys']
+    include: 'CustomerIncludeFromCustomer'
+
+
+class SaleIncludeFromRolePermission(TypedDict, total=False):
+    """Relational arguments for RolePermission"""
+    branch: Union[bool, 'BranchArgsFromRolePermission']
+    customer: Union[bool, 'CustomerArgsFromRolePermission']
+    user: Union[bool, 'UserArgsFromRolePermission']
+    items: Union[bool, 'FindManySaleItemArgsFromRolePermission']
+    payments: Union[bool, 'FindManyPaymentArgsFromRolePermission']
+    returns: Union[bool, 'FindManyReturnSaleArgsFromRolePermission']
+    deletedBy: Union[bool, 'UserArgsFromRolePermission']
+
+
+class SaleArgsFromRolePermission(TypedDict, total=False):
+    """Arguments for RolePermission"""
+    include: 'SaleIncludeFromSale'
+
+
+class FindManySaleArgsFromRolePermission(TypedDict, total=False):
+    """Arguments for RolePermission"""
+    take: int
+    skip: int
+    order_by: Union['SaleOrderByInput', List['SaleOrderByInput']]
+    where: 'SaleWhereInput'
+    cursor: 'SaleWhereUniqueInput'
+    distinct: List['SaleScalarFieldKeys']
+    include: 'SaleIncludeFromSale'
+
+
+class SaleItemIncludeFromRolePermission(TypedDict, total=False):
+    """Relational arguments for RolePermission"""
+    sale: Union[bool, 'SaleArgsFromRolePermission']
+    stock: Union[bool, 'StockArgsFromRolePermission']
+    ReturnItem: Union[bool, 'FindManyReturnItemArgsFromRolePermission']
+
+
+class SaleItemArgsFromRolePermission(TypedDict, total=False):
+    """Arguments for RolePermission"""
+    include: 'SaleItemIncludeFromSaleItem'
+
+
+class FindManySaleItemArgsFromRolePermission(TypedDict, total=False):
+    """Arguments for RolePermission"""
+    take: int
+    skip: int
+    order_by: Union['SaleItemOrderByInput', List['SaleItemOrderByInput']]
+    where: 'SaleItemWhereInput'
+    cursor: 'SaleItemWhereUniqueInput'
+    distinct: List['SaleItemScalarFieldKeys']
+    include: 'SaleItemIncludeFromSaleItem'
+
+
+class ReturnSaleIncludeFromRolePermission(TypedDict, total=False):
+    """Relational arguments for RolePermission"""
+    original: Union[bool, 'SaleArgsFromRolePermission']
+    items: Union[bool, 'FindManyReturnItemArgsFromRolePermission']
+    refund: Union[bool, 'FindManyPaymentArgsFromRolePermission']
+
+
+class ReturnSaleArgsFromRolePermission(TypedDict, total=False):
+    """Arguments for RolePermission"""
+    include: 'ReturnSaleIncludeFromReturnSale'
+
+
+class FindManyReturnSaleArgsFromRolePermission(TypedDict, total=False):
+    """Arguments for RolePermission"""
+    take: int
+    skip: int
+    order_by: Union['ReturnSaleOrderByInput', List['ReturnSaleOrderByInput']]
+    where: 'ReturnSaleWhereInput'
+    cursor: 'ReturnSaleWhereUniqueInput'
+    distinct: List['ReturnSaleScalarFieldKeys']
+    include: 'ReturnSaleIncludeFromReturnSale'
+
+
+class ReturnItemIncludeFromRolePermission(TypedDict, total=False):
+    """Relational arguments for RolePermission"""
+    returnSale: Union[bool, 'ReturnSaleArgsFromRolePermission']
+    saleItem: Union[bool, 'SaleItemArgsFromRolePermission']
+
+
+class ReturnItemArgsFromRolePermission(TypedDict, total=False):
+    """Arguments for RolePermission"""
+    include: 'ReturnItemIncludeFromReturnItem'
+
+
+class FindManyReturnItemArgsFromRolePermission(TypedDict, total=False):
+    """Arguments for RolePermission"""
+    take: int
+    skip: int
+    order_by: Union['ReturnItemOrderByInput', List['ReturnItemOrderByInput']]
+    where: 'ReturnItemWhereInput'
+    cursor: 'ReturnItemWhereUniqueInput'
+    distinct: List['ReturnItemScalarFieldKeys']
+    include: 'ReturnItemIncludeFromReturnItem'
+
+
+class PaymentIncludeFromRolePermission(TypedDict, total=False):
+    """Relational arguments for RolePermission"""
+    sale: Union[bool, 'SaleArgsFromRolePermission']
+    account: Union[bool, 'AccountArgsFromRolePermission']
+    returnSale: Union[bool, 'ReturnSaleArgsFromRolePermission']
+    user: Union[bool, 'UserArgsFromRolePermission']
+
+
+class PaymentArgsFromRolePermission(TypedDict, total=False):
+    """Arguments for RolePermission"""
+    include: 'PaymentIncludeFromPayment'
+
+
+class FindManyPaymentArgsFromRolePermission(TypedDict, total=False):
+    """Arguments for RolePermission"""
+    take: int
+    skip: int
+    order_by: Union['PaymentOrderByInput', List['PaymentOrderByInput']]
+    where: 'PaymentWhereInput'
+    cursor: 'PaymentWhereUniqueInput'
+    distinct: List['PaymentScalarFieldKeys']
+    include: 'PaymentIncludeFromPayment'
+
+
+class JournalEntryIncludeFromRolePermission(TypedDict, total=False):
+    """Relational arguments for RolePermission"""
+    lines: Union[bool, 'FindManyJournalEntryLineArgsFromRolePermission']
+
+
+class JournalEntryArgsFromRolePermission(TypedDict, total=False):
+    """Arguments for RolePermission"""
+    include: 'JournalEntryIncludeFromJournalEntry'
+
+
+class FindManyJournalEntryArgsFromRolePermission(TypedDict, total=False):
+    """Arguments for RolePermission"""
+    take: int
+    skip: int
+    order_by: Union['JournalEntryOrderByInput', List['JournalEntryOrderByInput']]
+    where: 'JournalEntryWhereInput'
+    cursor: 'JournalEntryWhereUniqueInput'
+    distinct: List['JournalEntryScalarFieldKeys']
+    include: 'JournalEntryIncludeFromJournalEntry'
+
+
+class JournalEntryLineIncludeFromRolePermission(TypedDict, total=False):
+    """Relational arguments for RolePermission"""
+    entry: Union[bool, 'JournalEntryArgsFromRolePermission']
+    account: Union[bool, 'AccountArgsFromRolePermission']
+
+
+class JournalEntryLineArgsFromRolePermission(TypedDict, total=False):
+    """Arguments for RolePermission"""
+    include: 'JournalEntryLineIncludeFromJournalEntryLine'
+
+
+class FindManyJournalEntryLineArgsFromRolePermission(TypedDict, total=False):
+    """Arguments for RolePermission"""
+    take: int
+    skip: int
+    order_by: Union['JournalEntryLineOrderByInput', List['JournalEntryLineOrderByInput']]
+    where: 'JournalEntryLineWhereInput'
+    cursor: 'JournalEntryLineWhereUniqueInput'
+    distinct: List['JournalEntryLineScalarFieldKeys']
+    include: 'JournalEntryLineIncludeFromJournalEntryLine'
+
+
+class AccountIncludeFromRolePermission(TypedDict, total=False):
+    """Relational arguments for RolePermission"""
+    branch: Union[bool, 'BranchArgsFromRolePermission']
+    entries: Union[bool, 'FindManyJournalEntryLineArgsFromRolePermission']
+    payments: Union[bool, 'FindManyPaymentArgsFromRolePermission']
+    outgoingTransfers: Union[bool, 'FindManyAccountTransferArgsFromRolePermission']
+    incomingTransfers: Union[bool, 'FindManyAccountTransferArgsFromRolePermission']
+
+
+class AccountArgsFromRolePermission(TypedDict, total=False):
+    """Arguments for RolePermission"""
+    include: 'AccountIncludeFromAccount'
+
+
+class FindManyAccountArgsFromRolePermission(TypedDict, total=False):
+    """Arguments for RolePermission"""
+    take: int
+    skip: int
+    order_by: Union['AccountOrderByInput', List['AccountOrderByInput']]
+    where: 'AccountWhereInput'
+    cursor: 'AccountWhereUniqueInput'
+    distinct: List['AccountScalarFieldKeys']
+    include: 'AccountIncludeFromAccount'
+
+
+class AccountTransferIncludeFromRolePermission(TypedDict, total=False):
+    """Relational arguments for RolePermission"""
+    fromAccount: Union[bool, 'AccountArgsFromRolePermission']
+    toAccount: Union[bool, 'AccountArgsFromRolePermission']
+
+
+class AccountTransferArgsFromRolePermission(TypedDict, total=False):
+    """Arguments for RolePermission"""
+    include: 'AccountTransferIncludeFromAccountTransfer'
+
+
+class FindManyAccountTransferArgsFromRolePermission(TypedDict, total=False):
+    """Arguments for RolePermission"""
+    take: int
+    skip: int
+    order_by: Union['AccountTransferOrderByInput', List['AccountTransferOrderByInput']]
+    where: 'AccountTransferWhereInput'
+    cursor: 'AccountTransferWhereUniqueInput'
+    distinct: List['AccountTransferScalarFieldKeys']
+    include: 'AccountTransferIncludeFromAccountTransfer'
+
+
+class BranchOrderIncludeFromRolePermission(TypedDict, total=False):
+    """Relational arguments for RolePermission"""
+    branch: Union[bool, 'BranchArgsFromRolePermission']
+    requestedBy: Union[bool, 'UserArgsFromRolePermission']
+    approvedBy: Union[bool, 'UserArgsFromRolePermission']
+    sentBy: Union[bool, 'UserArgsFromRolePermission']
+    receivedBy: Union[bool, 'UserArgsFromRolePermission']
+    items: Union[bool, 'FindManyBranchOrderItemArgsFromRolePermission']
+
+
+class BranchOrderArgsFromRolePermission(TypedDict, total=False):
+    """Arguments for RolePermission"""
+    include: 'BranchOrderIncludeFromBranchOrder'
+
+
+class FindManyBranchOrderArgsFromRolePermission(TypedDict, total=False):
+    """Arguments for RolePermission"""
+    take: int
+    skip: int
+    order_by: Union['BranchOrderOrderByInput', List['BranchOrderOrderByInput']]
+    where: 'BranchOrderWhereInput'
+    cursor: 'BranchOrderWhereUniqueInput'
+    distinct: List['BranchOrderScalarFieldKeys']
+    include: 'BranchOrderIncludeFromBranchOrder'
+
+
+class BranchOrderItemIncludeFromRolePermission(TypedDict, total=False):
+    """Relational arguments for RolePermission"""
+    branchOrder: Union[bool, 'BranchOrderArgsFromRolePermission']
+    stock: Union[bool, 'StockArgsFromRolePermission']
+
+
+class BranchOrderItemArgsFromRolePermission(TypedDict, total=False):
+    """Arguments for RolePermission"""
+    include: 'BranchOrderItemIncludeFromBranchOrderItem'
+
+
+class FindManyBranchOrderItemArgsFromRolePermission(TypedDict, total=False):
+    """Arguments for RolePermission"""
+    take: int
+    skip: int
+    order_by: Union['BranchOrderItemOrderByInput', List['BranchOrderItemOrderByInput']]
+    where: 'BranchOrderItemWhereInput'
+    cursor: 'BranchOrderItemWhereUniqueInput'
+    distinct: List['BranchOrderItemScalarFieldKeys']
+    include: 'BranchOrderItemIncludeFromBranchOrderItem'
+
+
+class AuditLogIncludeFromRolePermission(TypedDict, total=False):
+    """Relational arguments for RolePermission"""
+    user: Union[bool, 'UserArgsFromRolePermission']
+
+
+class AuditLogArgsFromRolePermission(TypedDict, total=False):
+    """Arguments for RolePermission"""
+    include: 'AuditLogIncludeFromAuditLog'
+
+
+class FindManyAuditLogArgsFromRolePermission(TypedDict, total=False):
+    """Arguments for RolePermission"""
+    take: int
+    skip: int
+    order_by: Union['AuditLogOrderByInput', List['AuditLogOrderByInput']]
+    where: 'AuditLogWhereInput'
+    cursor: 'AuditLogWhereUniqueInput'
+    distinct: List['AuditLogScalarFieldKeys']
+    include: 'AuditLogIncludeFromAuditLog'
+
+
+class SystemInfoIncludeFromRolePermission(TypedDict, total=False):
+    """Relational arguments for RolePermission"""
+
+
+class SystemInfoArgsFromRolePermission(TypedDict, total=False):
+    """Arguments for RolePermission"""
+    include: 'SystemInfoIncludeFromSystemInfo'
+
+
+class FindManySystemInfoArgsFromRolePermission(TypedDict, total=False):
+    """Arguments for RolePermission"""
+    take: int
+    skip: int
+    order_by: Union['SystemInfoOrderByInput', List['SystemInfoOrderByInput']]
+    where: 'SystemInfoWhereInput'
+    cursor: 'SystemInfoWhereUniqueInput'
+    distinct: List['SystemInfoScalarFieldKeys']
+    include: 'SystemInfoIncludeFromSystemInfo'
+
+
+class BackupIncludeFromRolePermission(TypedDict, total=False):
+    """Relational arguments for RolePermission"""
+    createdBy: Union[bool, 'UserArgsFromRolePermission']
+
+
+class BackupArgsFromRolePermission(TypedDict, total=False):
+    """Arguments for RolePermission"""
+    include: 'BackupIncludeFromBackup'
+
+
+class FindManyBackupArgsFromRolePermission(TypedDict, total=False):
+    """Arguments for RolePermission"""
+    take: int
+    skip: int
+    order_by: Union['BackupOrderByInput', List['BackupOrderByInput']]
+    where: 'BackupWhereInput'
+    cursor: 'BackupWhereUniqueInput'
+    distinct: List['BackupScalarFieldKeys']
+    include: 'BackupIncludeFromBackup'
+
+
+class RevokedTokenIncludeFromRolePermission(TypedDict, total=False):
+    """Relational arguments for RolePermission"""
+    user: Union[bool, 'UserArgsFromRolePermission']
+
+
+class RevokedTokenArgsFromRolePermission(TypedDict, total=False):
+    """Arguments for RolePermission"""
+    include: 'RevokedTokenIncludeFromRevokedToken'
+
+
+class FindManyRevokedTokenArgsFromRolePermission(TypedDict, total=False):
+    """Arguments for RolePermission"""
+    take: int
+    skip: int
+    order_by: Union['RevokedTokenOrderByInput', List['RevokedTokenOrderByInput']]
+    where: 'RevokedTokenWhereInput'
+    cursor: 'RevokedTokenWhereUniqueInput'
+    distinct: List['RevokedTokenScalarFieldKeys']
+    include: 'RevokedTokenIncludeFromRevokedToken'
+
+
+class SystemSettingIncludeFromRolePermission(TypedDict, total=False):
+    """Relational arguments for RolePermission"""
+
+
+class SystemSettingArgsFromRolePermission(TypedDict, total=False):
+    """Arguments for RolePermission"""
+    include: 'SystemSettingIncludeFromSystemSetting'
+
+
+class FindManySystemSettingArgsFromRolePermission(TypedDict, total=False):
+    """Arguments for RolePermission"""
+    take: int
+    skip: int
+    order_by: Union['SystemSettingOrderByInput', List['SystemSettingOrderByInput']]
+    where: 'SystemSettingWhereInput'
+    cursor: 'SystemSettingWhereUniqueInput'
+    distinct: List['SystemSettingScalarFieldKeys']
+    include: 'SystemSettingIncludeFromSystemSetting'
+
+
+class NotificationIncludeFromRolePermission(TypedDict, total=False):
+    """Relational arguments for RolePermission"""
+    user: Union[bool, 'UserArgsFromRolePermission']
+
+
+class NotificationArgsFromRolePermission(TypedDict, total=False):
+    """Arguments for RolePermission"""
+    include: 'NotificationIncludeFromNotification'
+
+
+class FindManyNotificationArgsFromRolePermission(TypedDict, total=False):
+    """Arguments for RolePermission"""
+    take: int
+    skip: int
+    order_by: Union['NotificationOrderByInput', List['NotificationOrderByInput']]
+    where: 'NotificationWhereInput'
+    cursor: 'NotificationWhereUniqueInput'
+    distinct: List['NotificationScalarFieldKeys']
+    include: 'NotificationIncludeFromNotification'
+
+
+class StockAdjustmentIncludeFromRolePermission(TypedDict, total=False):
+    """Relational arguments for RolePermission"""
+    product: Union[bool, 'ProductArgsFromRolePermission']
+    createdBy: Union[bool, 'UserArgsFromRolePermission']
+
+
+class StockAdjustmentArgsFromRolePermission(TypedDict, total=False):
+    """Arguments for RolePermission"""
+    include: 'StockAdjustmentIncludeFromStockAdjustment'
+
+
+class FindManyStockAdjustmentArgsFromRolePermission(TypedDict, total=False):
+    """Arguments for RolePermission"""
+    take: int
+    skip: int
+    order_by: Union['StockAdjustmentOrderByInput', List['StockAdjustmentOrderByInput']]
+    where: 'StockAdjustmentWhereInput'
+    cursor: 'StockAdjustmentWhereUniqueInput'
+    distinct: List['StockAdjustmentScalarFieldKeys']
+    include: 'StockAdjustmentIncludeFromStockAdjustment'
+
+
+
+
+FindManyRolePermissionArgs = FindManyRolePermissionArgsFromRolePermission
+FindFirstRolePermissionArgs = FindManyRolePermissionArgsFromRolePermission
+
+
+class RolePermissionWhereInput(TypedDict, total=False):
+    """RolePermission arguments for searching"""
+    id: Union[_int, 'types.IntFilter']
+    role: 'enums.Role'
+    permission: 'PermissionRelationFilter'
+    permissionId: Union[_int, 'types.IntFilter']
+    createdAt: Union[datetime.datetime, 'types.DateTimeFilter']
+
+    # should be noted that AND and NOT should be Union['RolePermissionWhereInput', List['RolePermissionWhereInput']]
+    # but this causes mypy to hang :/
+    AND: List['RolePermissionWhereInput']
+    OR: List['RolePermissionWhereInput']
+    NOT: List['RolePermissionWhereInput']
+
+
+
+# aggregate RolePermission types
+
+
+class RolePermissionScalarWhereWithAggregatesInput(TypedDict, total=False):
+    """RolePermission arguments for searching"""
+    id: Union[_int, 'types.IntWithAggregatesFilter']
+    role: 'enums.Role'
+    permissionId: Union[_int, 'types.IntWithAggregatesFilter']
+    createdAt: Union[datetime.datetime, 'types.DateTimeWithAggregatesFilter']
+
+    AND: List['RolePermissionScalarWhereWithAggregatesInput']
+    OR: List['RolePermissionScalarWhereWithAggregatesInput']
+    NOT: List['RolePermissionScalarWhereWithAggregatesInput']
+
+
+
+class RolePermissionGroupByOutput(TypedDict, total=False):
+    id: _int
+    role: 'enums.Role'
+    permissionId: _int
+    createdAt: datetime.datetime
+    _sum: 'RolePermissionSumAggregateOutput'
+    _avg: 'RolePermissionAvgAggregateOutput'
+    _min: 'RolePermissionMinAggregateOutput'
+    _max: 'RolePermissionMaxAggregateOutput'
+    _count: 'RolePermissionCountAggregateOutput'
+
+
+class RolePermissionAvgAggregateOutput(TypedDict, total=False):
+    """RolePermission output for aggregating averages"""
+    id: float
+    permissionId: float
+
+
+class RolePermissionSumAggregateOutput(TypedDict, total=False):
+    """RolePermission output for aggregating sums"""
+    id: _int
+    permissionId: _int
+
+
+class RolePermissionScalarAggregateOutput(TypedDict, total=False):
+    """RolePermission output including scalar fields"""
+    id: _int
+    role: 'enums.Role'
+    permissionId: _int
+    createdAt: datetime.datetime
+
+
+RolePermissionMinAggregateOutput = RolePermissionScalarAggregateOutput
+RolePermissionMaxAggregateOutput = RolePermissionScalarAggregateOutput
+
+
+class RolePermissionMaxAggregateInput(TypedDict, total=False):
+    """RolePermission input for aggregating by max"""
+    id: bool
+    role: bool
+    permissionId: bool
+    createdAt: bool
+
+
+class RolePermissionMinAggregateInput(TypedDict, total=False):
+    """RolePermission input for aggregating by min"""
+    id: bool
+    role: bool
+    permissionId: bool
+    createdAt: bool
+
+
+class RolePermissionNumberAggregateInput(TypedDict, total=False):
+    """RolePermission input for aggregating numbers"""
+    id: bool
+    permissionId: bool
+
+
+RolePermissionAvgAggregateInput = RolePermissionNumberAggregateInput
+RolePermissionSumAggregateInput = RolePermissionNumberAggregateInput
+
+
+RolePermissionCountAggregateInput = TypedDict(
+    'RolePermissionCountAggregateInput',
+    {
+        'id': bool,
+        'role': bool,
+        'permissionId': bool,
+        'createdAt': bool,
+        '_all': bool,
+    },
+    total=False,
+)
+
+RolePermissionCountAggregateOutput = TypedDict(
+    'RolePermissionCountAggregateOutput',
+    {
+        'id': int,
+        'role': int,
+        'permissionId': int,
+        'createdAt': int,
+        '_all': int,
+    },
+    total=False,
+)
+
+
+RolePermissionKeys = Literal[
+    'id',
+    'role',
+    'permission',
+    'permissionId',
+    'createdAt',
+]
+RolePermissionScalarFieldKeys = Literal[
+    'id',
+    'role',
+    'permissionId',
+    'createdAt',
+]
+RolePermissionScalarFieldKeysT = TypeVar('RolePermissionScalarFieldKeysT', bound=RolePermissionScalarFieldKeys)
+
+RolePermissionRelationalFieldKeys = Literal[
+        'permission',
+    ]
+
+# UserPermissionOverride types
+
+class UserPermissionOverrideOptionalCreateInput(TypedDict, total=False):
+    """Optional arguments to the UserPermissionOverride create method"""
+    id: _int
+    user: 'UserCreateNestedWithoutRelationsInput'
+    userId: _int
+    permission: 'PermissionCreateNestedWithoutRelationsInput'
+    permissionId: _int
+    createdAt: datetime.datetime
+    updatedAt: datetime.datetime
+
+
+class UserPermissionOverrideCreateInput(UserPermissionOverrideOptionalCreateInput):
+    """Required arguments to the UserPermissionOverride create method"""
+    type: 'enums.PermissionType'
+
+
+# TODO: remove this in favour of without explicit relations
+# e.g. PostCreateWithoutAuthorInput
+
+class UserPermissionOverrideOptionalCreateWithoutRelationsInput(TypedDict, total=False):
+    """Optional arguments to the UserPermissionOverride create method, without relations"""
+    id: _int
+    userId: _int
+    permissionId: _int
+    createdAt: datetime.datetime
+    updatedAt: datetime.datetime
+
+
+class UserPermissionOverrideCreateWithoutRelationsInput(UserPermissionOverrideOptionalCreateWithoutRelationsInput):
+    """Required arguments to the UserPermissionOverride create method, without relations"""
+    type: 'enums.PermissionType'
+
+
+class UserPermissionOverrideCreateNestedWithoutRelationsInput(TypedDict, total=False):
+    create: 'UserPermissionOverrideCreateWithoutRelationsInput'
+    connect: 'UserPermissionOverrideWhereUniqueInput'
+
+
+class UserPermissionOverrideCreateManyNestedWithoutRelationsInput(TypedDict, total=False):
+    create: Union['UserPermissionOverrideCreateWithoutRelationsInput', List['UserPermissionOverrideCreateWithoutRelationsInput']]
+    connect: Union['UserPermissionOverrideWhereUniqueInput', List['UserPermissionOverrideWhereUniqueInput']]
+
+
+_UserPermissionOverrideWhereUnique_id_Input = TypedDict(
+    '_UserPermissionOverrideWhereUnique_id_Input',
+    {
+        'id': '_int',
+    },
+    total=True
+)
+
+_UserPermissionOverrideCompounduserId_permissionIdKeyInner = TypedDict(
+    '_UserPermissionOverrideCompounduserId_permissionIdKeyInner',
+    {
+        'userId': '_int',
+        'permissionId': '_int',
+    },
+    total=True
+)
+
+_UserPermissionOverrideCompounduserId_permissionIdKey = TypedDict(
+    '_UserPermissionOverrideCompounduserId_permissionIdKey',
+    {
+        'userId_permissionId': '_UserPermissionOverrideCompounduserId_permissionIdKeyInner',
+    },
+    total=True
+)
+
+UserPermissionOverrideWhereUniqueInput = Union[
+    '_UserPermissionOverrideWhereUnique_id_Input',
+    '_UserPermissionOverrideCompounduserId_permissionIdKey',
+]
+
+
+class UserPermissionOverrideUpdateInput(TypedDict, total=False):
+    """Optional arguments for updating a record"""
+    id: Union[AtomicIntInput, _int]
+    user: 'UserUpdateOneWithoutRelationsInput'
+    permission: 'PermissionUpdateOneWithoutRelationsInput'
+    type: 'enums.PermissionType'
+    createdAt: datetime.datetime
+    updatedAt: datetime.datetime
+
+
+class UserPermissionOverrideUpdateManyMutationInput(TypedDict, total=False):
+    """Arguments for updating many records"""
+    id: Union[AtomicIntInput, _int]
+    type: 'enums.PermissionType'
+    createdAt: datetime.datetime
+    updatedAt: datetime.datetime
+
+
+class UserPermissionOverrideUpdateManyWithoutRelationsInput(TypedDict, total=False):
+    create: List['UserPermissionOverrideCreateWithoutRelationsInput']
+    connect: List['UserPermissionOverrideWhereUniqueInput']
+    set: List['UserPermissionOverrideWhereUniqueInput']
+    disconnect: List['UserPermissionOverrideWhereUniqueInput']
+    delete: List['UserPermissionOverrideWhereUniqueInput']
+
+    # TODO
+    # update: List['UserPermissionOverrideUpdateWithWhereUniqueWithoutRelationsInput']
+    # updateMany: List['UserPermissionOverrideUpdateManyWithWhereUniqueWithoutRelationsInput']
+    # deleteMany: List['UserPermissionOverrideScalarWhereInput']
+    # upsert: List['UserPermissionOverrideUpserteWithWhereUniqueWithoutRelationsInput']
+    # connectOrCreate: List['UserPermissionOverrideCreateOrConnectWithoutRelationsInput']
+
+
+class UserPermissionOverrideUpdateOneWithoutRelationsInput(TypedDict, total=False):
+    create: 'UserPermissionOverrideCreateWithoutRelationsInput'
+    connect: 'UserPermissionOverrideWhereUniqueInput'
+    disconnect: bool
+    delete: bool
+
+    # TODO
+    # update: 'UserPermissionOverrideUpdateInput'
+    # upsert: 'UserPermissionOverrideUpsertWithoutRelationsInput'
+    # connectOrCreate: 'UserPermissionOverrideCreateOrConnectWithoutRelationsInput'
+
+
+class UserPermissionOverrideUpsertInput(TypedDict):
+    create: 'UserPermissionOverrideCreateInput'
+    update: 'UserPermissionOverrideUpdateInput'  # pyright: ignore[reportIncompatibleMethodOverride]
+
+
+_UserPermissionOverride_id_OrderByInput = TypedDict(
+    '_UserPermissionOverride_id_OrderByInput',
+    {
+        'id': 'SortOrder',
+    },
+    total=True
+)
+
+_UserPermissionOverride_userId_OrderByInput = TypedDict(
+    '_UserPermissionOverride_userId_OrderByInput',
+    {
+        'userId': 'SortOrder',
+    },
+    total=True
+)
+
+_UserPermissionOverride_permissionId_OrderByInput = TypedDict(
+    '_UserPermissionOverride_permissionId_OrderByInput',
+    {
+        'permissionId': 'SortOrder',
+    },
+    total=True
+)
+
+_UserPermissionOverride_type_OrderByInput = TypedDict(
+    '_UserPermissionOverride_type_OrderByInput',
+    {
+        'type': 'SortOrder',
+    },
+    total=True
+)
+
+_UserPermissionOverride_createdAt_OrderByInput = TypedDict(
+    '_UserPermissionOverride_createdAt_OrderByInput',
+    {
+        'createdAt': 'SortOrder',
+    },
+    total=True
+)
+
+_UserPermissionOverride_updatedAt_OrderByInput = TypedDict(
+    '_UserPermissionOverride_updatedAt_OrderByInput',
+    {
+        'updatedAt': 'SortOrder',
+    },
+    total=True
+)
+
+UserPermissionOverrideOrderByInput = Union[
+    '_UserPermissionOverride_id_OrderByInput',
+    '_UserPermissionOverride_userId_OrderByInput',
+    '_UserPermissionOverride_permissionId_OrderByInput',
+    '_UserPermissionOverride_type_OrderByInput',
+    '_UserPermissionOverride_createdAt_OrderByInput',
+    '_UserPermissionOverride_updatedAt_OrderByInput',
+]
+
+
+
+# recursive UserPermissionOverride types
+# TODO: cleanup these types
+
+
+
+UserPermissionOverrideRelationFilter = TypedDict(
+    'UserPermissionOverrideRelationFilter',
+    {
+        'is': 'UserPermissionOverrideWhereInput',
+        'is_not': 'UserPermissionOverrideWhereInput',
+    },
+    total=False,
+)
+
+
+class UserPermissionOverrideListRelationFilter(TypedDict, total=False):
+    some: 'UserPermissionOverrideWhereInput'
+    none: 'UserPermissionOverrideWhereInput'
+    every: 'UserPermissionOverrideWhereInput'
+
+
+class UserPermissionOverrideInclude(TypedDict, total=False):
+    """UserPermissionOverride relational arguments"""
+    user: Union[bool, 'UserArgsFromUserPermissionOverride']
+    permission: Union[bool, 'PermissionArgsFromUserPermissionOverride']
+
+
+class UserIncludeFromUserPermissionOverride(TypedDict, total=False):
+    """Relational arguments for UserPermissionOverride"""
+    branch: Union[bool, 'BranchArgsFromUserPermissionOverride']
+    auditLogs: Union[bool, 'FindManyAuditLogArgsFromUserPermissionOverride']
+    rbacOverrides: Union[bool, 'FindManyUserPermissionOverrideArgsFromUserPermissionOverride']
+    notifications: Union[bool, 'FindManyNotificationArgsFromUserPermissionOverride']
+    revokedTokens: Union[bool, 'FindManyRevokedTokenArgsFromUserPermissionOverride']
+    stockAdjustments: Union[bool, 'FindManyStockAdjustmentArgsFromUserPermissionOverride']
+    Sale: Union[bool, 'FindManySaleArgsFromUserPermissionOverride']
+    deletedSales: Union[bool, 'FindManySaleArgsFromUserPermissionOverride']
+    Payment: Union[bool, 'FindManyPaymentArgsFromUserPermissionOverride']
+    Backup: Union[bool, 'FindManyBackupArgsFromUserPermissionOverride']
+    requestedOrders: Union[bool, 'FindManyBranchOrderArgsFromUserPermissionOverride']
+    approvedOrders: Union[bool, 'FindManyBranchOrderArgsFromUserPermissionOverride']
+    sentOrders: Union[bool, 'FindManyBranchOrderArgsFromUserPermissionOverride']
+    receivedOrders: Union[bool, 'FindManyBranchOrderArgsFromUserPermissionOverride']
+
+
+class UserArgsFromUserPermissionOverride(TypedDict, total=False):
+    """Arguments for UserPermissionOverride"""
+    include: 'UserIncludeFromUser'
+
+
+class FindManyUserArgsFromUserPermissionOverride(TypedDict, total=False):
+    """Arguments for UserPermissionOverride"""
+    take: int
+    skip: int
+    order_by: Union['UserOrderByInput', List['UserOrderByInput']]
+    where: 'UserWhereInput'
+    cursor: 'UserWhereUniqueInput'
+    distinct: List['UserScalarFieldKeys']
+    include: 'UserIncludeFromUser'
+
+
+class PermissionIncludeFromUserPermissionOverride(TypedDict, total=False):
+    """Relational arguments for UserPermissionOverride"""
+    roles: Union[bool, 'FindManyRolePermissionArgsFromUserPermissionOverride']
+    users: Union[bool, 'FindManyUserPermissionOverrideArgsFromUserPermissionOverride']
+
+
+class PermissionArgsFromUserPermissionOverride(TypedDict, total=False):
+    """Arguments for UserPermissionOverride"""
+    include: 'PermissionIncludeFromPermission'
+
+
+class FindManyPermissionArgsFromUserPermissionOverride(TypedDict, total=False):
+    """Arguments for UserPermissionOverride"""
+    take: int
+    skip: int
+    order_by: Union['PermissionOrderByInput', List['PermissionOrderByInput']]
+    where: 'PermissionWhereInput'
+    cursor: 'PermissionWhereUniqueInput'
+    distinct: List['PermissionScalarFieldKeys']
+    include: 'PermissionIncludeFromPermission'
+
+
+class RolePermissionIncludeFromUserPermissionOverride(TypedDict, total=False):
+    """Relational arguments for UserPermissionOverride"""
+    permission: Union[bool, 'PermissionArgsFromUserPermissionOverride']
+
+
+class RolePermissionArgsFromUserPermissionOverride(TypedDict, total=False):
+    """Arguments for UserPermissionOverride"""
+    include: 'RolePermissionIncludeFromRolePermission'
+
+
+class FindManyRolePermissionArgsFromUserPermissionOverride(TypedDict, total=False):
+    """Arguments for UserPermissionOverride"""
+    take: int
+    skip: int
+    order_by: Union['RolePermissionOrderByInput', List['RolePermissionOrderByInput']]
+    where: 'RolePermissionWhereInput'
+    cursor: 'RolePermissionWhereUniqueInput'
+    distinct: List['RolePermissionScalarFieldKeys']
+    include: 'RolePermissionIncludeFromRolePermission'
+
+
+class UserPermissionOverrideIncludeFromUserPermissionOverride(TypedDict, total=False):
+    """Relational arguments for UserPermissionOverride"""
+    user: Union[bool, 'UserArgsFromUserPermissionOverride']
+    permission: Union[bool, 'PermissionArgsFromUserPermissionOverride']
+
+
+class UserPermissionOverrideArgsFromUserPermissionOverride(TypedDict, total=False):
+    """Arguments for UserPermissionOverride"""
+    include: 'UserPermissionOverrideIncludeFromUserPermissionOverride'
+
+
+class FindManyUserPermissionOverrideArgsFromUserPermissionOverride(TypedDict, total=False):
+    """Arguments for UserPermissionOverride"""
+    take: int
+    skip: int
+    order_by: Union['UserPermissionOverrideOrderByInput', List['UserPermissionOverrideOrderByInput']]
+    where: 'UserPermissionOverrideWhereInput'
+    cursor: 'UserPermissionOverrideWhereUniqueInput'
+    distinct: List['UserPermissionOverrideScalarFieldKeys']
+    include: 'UserPermissionOverrideIncludeFromUserPermissionOverride'
+
+
+class BranchIncludeFromUserPermissionOverride(TypedDict, total=False):
+    """Relational arguments for UserPermissionOverride"""
+    users: Union[bool, 'FindManyUserArgsFromUserPermissionOverride']
+    Sale: Union[bool, 'FindManySaleArgsFromUserPermissionOverride']
+    Account: Union[bool, 'FindManyAccountArgsFromUserPermissionOverride']
+    BranchOrder: Union[bool, 'FindManyBranchOrderArgsFromUserPermissionOverride']
+
+
+class BranchArgsFromUserPermissionOverride(TypedDict, total=False):
+    """Arguments for UserPermissionOverride"""
+    include: 'BranchIncludeFromBranch'
+
+
+class FindManyBranchArgsFromUserPermissionOverride(TypedDict, total=False):
+    """Arguments for UserPermissionOverride"""
+    take: int
+    skip: int
+    order_by: Union['BranchOrderByInput', List['BranchOrderByInput']]
+    where: 'BranchWhereInput'
+    cursor: 'BranchWhereUniqueInput'
+    distinct: List['BranchScalarFieldKeys']
+    include: 'BranchIncludeFromBranch'
+
+
+class ProductIncludeFromUserPermissionOverride(TypedDict, total=False):
+    """Relational arguments for UserPermissionOverride"""
+    category: Union[bool, 'CategoryArgsFromUserPermissionOverride']
+    stocks: Union[bool, 'FindManyStockArgsFromUserPermissionOverride']
+    stockAdjustments: Union[bool, 'FindManyStockAdjustmentArgsFromUserPermissionOverride']
+
+
+class ProductArgsFromUserPermissionOverride(TypedDict, total=False):
+    """Arguments for UserPermissionOverride"""
+    include: 'ProductIncludeFromProduct'
+
+
+class FindManyProductArgsFromUserPermissionOverride(TypedDict, total=False):
+    """Arguments for UserPermissionOverride"""
+    take: int
+    skip: int
+    order_by: Union['ProductOrderByInput', List['ProductOrderByInput']]
+    where: 'ProductWhereInput'
+    cursor: 'ProductWhereUniqueInput'
+    distinct: List['ProductScalarFieldKeys']
+    include: 'ProductIncludeFromProduct'
+
+
+class CategoryIncludeFromUserPermissionOverride(TypedDict, total=False):
+    """Relational arguments for UserPermissionOverride"""
+    products: Union[bool, 'FindManyProductArgsFromUserPermissionOverride']
+
+
+class CategoryArgsFromUserPermissionOverride(TypedDict, total=False):
+    """Arguments for UserPermissionOverride"""
+    include: 'CategoryIncludeFromCategory'
+
+
+class FindManyCategoryArgsFromUserPermissionOverride(TypedDict, total=False):
+    """Arguments for UserPermissionOverride"""
+    take: int
+    skip: int
+    order_by: Union['CategoryOrderByInput', List['CategoryOrderByInput']]
+    where: 'CategoryWhereInput'
+    cursor: 'CategoryWhereUniqueInput'
+    distinct: List['CategoryScalarFieldKeys']
+    include: 'CategoryIncludeFromCategory'
+
+
+class StockIncludeFromUserPermissionOverride(TypedDict, total=False):
+    """Relational arguments for UserPermissionOverride"""
+    product: Union[bool, 'ProductArgsFromUserPermissionOverride']
+    SaleItem: Union[bool, 'FindManySaleItemArgsFromUserPermissionOverride']
+    BranchOrderItem: Union[bool, 'FindManyBranchOrderItemArgsFromUserPermissionOverride']
+
+
+class StockArgsFromUserPermissionOverride(TypedDict, total=False):
+    """Arguments for UserPermissionOverride"""
+    include: 'StockIncludeFromStock'
+
+
+class FindManyStockArgsFromUserPermissionOverride(TypedDict, total=False):
+    """Arguments for UserPermissionOverride"""
+    take: int
+    skip: int
+    order_by: Union['StockOrderByInput', List['StockOrderByInput']]
+    where: 'StockWhereInput'
+    cursor: 'StockWhereUniqueInput'
+    distinct: List['StockScalarFieldKeys']
+    include: 'StockIncludeFromStock'
+
+
+class CustomerIncludeFromUserPermissionOverride(TypedDict, total=False):
+    """Relational arguments for UserPermissionOverride"""
+    Sale: Union[bool, 'FindManySaleArgsFromUserPermissionOverride']
+
+
+class CustomerArgsFromUserPermissionOverride(TypedDict, total=False):
+    """Arguments for UserPermissionOverride"""
+    include: 'CustomerIncludeFromCustomer'
+
+
+class FindManyCustomerArgsFromUserPermissionOverride(TypedDict, total=False):
+    """Arguments for UserPermissionOverride"""
+    take: int
+    skip: int
+    order_by: Union['CustomerOrderByInput', List['CustomerOrderByInput']]
+    where: 'CustomerWhereInput'
+    cursor: 'CustomerWhereUniqueInput'
+    distinct: List['CustomerScalarFieldKeys']
+    include: 'CustomerIncludeFromCustomer'
+
+
+class SaleIncludeFromUserPermissionOverride(TypedDict, total=False):
+    """Relational arguments for UserPermissionOverride"""
+    branch: Union[bool, 'BranchArgsFromUserPermissionOverride']
+    customer: Union[bool, 'CustomerArgsFromUserPermissionOverride']
+    user: Union[bool, 'UserArgsFromUserPermissionOverride']
+    items: Union[bool, 'FindManySaleItemArgsFromUserPermissionOverride']
+    payments: Union[bool, 'FindManyPaymentArgsFromUserPermissionOverride']
+    returns: Union[bool, 'FindManyReturnSaleArgsFromUserPermissionOverride']
+    deletedBy: Union[bool, 'UserArgsFromUserPermissionOverride']
+
+
+class SaleArgsFromUserPermissionOverride(TypedDict, total=False):
+    """Arguments for UserPermissionOverride"""
+    include: 'SaleIncludeFromSale'
+
+
+class FindManySaleArgsFromUserPermissionOverride(TypedDict, total=False):
+    """Arguments for UserPermissionOverride"""
+    take: int
+    skip: int
+    order_by: Union['SaleOrderByInput', List['SaleOrderByInput']]
+    where: 'SaleWhereInput'
+    cursor: 'SaleWhereUniqueInput'
+    distinct: List['SaleScalarFieldKeys']
+    include: 'SaleIncludeFromSale'
+
+
+class SaleItemIncludeFromUserPermissionOverride(TypedDict, total=False):
+    """Relational arguments for UserPermissionOverride"""
+    sale: Union[bool, 'SaleArgsFromUserPermissionOverride']
+    stock: Union[bool, 'StockArgsFromUserPermissionOverride']
+    ReturnItem: Union[bool, 'FindManyReturnItemArgsFromUserPermissionOverride']
+
+
+class SaleItemArgsFromUserPermissionOverride(TypedDict, total=False):
+    """Arguments for UserPermissionOverride"""
+    include: 'SaleItemIncludeFromSaleItem'
+
+
+class FindManySaleItemArgsFromUserPermissionOverride(TypedDict, total=False):
+    """Arguments for UserPermissionOverride"""
+    take: int
+    skip: int
+    order_by: Union['SaleItemOrderByInput', List['SaleItemOrderByInput']]
+    where: 'SaleItemWhereInput'
+    cursor: 'SaleItemWhereUniqueInput'
+    distinct: List['SaleItemScalarFieldKeys']
+    include: 'SaleItemIncludeFromSaleItem'
+
+
+class ReturnSaleIncludeFromUserPermissionOverride(TypedDict, total=False):
+    """Relational arguments for UserPermissionOverride"""
+    original: Union[bool, 'SaleArgsFromUserPermissionOverride']
+    items: Union[bool, 'FindManyReturnItemArgsFromUserPermissionOverride']
+    refund: Union[bool, 'FindManyPaymentArgsFromUserPermissionOverride']
+
+
+class ReturnSaleArgsFromUserPermissionOverride(TypedDict, total=False):
+    """Arguments for UserPermissionOverride"""
+    include: 'ReturnSaleIncludeFromReturnSale'
+
+
+class FindManyReturnSaleArgsFromUserPermissionOverride(TypedDict, total=False):
+    """Arguments for UserPermissionOverride"""
+    take: int
+    skip: int
+    order_by: Union['ReturnSaleOrderByInput', List['ReturnSaleOrderByInput']]
+    where: 'ReturnSaleWhereInput'
+    cursor: 'ReturnSaleWhereUniqueInput'
+    distinct: List['ReturnSaleScalarFieldKeys']
+    include: 'ReturnSaleIncludeFromReturnSale'
+
+
+class ReturnItemIncludeFromUserPermissionOverride(TypedDict, total=False):
+    """Relational arguments for UserPermissionOverride"""
+    returnSale: Union[bool, 'ReturnSaleArgsFromUserPermissionOverride']
+    saleItem: Union[bool, 'SaleItemArgsFromUserPermissionOverride']
+
+
+class ReturnItemArgsFromUserPermissionOverride(TypedDict, total=False):
+    """Arguments for UserPermissionOverride"""
+    include: 'ReturnItemIncludeFromReturnItem'
+
+
+class FindManyReturnItemArgsFromUserPermissionOverride(TypedDict, total=False):
+    """Arguments for UserPermissionOverride"""
+    take: int
+    skip: int
+    order_by: Union['ReturnItemOrderByInput', List['ReturnItemOrderByInput']]
+    where: 'ReturnItemWhereInput'
+    cursor: 'ReturnItemWhereUniqueInput'
+    distinct: List['ReturnItemScalarFieldKeys']
+    include: 'ReturnItemIncludeFromReturnItem'
+
+
+class PaymentIncludeFromUserPermissionOverride(TypedDict, total=False):
+    """Relational arguments for UserPermissionOverride"""
+    sale: Union[bool, 'SaleArgsFromUserPermissionOverride']
+    account: Union[bool, 'AccountArgsFromUserPermissionOverride']
+    returnSale: Union[bool, 'ReturnSaleArgsFromUserPermissionOverride']
+    user: Union[bool, 'UserArgsFromUserPermissionOverride']
+
+
+class PaymentArgsFromUserPermissionOverride(TypedDict, total=False):
+    """Arguments for UserPermissionOverride"""
+    include: 'PaymentIncludeFromPayment'
+
+
+class FindManyPaymentArgsFromUserPermissionOverride(TypedDict, total=False):
+    """Arguments for UserPermissionOverride"""
+    take: int
+    skip: int
+    order_by: Union['PaymentOrderByInput', List['PaymentOrderByInput']]
+    where: 'PaymentWhereInput'
+    cursor: 'PaymentWhereUniqueInput'
+    distinct: List['PaymentScalarFieldKeys']
+    include: 'PaymentIncludeFromPayment'
+
+
+class JournalEntryIncludeFromUserPermissionOverride(TypedDict, total=False):
+    """Relational arguments for UserPermissionOverride"""
+    lines: Union[bool, 'FindManyJournalEntryLineArgsFromUserPermissionOverride']
+
+
+class JournalEntryArgsFromUserPermissionOverride(TypedDict, total=False):
+    """Arguments for UserPermissionOverride"""
+    include: 'JournalEntryIncludeFromJournalEntry'
+
+
+class FindManyJournalEntryArgsFromUserPermissionOverride(TypedDict, total=False):
+    """Arguments for UserPermissionOverride"""
+    take: int
+    skip: int
+    order_by: Union['JournalEntryOrderByInput', List['JournalEntryOrderByInput']]
+    where: 'JournalEntryWhereInput'
+    cursor: 'JournalEntryWhereUniqueInput'
+    distinct: List['JournalEntryScalarFieldKeys']
+    include: 'JournalEntryIncludeFromJournalEntry'
+
+
+class JournalEntryLineIncludeFromUserPermissionOverride(TypedDict, total=False):
+    """Relational arguments for UserPermissionOverride"""
+    entry: Union[bool, 'JournalEntryArgsFromUserPermissionOverride']
+    account: Union[bool, 'AccountArgsFromUserPermissionOverride']
+
+
+class JournalEntryLineArgsFromUserPermissionOverride(TypedDict, total=False):
+    """Arguments for UserPermissionOverride"""
+    include: 'JournalEntryLineIncludeFromJournalEntryLine'
+
+
+class FindManyJournalEntryLineArgsFromUserPermissionOverride(TypedDict, total=False):
+    """Arguments for UserPermissionOverride"""
+    take: int
+    skip: int
+    order_by: Union['JournalEntryLineOrderByInput', List['JournalEntryLineOrderByInput']]
+    where: 'JournalEntryLineWhereInput'
+    cursor: 'JournalEntryLineWhereUniqueInput'
+    distinct: List['JournalEntryLineScalarFieldKeys']
+    include: 'JournalEntryLineIncludeFromJournalEntryLine'
+
+
+class AccountIncludeFromUserPermissionOverride(TypedDict, total=False):
+    """Relational arguments for UserPermissionOverride"""
+    branch: Union[bool, 'BranchArgsFromUserPermissionOverride']
+    entries: Union[bool, 'FindManyJournalEntryLineArgsFromUserPermissionOverride']
+    payments: Union[bool, 'FindManyPaymentArgsFromUserPermissionOverride']
+    outgoingTransfers: Union[bool, 'FindManyAccountTransferArgsFromUserPermissionOverride']
+    incomingTransfers: Union[bool, 'FindManyAccountTransferArgsFromUserPermissionOverride']
+
+
+class AccountArgsFromUserPermissionOverride(TypedDict, total=False):
+    """Arguments for UserPermissionOverride"""
+    include: 'AccountIncludeFromAccount'
+
+
+class FindManyAccountArgsFromUserPermissionOverride(TypedDict, total=False):
+    """Arguments for UserPermissionOverride"""
+    take: int
+    skip: int
+    order_by: Union['AccountOrderByInput', List['AccountOrderByInput']]
+    where: 'AccountWhereInput'
+    cursor: 'AccountWhereUniqueInput'
+    distinct: List['AccountScalarFieldKeys']
+    include: 'AccountIncludeFromAccount'
+
+
+class AccountTransferIncludeFromUserPermissionOverride(TypedDict, total=False):
+    """Relational arguments for UserPermissionOverride"""
+    fromAccount: Union[bool, 'AccountArgsFromUserPermissionOverride']
+    toAccount: Union[bool, 'AccountArgsFromUserPermissionOverride']
+
+
+class AccountTransferArgsFromUserPermissionOverride(TypedDict, total=False):
+    """Arguments for UserPermissionOverride"""
+    include: 'AccountTransferIncludeFromAccountTransfer'
+
+
+class FindManyAccountTransferArgsFromUserPermissionOverride(TypedDict, total=False):
+    """Arguments for UserPermissionOverride"""
+    take: int
+    skip: int
+    order_by: Union['AccountTransferOrderByInput', List['AccountTransferOrderByInput']]
+    where: 'AccountTransferWhereInput'
+    cursor: 'AccountTransferWhereUniqueInput'
+    distinct: List['AccountTransferScalarFieldKeys']
+    include: 'AccountTransferIncludeFromAccountTransfer'
+
+
+class BranchOrderIncludeFromUserPermissionOverride(TypedDict, total=False):
+    """Relational arguments for UserPermissionOverride"""
+    branch: Union[bool, 'BranchArgsFromUserPermissionOverride']
+    requestedBy: Union[bool, 'UserArgsFromUserPermissionOverride']
+    approvedBy: Union[bool, 'UserArgsFromUserPermissionOverride']
+    sentBy: Union[bool, 'UserArgsFromUserPermissionOverride']
+    receivedBy: Union[bool, 'UserArgsFromUserPermissionOverride']
+    items: Union[bool, 'FindManyBranchOrderItemArgsFromUserPermissionOverride']
+
+
+class BranchOrderArgsFromUserPermissionOverride(TypedDict, total=False):
+    """Arguments for UserPermissionOverride"""
+    include: 'BranchOrderIncludeFromBranchOrder'
+
+
+class FindManyBranchOrderArgsFromUserPermissionOverride(TypedDict, total=False):
+    """Arguments for UserPermissionOverride"""
+    take: int
+    skip: int
+    order_by: Union['BranchOrderOrderByInput', List['BranchOrderOrderByInput']]
+    where: 'BranchOrderWhereInput'
+    cursor: 'BranchOrderWhereUniqueInput'
+    distinct: List['BranchOrderScalarFieldKeys']
+    include: 'BranchOrderIncludeFromBranchOrder'
+
+
+class BranchOrderItemIncludeFromUserPermissionOverride(TypedDict, total=False):
+    """Relational arguments for UserPermissionOverride"""
+    branchOrder: Union[bool, 'BranchOrderArgsFromUserPermissionOverride']
+    stock: Union[bool, 'StockArgsFromUserPermissionOverride']
+
+
+class BranchOrderItemArgsFromUserPermissionOverride(TypedDict, total=False):
+    """Arguments for UserPermissionOverride"""
+    include: 'BranchOrderItemIncludeFromBranchOrderItem'
+
+
+class FindManyBranchOrderItemArgsFromUserPermissionOverride(TypedDict, total=False):
+    """Arguments for UserPermissionOverride"""
+    take: int
+    skip: int
+    order_by: Union['BranchOrderItemOrderByInput', List['BranchOrderItemOrderByInput']]
+    where: 'BranchOrderItemWhereInput'
+    cursor: 'BranchOrderItemWhereUniqueInput'
+    distinct: List['BranchOrderItemScalarFieldKeys']
+    include: 'BranchOrderItemIncludeFromBranchOrderItem'
+
+
+class AuditLogIncludeFromUserPermissionOverride(TypedDict, total=False):
+    """Relational arguments for UserPermissionOverride"""
+    user: Union[bool, 'UserArgsFromUserPermissionOverride']
+
+
+class AuditLogArgsFromUserPermissionOverride(TypedDict, total=False):
+    """Arguments for UserPermissionOverride"""
+    include: 'AuditLogIncludeFromAuditLog'
+
+
+class FindManyAuditLogArgsFromUserPermissionOverride(TypedDict, total=False):
+    """Arguments for UserPermissionOverride"""
+    take: int
+    skip: int
+    order_by: Union['AuditLogOrderByInput', List['AuditLogOrderByInput']]
+    where: 'AuditLogWhereInput'
+    cursor: 'AuditLogWhereUniqueInput'
+    distinct: List['AuditLogScalarFieldKeys']
+    include: 'AuditLogIncludeFromAuditLog'
+
+
+class SystemInfoIncludeFromUserPermissionOverride(TypedDict, total=False):
+    """Relational arguments for UserPermissionOverride"""
+
+
+class SystemInfoArgsFromUserPermissionOverride(TypedDict, total=False):
+    """Arguments for UserPermissionOverride"""
+    include: 'SystemInfoIncludeFromSystemInfo'
+
+
+class FindManySystemInfoArgsFromUserPermissionOverride(TypedDict, total=False):
+    """Arguments for UserPermissionOverride"""
+    take: int
+    skip: int
+    order_by: Union['SystemInfoOrderByInput', List['SystemInfoOrderByInput']]
+    where: 'SystemInfoWhereInput'
+    cursor: 'SystemInfoWhereUniqueInput'
+    distinct: List['SystemInfoScalarFieldKeys']
+    include: 'SystemInfoIncludeFromSystemInfo'
+
+
+class BackupIncludeFromUserPermissionOverride(TypedDict, total=False):
+    """Relational arguments for UserPermissionOverride"""
+    createdBy: Union[bool, 'UserArgsFromUserPermissionOverride']
+
+
+class BackupArgsFromUserPermissionOverride(TypedDict, total=False):
+    """Arguments for UserPermissionOverride"""
+    include: 'BackupIncludeFromBackup'
+
+
+class FindManyBackupArgsFromUserPermissionOverride(TypedDict, total=False):
+    """Arguments for UserPermissionOverride"""
+    take: int
+    skip: int
+    order_by: Union['BackupOrderByInput', List['BackupOrderByInput']]
+    where: 'BackupWhereInput'
+    cursor: 'BackupWhereUniqueInput'
+    distinct: List['BackupScalarFieldKeys']
+    include: 'BackupIncludeFromBackup'
+
+
+class RevokedTokenIncludeFromUserPermissionOverride(TypedDict, total=False):
+    """Relational arguments for UserPermissionOverride"""
+    user: Union[bool, 'UserArgsFromUserPermissionOverride']
+
+
+class RevokedTokenArgsFromUserPermissionOverride(TypedDict, total=False):
+    """Arguments for UserPermissionOverride"""
+    include: 'RevokedTokenIncludeFromRevokedToken'
+
+
+class FindManyRevokedTokenArgsFromUserPermissionOverride(TypedDict, total=False):
+    """Arguments for UserPermissionOverride"""
+    take: int
+    skip: int
+    order_by: Union['RevokedTokenOrderByInput', List['RevokedTokenOrderByInput']]
+    where: 'RevokedTokenWhereInput'
+    cursor: 'RevokedTokenWhereUniqueInput'
+    distinct: List['RevokedTokenScalarFieldKeys']
+    include: 'RevokedTokenIncludeFromRevokedToken'
+
+
+class SystemSettingIncludeFromUserPermissionOverride(TypedDict, total=False):
+    """Relational arguments for UserPermissionOverride"""
+
+
+class SystemSettingArgsFromUserPermissionOverride(TypedDict, total=False):
+    """Arguments for UserPermissionOverride"""
+    include: 'SystemSettingIncludeFromSystemSetting'
+
+
+class FindManySystemSettingArgsFromUserPermissionOverride(TypedDict, total=False):
+    """Arguments for UserPermissionOverride"""
+    take: int
+    skip: int
+    order_by: Union['SystemSettingOrderByInput', List['SystemSettingOrderByInput']]
+    where: 'SystemSettingWhereInput'
+    cursor: 'SystemSettingWhereUniqueInput'
+    distinct: List['SystemSettingScalarFieldKeys']
+    include: 'SystemSettingIncludeFromSystemSetting'
+
+
+class NotificationIncludeFromUserPermissionOverride(TypedDict, total=False):
+    """Relational arguments for UserPermissionOverride"""
+    user: Union[bool, 'UserArgsFromUserPermissionOverride']
+
+
+class NotificationArgsFromUserPermissionOverride(TypedDict, total=False):
+    """Arguments for UserPermissionOverride"""
+    include: 'NotificationIncludeFromNotification'
+
+
+class FindManyNotificationArgsFromUserPermissionOverride(TypedDict, total=False):
+    """Arguments for UserPermissionOverride"""
+    take: int
+    skip: int
+    order_by: Union['NotificationOrderByInput', List['NotificationOrderByInput']]
+    where: 'NotificationWhereInput'
+    cursor: 'NotificationWhereUniqueInput'
+    distinct: List['NotificationScalarFieldKeys']
+    include: 'NotificationIncludeFromNotification'
+
+
+class StockAdjustmentIncludeFromUserPermissionOverride(TypedDict, total=False):
+    """Relational arguments for UserPermissionOverride"""
+    product: Union[bool, 'ProductArgsFromUserPermissionOverride']
+    createdBy: Union[bool, 'UserArgsFromUserPermissionOverride']
+
+
+class StockAdjustmentArgsFromUserPermissionOverride(TypedDict, total=False):
+    """Arguments for UserPermissionOverride"""
+    include: 'StockAdjustmentIncludeFromStockAdjustment'
+
+
+class FindManyStockAdjustmentArgsFromUserPermissionOverride(TypedDict, total=False):
+    """Arguments for UserPermissionOverride"""
+    take: int
+    skip: int
+    order_by: Union['StockAdjustmentOrderByInput', List['StockAdjustmentOrderByInput']]
+    where: 'StockAdjustmentWhereInput'
+    cursor: 'StockAdjustmentWhereUniqueInput'
+    distinct: List['StockAdjustmentScalarFieldKeys']
+    include: 'StockAdjustmentIncludeFromStockAdjustment'
+
+
+
+
+FindManyUserPermissionOverrideArgs = FindManyUserPermissionOverrideArgsFromUserPermissionOverride
+FindFirstUserPermissionOverrideArgs = FindManyUserPermissionOverrideArgsFromUserPermissionOverride
+
+
+class UserPermissionOverrideWhereInput(TypedDict, total=False):
+    """UserPermissionOverride arguments for searching"""
+    id: Union[_int, 'types.IntFilter']
+    user: 'UserRelationFilter'
+    userId: Union[_int, 'types.IntFilter']
+    permission: 'PermissionRelationFilter'
+    permissionId: Union[_int, 'types.IntFilter']
+    type: 'enums.PermissionType'
+    createdAt: Union[datetime.datetime, 'types.DateTimeFilter']
+    updatedAt: Union[datetime.datetime, 'types.DateTimeFilter']
+
+    # should be noted that AND and NOT should be Union['UserPermissionOverrideWhereInput', List['UserPermissionOverrideWhereInput']]
+    # but this causes mypy to hang :/
+    AND: List['UserPermissionOverrideWhereInput']
+    OR: List['UserPermissionOverrideWhereInput']
+    NOT: List['UserPermissionOverrideWhereInput']
+
+
+
+# aggregate UserPermissionOverride types
+
+
+class UserPermissionOverrideScalarWhereWithAggregatesInput(TypedDict, total=False):
+    """UserPermissionOverride arguments for searching"""
+    id: Union[_int, 'types.IntWithAggregatesFilter']
+    userId: Union[_int, 'types.IntWithAggregatesFilter']
+    permissionId: Union[_int, 'types.IntWithAggregatesFilter']
+    type: 'enums.PermissionType'
+    createdAt: Union[datetime.datetime, 'types.DateTimeWithAggregatesFilter']
+    updatedAt: Union[datetime.datetime, 'types.DateTimeWithAggregatesFilter']
+
+    AND: List['UserPermissionOverrideScalarWhereWithAggregatesInput']
+    OR: List['UserPermissionOverrideScalarWhereWithAggregatesInput']
+    NOT: List['UserPermissionOverrideScalarWhereWithAggregatesInput']
+
+
+
+class UserPermissionOverrideGroupByOutput(TypedDict, total=False):
+    id: _int
+    userId: _int
+    permissionId: _int
+    type: 'enums.PermissionType'
+    createdAt: datetime.datetime
+    updatedAt: datetime.datetime
+    _sum: 'UserPermissionOverrideSumAggregateOutput'
+    _avg: 'UserPermissionOverrideAvgAggregateOutput'
+    _min: 'UserPermissionOverrideMinAggregateOutput'
+    _max: 'UserPermissionOverrideMaxAggregateOutput'
+    _count: 'UserPermissionOverrideCountAggregateOutput'
+
+
+class UserPermissionOverrideAvgAggregateOutput(TypedDict, total=False):
+    """UserPermissionOverride output for aggregating averages"""
+    id: float
+    userId: float
+    permissionId: float
+
+
+class UserPermissionOverrideSumAggregateOutput(TypedDict, total=False):
+    """UserPermissionOverride output for aggregating sums"""
+    id: _int
+    userId: _int
+    permissionId: _int
+
+
+class UserPermissionOverrideScalarAggregateOutput(TypedDict, total=False):
+    """UserPermissionOverride output including scalar fields"""
+    id: _int
+    userId: _int
+    permissionId: _int
+    type: 'enums.PermissionType'
+    createdAt: datetime.datetime
+    updatedAt: datetime.datetime
+
+
+UserPermissionOverrideMinAggregateOutput = UserPermissionOverrideScalarAggregateOutput
+UserPermissionOverrideMaxAggregateOutput = UserPermissionOverrideScalarAggregateOutput
+
+
+class UserPermissionOverrideMaxAggregateInput(TypedDict, total=False):
+    """UserPermissionOverride input for aggregating by max"""
+    id: bool
+    userId: bool
+    permissionId: bool
+    type: bool
+    createdAt: bool
+    updatedAt: bool
+
+
+class UserPermissionOverrideMinAggregateInput(TypedDict, total=False):
+    """UserPermissionOverride input for aggregating by min"""
+    id: bool
+    userId: bool
+    permissionId: bool
+    type: bool
+    createdAt: bool
+    updatedAt: bool
+
+
+class UserPermissionOverrideNumberAggregateInput(TypedDict, total=False):
+    """UserPermissionOverride input for aggregating numbers"""
+    id: bool
+    userId: bool
+    permissionId: bool
+
+
+UserPermissionOverrideAvgAggregateInput = UserPermissionOverrideNumberAggregateInput
+UserPermissionOverrideSumAggregateInput = UserPermissionOverrideNumberAggregateInput
+
+
+UserPermissionOverrideCountAggregateInput = TypedDict(
+    'UserPermissionOverrideCountAggregateInput',
+    {
+        'id': bool,
+        'userId': bool,
+        'permissionId': bool,
+        'type': bool,
+        'createdAt': bool,
+        'updatedAt': bool,
+        '_all': bool,
+    },
+    total=False,
+)
+
+UserPermissionOverrideCountAggregateOutput = TypedDict(
+    'UserPermissionOverrideCountAggregateOutput',
+    {
+        'id': int,
+        'userId': int,
+        'permissionId': int,
+        'type': int,
+        'createdAt': int,
+        'updatedAt': int,
+        '_all': int,
+    },
+    total=False,
+)
+
+
+UserPermissionOverrideKeys = Literal[
     'id',
     'user',
     'userId',
-    'resource',
-    'actions',
+    'permission',
+    'permissionId',
+    'type',
     'createdAt',
     'updatedAt',
 ]
-UserPermissionScalarFieldKeys = Literal[
+UserPermissionOverrideScalarFieldKeys = Literal[
     'id',
     'userId',
-    'resource',
-    'actions',
+    'permissionId',
+    'type',
     'createdAt',
     'updatedAt',
 ]
-UserPermissionScalarFieldKeysT = TypeVar('UserPermissionScalarFieldKeysT', bound=UserPermissionScalarFieldKeys)
+UserPermissionOverrideScalarFieldKeysT = TypeVar('UserPermissionOverrideScalarFieldKeysT', bound=UserPermissionOverrideScalarFieldKeys)
 
-UserPermissionRelationalFieldKeys = Literal[
+UserPermissionOverrideRelationalFieldKeys = Literal[
         'user',
+        'permission',
     ]
 
 # Branch types
@@ -3838,7 +5910,7 @@ class UserIncludeFromBranch(TypedDict, total=False):
     """Relational arguments for Branch"""
     branch: Union[bool, 'BranchArgsFromBranch']
     auditLogs: Union[bool, 'FindManyAuditLogArgsFromBranch']
-    permissions: Union[bool, 'FindManyUserPermissionArgsFromBranch']
+    rbacOverrides: Union[bool, 'FindManyUserPermissionOverrideArgsFromBranch']
     notifications: Union[bool, 'FindManyNotificationArgsFromBranch']
     revokedTokens: Union[bool, 'FindManyRevokedTokenArgsFromBranch']
     stockAdjustments: Union[bool, 'FindManyStockAdjustmentArgsFromBranch']
@@ -3868,25 +5940,69 @@ class FindManyUserArgsFromBranch(TypedDict, total=False):
     include: 'UserIncludeFromUser'
 
 
-class UserPermissionIncludeFromBranch(TypedDict, total=False):
+class PermissionIncludeFromBranch(TypedDict, total=False):
     """Relational arguments for Branch"""
-    user: Union[bool, 'UserArgsFromBranch']
+    roles: Union[bool, 'FindManyRolePermissionArgsFromBranch']
+    users: Union[bool, 'FindManyUserPermissionOverrideArgsFromBranch']
 
 
-class UserPermissionArgsFromBranch(TypedDict, total=False):
+class PermissionArgsFromBranch(TypedDict, total=False):
     """Arguments for Branch"""
-    include: 'UserPermissionIncludeFromUserPermission'
+    include: 'PermissionIncludeFromPermission'
 
 
-class FindManyUserPermissionArgsFromBranch(TypedDict, total=False):
+class FindManyPermissionArgsFromBranch(TypedDict, total=False):
     """Arguments for Branch"""
     take: int
     skip: int
-    order_by: Union['UserPermissionOrderByInput', List['UserPermissionOrderByInput']]
-    where: 'UserPermissionWhereInput'
-    cursor: 'UserPermissionWhereUniqueInput'
-    distinct: List['UserPermissionScalarFieldKeys']
-    include: 'UserPermissionIncludeFromUserPermission'
+    order_by: Union['PermissionOrderByInput', List['PermissionOrderByInput']]
+    where: 'PermissionWhereInput'
+    cursor: 'PermissionWhereUniqueInput'
+    distinct: List['PermissionScalarFieldKeys']
+    include: 'PermissionIncludeFromPermission'
+
+
+class RolePermissionIncludeFromBranch(TypedDict, total=False):
+    """Relational arguments for Branch"""
+    permission: Union[bool, 'PermissionArgsFromBranch']
+
+
+class RolePermissionArgsFromBranch(TypedDict, total=False):
+    """Arguments for Branch"""
+    include: 'RolePermissionIncludeFromRolePermission'
+
+
+class FindManyRolePermissionArgsFromBranch(TypedDict, total=False):
+    """Arguments for Branch"""
+    take: int
+    skip: int
+    order_by: Union['RolePermissionOrderByInput', List['RolePermissionOrderByInput']]
+    where: 'RolePermissionWhereInput'
+    cursor: 'RolePermissionWhereUniqueInput'
+    distinct: List['RolePermissionScalarFieldKeys']
+    include: 'RolePermissionIncludeFromRolePermission'
+
+
+class UserPermissionOverrideIncludeFromBranch(TypedDict, total=False):
+    """Relational arguments for Branch"""
+    user: Union[bool, 'UserArgsFromBranch']
+    permission: Union[bool, 'PermissionArgsFromBranch']
+
+
+class UserPermissionOverrideArgsFromBranch(TypedDict, total=False):
+    """Arguments for Branch"""
+    include: 'UserPermissionOverrideIncludeFromUserPermissionOverride'
+
+
+class FindManyUserPermissionOverrideArgsFromBranch(TypedDict, total=False):
+    """Arguments for Branch"""
+    take: int
+    skip: int
+    order_by: Union['UserPermissionOverrideOrderByInput', List['UserPermissionOverrideOrderByInput']]
+    where: 'UserPermissionOverrideWhereInput'
+    cursor: 'UserPermissionOverrideWhereUniqueInput'
+    distinct: List['UserPermissionOverrideScalarFieldKeys']
+    include: 'UserPermissionOverrideIncludeFromUserPermissionOverride'
 
 
 class BranchIncludeFromBranch(TypedDict, total=False):
@@ -4857,7 +6973,7 @@ class UserIncludeFromProduct(TypedDict, total=False):
     """Relational arguments for Product"""
     branch: Union[bool, 'BranchArgsFromProduct']
     auditLogs: Union[bool, 'FindManyAuditLogArgsFromProduct']
-    permissions: Union[bool, 'FindManyUserPermissionArgsFromProduct']
+    rbacOverrides: Union[bool, 'FindManyUserPermissionOverrideArgsFromProduct']
     notifications: Union[bool, 'FindManyNotificationArgsFromProduct']
     revokedTokens: Union[bool, 'FindManyRevokedTokenArgsFromProduct']
     stockAdjustments: Union[bool, 'FindManyStockAdjustmentArgsFromProduct']
@@ -4887,25 +7003,69 @@ class FindManyUserArgsFromProduct(TypedDict, total=False):
     include: 'UserIncludeFromUser'
 
 
-class UserPermissionIncludeFromProduct(TypedDict, total=False):
+class PermissionIncludeFromProduct(TypedDict, total=False):
     """Relational arguments for Product"""
-    user: Union[bool, 'UserArgsFromProduct']
+    roles: Union[bool, 'FindManyRolePermissionArgsFromProduct']
+    users: Union[bool, 'FindManyUserPermissionOverrideArgsFromProduct']
 
 
-class UserPermissionArgsFromProduct(TypedDict, total=False):
+class PermissionArgsFromProduct(TypedDict, total=False):
     """Arguments for Product"""
-    include: 'UserPermissionIncludeFromUserPermission'
+    include: 'PermissionIncludeFromPermission'
 
 
-class FindManyUserPermissionArgsFromProduct(TypedDict, total=False):
+class FindManyPermissionArgsFromProduct(TypedDict, total=False):
     """Arguments for Product"""
     take: int
     skip: int
-    order_by: Union['UserPermissionOrderByInput', List['UserPermissionOrderByInput']]
-    where: 'UserPermissionWhereInput'
-    cursor: 'UserPermissionWhereUniqueInput'
-    distinct: List['UserPermissionScalarFieldKeys']
-    include: 'UserPermissionIncludeFromUserPermission'
+    order_by: Union['PermissionOrderByInput', List['PermissionOrderByInput']]
+    where: 'PermissionWhereInput'
+    cursor: 'PermissionWhereUniqueInput'
+    distinct: List['PermissionScalarFieldKeys']
+    include: 'PermissionIncludeFromPermission'
+
+
+class RolePermissionIncludeFromProduct(TypedDict, total=False):
+    """Relational arguments for Product"""
+    permission: Union[bool, 'PermissionArgsFromProduct']
+
+
+class RolePermissionArgsFromProduct(TypedDict, total=False):
+    """Arguments for Product"""
+    include: 'RolePermissionIncludeFromRolePermission'
+
+
+class FindManyRolePermissionArgsFromProduct(TypedDict, total=False):
+    """Arguments for Product"""
+    take: int
+    skip: int
+    order_by: Union['RolePermissionOrderByInput', List['RolePermissionOrderByInput']]
+    where: 'RolePermissionWhereInput'
+    cursor: 'RolePermissionWhereUniqueInput'
+    distinct: List['RolePermissionScalarFieldKeys']
+    include: 'RolePermissionIncludeFromRolePermission'
+
+
+class UserPermissionOverrideIncludeFromProduct(TypedDict, total=False):
+    """Relational arguments for Product"""
+    user: Union[bool, 'UserArgsFromProduct']
+    permission: Union[bool, 'PermissionArgsFromProduct']
+
+
+class UserPermissionOverrideArgsFromProduct(TypedDict, total=False):
+    """Arguments for Product"""
+    include: 'UserPermissionOverrideIncludeFromUserPermissionOverride'
+
+
+class FindManyUserPermissionOverrideArgsFromProduct(TypedDict, total=False):
+    """Arguments for Product"""
+    take: int
+    skip: int
+    order_by: Union['UserPermissionOverrideOrderByInput', List['UserPermissionOverrideOrderByInput']]
+    where: 'UserPermissionOverrideWhereInput'
+    cursor: 'UserPermissionOverrideWhereUniqueInput'
+    distinct: List['UserPermissionOverrideScalarFieldKeys']
+    include: 'UserPermissionOverrideIncludeFromUserPermissionOverride'
 
 
 class BranchIncludeFromProduct(TypedDict, total=False):
@@ -5841,7 +8001,7 @@ class UserIncludeFromCategory(TypedDict, total=False):
     """Relational arguments for Category"""
     branch: Union[bool, 'BranchArgsFromCategory']
     auditLogs: Union[bool, 'FindManyAuditLogArgsFromCategory']
-    permissions: Union[bool, 'FindManyUserPermissionArgsFromCategory']
+    rbacOverrides: Union[bool, 'FindManyUserPermissionOverrideArgsFromCategory']
     notifications: Union[bool, 'FindManyNotificationArgsFromCategory']
     revokedTokens: Union[bool, 'FindManyRevokedTokenArgsFromCategory']
     stockAdjustments: Union[bool, 'FindManyStockAdjustmentArgsFromCategory']
@@ -5871,25 +8031,69 @@ class FindManyUserArgsFromCategory(TypedDict, total=False):
     include: 'UserIncludeFromUser'
 
 
-class UserPermissionIncludeFromCategory(TypedDict, total=False):
+class PermissionIncludeFromCategory(TypedDict, total=False):
     """Relational arguments for Category"""
-    user: Union[bool, 'UserArgsFromCategory']
+    roles: Union[bool, 'FindManyRolePermissionArgsFromCategory']
+    users: Union[bool, 'FindManyUserPermissionOverrideArgsFromCategory']
 
 
-class UserPermissionArgsFromCategory(TypedDict, total=False):
+class PermissionArgsFromCategory(TypedDict, total=False):
     """Arguments for Category"""
-    include: 'UserPermissionIncludeFromUserPermission'
+    include: 'PermissionIncludeFromPermission'
 
 
-class FindManyUserPermissionArgsFromCategory(TypedDict, total=False):
+class FindManyPermissionArgsFromCategory(TypedDict, total=False):
     """Arguments for Category"""
     take: int
     skip: int
-    order_by: Union['UserPermissionOrderByInput', List['UserPermissionOrderByInput']]
-    where: 'UserPermissionWhereInput'
-    cursor: 'UserPermissionWhereUniqueInput'
-    distinct: List['UserPermissionScalarFieldKeys']
-    include: 'UserPermissionIncludeFromUserPermission'
+    order_by: Union['PermissionOrderByInput', List['PermissionOrderByInput']]
+    where: 'PermissionWhereInput'
+    cursor: 'PermissionWhereUniqueInput'
+    distinct: List['PermissionScalarFieldKeys']
+    include: 'PermissionIncludeFromPermission'
+
+
+class RolePermissionIncludeFromCategory(TypedDict, total=False):
+    """Relational arguments for Category"""
+    permission: Union[bool, 'PermissionArgsFromCategory']
+
+
+class RolePermissionArgsFromCategory(TypedDict, total=False):
+    """Arguments for Category"""
+    include: 'RolePermissionIncludeFromRolePermission'
+
+
+class FindManyRolePermissionArgsFromCategory(TypedDict, total=False):
+    """Arguments for Category"""
+    take: int
+    skip: int
+    order_by: Union['RolePermissionOrderByInput', List['RolePermissionOrderByInput']]
+    where: 'RolePermissionWhereInput'
+    cursor: 'RolePermissionWhereUniqueInput'
+    distinct: List['RolePermissionScalarFieldKeys']
+    include: 'RolePermissionIncludeFromRolePermission'
+
+
+class UserPermissionOverrideIncludeFromCategory(TypedDict, total=False):
+    """Relational arguments for Category"""
+    user: Union[bool, 'UserArgsFromCategory']
+    permission: Union[bool, 'PermissionArgsFromCategory']
+
+
+class UserPermissionOverrideArgsFromCategory(TypedDict, total=False):
+    """Arguments for Category"""
+    include: 'UserPermissionOverrideIncludeFromUserPermissionOverride'
+
+
+class FindManyUserPermissionOverrideArgsFromCategory(TypedDict, total=False):
+    """Arguments for Category"""
+    take: int
+    skip: int
+    order_by: Union['UserPermissionOverrideOrderByInput', List['UserPermissionOverrideOrderByInput']]
+    where: 'UserPermissionOverrideWhereInput'
+    cursor: 'UserPermissionOverrideWhereUniqueInput'
+    distinct: List['UserPermissionOverrideScalarFieldKeys']
+    include: 'UserPermissionOverrideIncludeFromUserPermissionOverride'
 
 
 class BranchIncludeFromCategory(TypedDict, total=False):
@@ -6769,7 +8973,7 @@ class UserIncludeFromStock(TypedDict, total=False):
     """Relational arguments for Stock"""
     branch: Union[bool, 'BranchArgsFromStock']
     auditLogs: Union[bool, 'FindManyAuditLogArgsFromStock']
-    permissions: Union[bool, 'FindManyUserPermissionArgsFromStock']
+    rbacOverrides: Union[bool, 'FindManyUserPermissionOverrideArgsFromStock']
     notifications: Union[bool, 'FindManyNotificationArgsFromStock']
     revokedTokens: Union[bool, 'FindManyRevokedTokenArgsFromStock']
     stockAdjustments: Union[bool, 'FindManyStockAdjustmentArgsFromStock']
@@ -6799,25 +9003,69 @@ class FindManyUserArgsFromStock(TypedDict, total=False):
     include: 'UserIncludeFromUser'
 
 
-class UserPermissionIncludeFromStock(TypedDict, total=False):
+class PermissionIncludeFromStock(TypedDict, total=False):
     """Relational arguments for Stock"""
-    user: Union[bool, 'UserArgsFromStock']
+    roles: Union[bool, 'FindManyRolePermissionArgsFromStock']
+    users: Union[bool, 'FindManyUserPermissionOverrideArgsFromStock']
 
 
-class UserPermissionArgsFromStock(TypedDict, total=False):
+class PermissionArgsFromStock(TypedDict, total=False):
     """Arguments for Stock"""
-    include: 'UserPermissionIncludeFromUserPermission'
+    include: 'PermissionIncludeFromPermission'
 
 
-class FindManyUserPermissionArgsFromStock(TypedDict, total=False):
+class FindManyPermissionArgsFromStock(TypedDict, total=False):
     """Arguments for Stock"""
     take: int
     skip: int
-    order_by: Union['UserPermissionOrderByInput', List['UserPermissionOrderByInput']]
-    where: 'UserPermissionWhereInput'
-    cursor: 'UserPermissionWhereUniqueInput'
-    distinct: List['UserPermissionScalarFieldKeys']
-    include: 'UserPermissionIncludeFromUserPermission'
+    order_by: Union['PermissionOrderByInput', List['PermissionOrderByInput']]
+    where: 'PermissionWhereInput'
+    cursor: 'PermissionWhereUniqueInput'
+    distinct: List['PermissionScalarFieldKeys']
+    include: 'PermissionIncludeFromPermission'
+
+
+class RolePermissionIncludeFromStock(TypedDict, total=False):
+    """Relational arguments for Stock"""
+    permission: Union[bool, 'PermissionArgsFromStock']
+
+
+class RolePermissionArgsFromStock(TypedDict, total=False):
+    """Arguments for Stock"""
+    include: 'RolePermissionIncludeFromRolePermission'
+
+
+class FindManyRolePermissionArgsFromStock(TypedDict, total=False):
+    """Arguments for Stock"""
+    take: int
+    skip: int
+    order_by: Union['RolePermissionOrderByInput', List['RolePermissionOrderByInput']]
+    where: 'RolePermissionWhereInput'
+    cursor: 'RolePermissionWhereUniqueInput'
+    distinct: List['RolePermissionScalarFieldKeys']
+    include: 'RolePermissionIncludeFromRolePermission'
+
+
+class UserPermissionOverrideIncludeFromStock(TypedDict, total=False):
+    """Relational arguments for Stock"""
+    user: Union[bool, 'UserArgsFromStock']
+    permission: Union[bool, 'PermissionArgsFromStock']
+
+
+class UserPermissionOverrideArgsFromStock(TypedDict, total=False):
+    """Arguments for Stock"""
+    include: 'UserPermissionOverrideIncludeFromUserPermissionOverride'
+
+
+class FindManyUserPermissionOverrideArgsFromStock(TypedDict, total=False):
+    """Arguments for Stock"""
+    take: int
+    skip: int
+    order_by: Union['UserPermissionOverrideOrderByInput', List['UserPermissionOverrideOrderByInput']]
+    where: 'UserPermissionOverrideWhereInput'
+    cursor: 'UserPermissionOverrideWhereUniqueInput'
+    distinct: List['UserPermissionOverrideScalarFieldKeys']
+    include: 'UserPermissionOverrideIncludeFromUserPermissionOverride'
 
 
 class BranchIncludeFromStock(TypedDict, total=False):
@@ -7816,7 +10064,7 @@ class UserIncludeFromCustomer(TypedDict, total=False):
     """Relational arguments for Customer"""
     branch: Union[bool, 'BranchArgsFromCustomer']
     auditLogs: Union[bool, 'FindManyAuditLogArgsFromCustomer']
-    permissions: Union[bool, 'FindManyUserPermissionArgsFromCustomer']
+    rbacOverrides: Union[bool, 'FindManyUserPermissionOverrideArgsFromCustomer']
     notifications: Union[bool, 'FindManyNotificationArgsFromCustomer']
     revokedTokens: Union[bool, 'FindManyRevokedTokenArgsFromCustomer']
     stockAdjustments: Union[bool, 'FindManyStockAdjustmentArgsFromCustomer']
@@ -7846,25 +10094,69 @@ class FindManyUserArgsFromCustomer(TypedDict, total=False):
     include: 'UserIncludeFromUser'
 
 
-class UserPermissionIncludeFromCustomer(TypedDict, total=False):
+class PermissionIncludeFromCustomer(TypedDict, total=False):
     """Relational arguments for Customer"""
-    user: Union[bool, 'UserArgsFromCustomer']
+    roles: Union[bool, 'FindManyRolePermissionArgsFromCustomer']
+    users: Union[bool, 'FindManyUserPermissionOverrideArgsFromCustomer']
 
 
-class UserPermissionArgsFromCustomer(TypedDict, total=False):
+class PermissionArgsFromCustomer(TypedDict, total=False):
     """Arguments for Customer"""
-    include: 'UserPermissionIncludeFromUserPermission'
+    include: 'PermissionIncludeFromPermission'
 
 
-class FindManyUserPermissionArgsFromCustomer(TypedDict, total=False):
+class FindManyPermissionArgsFromCustomer(TypedDict, total=False):
     """Arguments for Customer"""
     take: int
     skip: int
-    order_by: Union['UserPermissionOrderByInput', List['UserPermissionOrderByInput']]
-    where: 'UserPermissionWhereInput'
-    cursor: 'UserPermissionWhereUniqueInput'
-    distinct: List['UserPermissionScalarFieldKeys']
-    include: 'UserPermissionIncludeFromUserPermission'
+    order_by: Union['PermissionOrderByInput', List['PermissionOrderByInput']]
+    where: 'PermissionWhereInput'
+    cursor: 'PermissionWhereUniqueInput'
+    distinct: List['PermissionScalarFieldKeys']
+    include: 'PermissionIncludeFromPermission'
+
+
+class RolePermissionIncludeFromCustomer(TypedDict, total=False):
+    """Relational arguments for Customer"""
+    permission: Union[bool, 'PermissionArgsFromCustomer']
+
+
+class RolePermissionArgsFromCustomer(TypedDict, total=False):
+    """Arguments for Customer"""
+    include: 'RolePermissionIncludeFromRolePermission'
+
+
+class FindManyRolePermissionArgsFromCustomer(TypedDict, total=False):
+    """Arguments for Customer"""
+    take: int
+    skip: int
+    order_by: Union['RolePermissionOrderByInput', List['RolePermissionOrderByInput']]
+    where: 'RolePermissionWhereInput'
+    cursor: 'RolePermissionWhereUniqueInput'
+    distinct: List['RolePermissionScalarFieldKeys']
+    include: 'RolePermissionIncludeFromRolePermission'
+
+
+class UserPermissionOverrideIncludeFromCustomer(TypedDict, total=False):
+    """Relational arguments for Customer"""
+    user: Union[bool, 'UserArgsFromCustomer']
+    permission: Union[bool, 'PermissionArgsFromCustomer']
+
+
+class UserPermissionOverrideArgsFromCustomer(TypedDict, total=False):
+    """Arguments for Customer"""
+    include: 'UserPermissionOverrideIncludeFromUserPermissionOverride'
+
+
+class FindManyUserPermissionOverrideArgsFromCustomer(TypedDict, total=False):
+    """Arguments for Customer"""
+    take: int
+    skip: int
+    order_by: Union['UserPermissionOverrideOrderByInput', List['UserPermissionOverrideOrderByInput']]
+    where: 'UserPermissionOverrideWhereInput'
+    cursor: 'UserPermissionOverrideWhereUniqueInput'
+    distinct: List['UserPermissionOverrideScalarFieldKeys']
+    include: 'UserPermissionOverrideIncludeFromUserPermissionOverride'
 
 
 class BranchIncludeFromCustomer(TypedDict, total=False):
@@ -8885,7 +11177,7 @@ class UserIncludeFromSale(TypedDict, total=False):
     """Relational arguments for Sale"""
     branch: Union[bool, 'BranchArgsFromSale']
     auditLogs: Union[bool, 'FindManyAuditLogArgsFromSale']
-    permissions: Union[bool, 'FindManyUserPermissionArgsFromSale']
+    rbacOverrides: Union[bool, 'FindManyUserPermissionOverrideArgsFromSale']
     notifications: Union[bool, 'FindManyNotificationArgsFromSale']
     revokedTokens: Union[bool, 'FindManyRevokedTokenArgsFromSale']
     stockAdjustments: Union[bool, 'FindManyStockAdjustmentArgsFromSale']
@@ -8915,25 +11207,69 @@ class FindManyUserArgsFromSale(TypedDict, total=False):
     include: 'UserIncludeFromUser'
 
 
-class UserPermissionIncludeFromSale(TypedDict, total=False):
+class PermissionIncludeFromSale(TypedDict, total=False):
     """Relational arguments for Sale"""
-    user: Union[bool, 'UserArgsFromSale']
+    roles: Union[bool, 'FindManyRolePermissionArgsFromSale']
+    users: Union[bool, 'FindManyUserPermissionOverrideArgsFromSale']
 
 
-class UserPermissionArgsFromSale(TypedDict, total=False):
+class PermissionArgsFromSale(TypedDict, total=False):
     """Arguments for Sale"""
-    include: 'UserPermissionIncludeFromUserPermission'
+    include: 'PermissionIncludeFromPermission'
 
 
-class FindManyUserPermissionArgsFromSale(TypedDict, total=False):
+class FindManyPermissionArgsFromSale(TypedDict, total=False):
     """Arguments for Sale"""
     take: int
     skip: int
-    order_by: Union['UserPermissionOrderByInput', List['UserPermissionOrderByInput']]
-    where: 'UserPermissionWhereInput'
-    cursor: 'UserPermissionWhereUniqueInput'
-    distinct: List['UserPermissionScalarFieldKeys']
-    include: 'UserPermissionIncludeFromUserPermission'
+    order_by: Union['PermissionOrderByInput', List['PermissionOrderByInput']]
+    where: 'PermissionWhereInput'
+    cursor: 'PermissionWhereUniqueInput'
+    distinct: List['PermissionScalarFieldKeys']
+    include: 'PermissionIncludeFromPermission'
+
+
+class RolePermissionIncludeFromSale(TypedDict, total=False):
+    """Relational arguments for Sale"""
+    permission: Union[bool, 'PermissionArgsFromSale']
+
+
+class RolePermissionArgsFromSale(TypedDict, total=False):
+    """Arguments for Sale"""
+    include: 'RolePermissionIncludeFromRolePermission'
+
+
+class FindManyRolePermissionArgsFromSale(TypedDict, total=False):
+    """Arguments for Sale"""
+    take: int
+    skip: int
+    order_by: Union['RolePermissionOrderByInput', List['RolePermissionOrderByInput']]
+    where: 'RolePermissionWhereInput'
+    cursor: 'RolePermissionWhereUniqueInput'
+    distinct: List['RolePermissionScalarFieldKeys']
+    include: 'RolePermissionIncludeFromRolePermission'
+
+
+class UserPermissionOverrideIncludeFromSale(TypedDict, total=False):
+    """Relational arguments for Sale"""
+    user: Union[bool, 'UserArgsFromSale']
+    permission: Union[bool, 'PermissionArgsFromSale']
+
+
+class UserPermissionOverrideArgsFromSale(TypedDict, total=False):
+    """Arguments for Sale"""
+    include: 'UserPermissionOverrideIncludeFromUserPermissionOverride'
+
+
+class FindManyUserPermissionOverrideArgsFromSale(TypedDict, total=False):
+    """Arguments for Sale"""
+    take: int
+    skip: int
+    order_by: Union['UserPermissionOverrideOrderByInput', List['UserPermissionOverrideOrderByInput']]
+    where: 'UserPermissionOverrideWhereInput'
+    cursor: 'UserPermissionOverrideWhereUniqueInput'
+    distinct: List['UserPermissionOverrideScalarFieldKeys']
+    include: 'UserPermissionOverrideIncludeFromUserPermissionOverride'
 
 
 class BranchIncludeFromSale(TypedDict, total=False):
@@ -9891,7 +12227,7 @@ class UserIncludeFromSaleItem(TypedDict, total=False):
     """Relational arguments for SaleItem"""
     branch: Union[bool, 'BranchArgsFromSaleItem']
     auditLogs: Union[bool, 'FindManyAuditLogArgsFromSaleItem']
-    permissions: Union[bool, 'FindManyUserPermissionArgsFromSaleItem']
+    rbacOverrides: Union[bool, 'FindManyUserPermissionOverrideArgsFromSaleItem']
     notifications: Union[bool, 'FindManyNotificationArgsFromSaleItem']
     revokedTokens: Union[bool, 'FindManyRevokedTokenArgsFromSaleItem']
     stockAdjustments: Union[bool, 'FindManyStockAdjustmentArgsFromSaleItem']
@@ -9921,25 +12257,69 @@ class FindManyUserArgsFromSaleItem(TypedDict, total=False):
     include: 'UserIncludeFromUser'
 
 
-class UserPermissionIncludeFromSaleItem(TypedDict, total=False):
+class PermissionIncludeFromSaleItem(TypedDict, total=False):
     """Relational arguments for SaleItem"""
-    user: Union[bool, 'UserArgsFromSaleItem']
+    roles: Union[bool, 'FindManyRolePermissionArgsFromSaleItem']
+    users: Union[bool, 'FindManyUserPermissionOverrideArgsFromSaleItem']
 
 
-class UserPermissionArgsFromSaleItem(TypedDict, total=False):
+class PermissionArgsFromSaleItem(TypedDict, total=False):
     """Arguments for SaleItem"""
-    include: 'UserPermissionIncludeFromUserPermission'
+    include: 'PermissionIncludeFromPermission'
 
 
-class FindManyUserPermissionArgsFromSaleItem(TypedDict, total=False):
+class FindManyPermissionArgsFromSaleItem(TypedDict, total=False):
     """Arguments for SaleItem"""
     take: int
     skip: int
-    order_by: Union['UserPermissionOrderByInput', List['UserPermissionOrderByInput']]
-    where: 'UserPermissionWhereInput'
-    cursor: 'UserPermissionWhereUniqueInput'
-    distinct: List['UserPermissionScalarFieldKeys']
-    include: 'UserPermissionIncludeFromUserPermission'
+    order_by: Union['PermissionOrderByInput', List['PermissionOrderByInput']]
+    where: 'PermissionWhereInput'
+    cursor: 'PermissionWhereUniqueInput'
+    distinct: List['PermissionScalarFieldKeys']
+    include: 'PermissionIncludeFromPermission'
+
+
+class RolePermissionIncludeFromSaleItem(TypedDict, total=False):
+    """Relational arguments for SaleItem"""
+    permission: Union[bool, 'PermissionArgsFromSaleItem']
+
+
+class RolePermissionArgsFromSaleItem(TypedDict, total=False):
+    """Arguments for SaleItem"""
+    include: 'RolePermissionIncludeFromRolePermission'
+
+
+class FindManyRolePermissionArgsFromSaleItem(TypedDict, total=False):
+    """Arguments for SaleItem"""
+    take: int
+    skip: int
+    order_by: Union['RolePermissionOrderByInput', List['RolePermissionOrderByInput']]
+    where: 'RolePermissionWhereInput'
+    cursor: 'RolePermissionWhereUniqueInput'
+    distinct: List['RolePermissionScalarFieldKeys']
+    include: 'RolePermissionIncludeFromRolePermission'
+
+
+class UserPermissionOverrideIncludeFromSaleItem(TypedDict, total=False):
+    """Relational arguments for SaleItem"""
+    user: Union[bool, 'UserArgsFromSaleItem']
+    permission: Union[bool, 'PermissionArgsFromSaleItem']
+
+
+class UserPermissionOverrideArgsFromSaleItem(TypedDict, total=False):
+    """Arguments for SaleItem"""
+    include: 'UserPermissionOverrideIncludeFromUserPermissionOverride'
+
+
+class FindManyUserPermissionOverrideArgsFromSaleItem(TypedDict, total=False):
+    """Arguments for SaleItem"""
+    take: int
+    skip: int
+    order_by: Union['UserPermissionOverrideOrderByInput', List['UserPermissionOverrideOrderByInput']]
+    where: 'UserPermissionOverrideWhereInput'
+    cursor: 'UserPermissionOverrideWhereUniqueInput'
+    distinct: List['UserPermissionOverrideScalarFieldKeys']
+    include: 'UserPermissionOverrideIncludeFromUserPermissionOverride'
 
 
 class BranchIncludeFromSaleItem(TypedDict, total=False):
@@ -10821,7 +13201,7 @@ class UserIncludeFromReturnSale(TypedDict, total=False):
     """Relational arguments for ReturnSale"""
     branch: Union[bool, 'BranchArgsFromReturnSale']
     auditLogs: Union[bool, 'FindManyAuditLogArgsFromReturnSale']
-    permissions: Union[bool, 'FindManyUserPermissionArgsFromReturnSale']
+    rbacOverrides: Union[bool, 'FindManyUserPermissionOverrideArgsFromReturnSale']
     notifications: Union[bool, 'FindManyNotificationArgsFromReturnSale']
     revokedTokens: Union[bool, 'FindManyRevokedTokenArgsFromReturnSale']
     stockAdjustments: Union[bool, 'FindManyStockAdjustmentArgsFromReturnSale']
@@ -10851,25 +13231,69 @@ class FindManyUserArgsFromReturnSale(TypedDict, total=False):
     include: 'UserIncludeFromUser'
 
 
-class UserPermissionIncludeFromReturnSale(TypedDict, total=False):
+class PermissionIncludeFromReturnSale(TypedDict, total=False):
     """Relational arguments for ReturnSale"""
-    user: Union[bool, 'UserArgsFromReturnSale']
+    roles: Union[bool, 'FindManyRolePermissionArgsFromReturnSale']
+    users: Union[bool, 'FindManyUserPermissionOverrideArgsFromReturnSale']
 
 
-class UserPermissionArgsFromReturnSale(TypedDict, total=False):
+class PermissionArgsFromReturnSale(TypedDict, total=False):
     """Arguments for ReturnSale"""
-    include: 'UserPermissionIncludeFromUserPermission'
+    include: 'PermissionIncludeFromPermission'
 
 
-class FindManyUserPermissionArgsFromReturnSale(TypedDict, total=False):
+class FindManyPermissionArgsFromReturnSale(TypedDict, total=False):
     """Arguments for ReturnSale"""
     take: int
     skip: int
-    order_by: Union['UserPermissionOrderByInput', List['UserPermissionOrderByInput']]
-    where: 'UserPermissionWhereInput'
-    cursor: 'UserPermissionWhereUniqueInput'
-    distinct: List['UserPermissionScalarFieldKeys']
-    include: 'UserPermissionIncludeFromUserPermission'
+    order_by: Union['PermissionOrderByInput', List['PermissionOrderByInput']]
+    where: 'PermissionWhereInput'
+    cursor: 'PermissionWhereUniqueInput'
+    distinct: List['PermissionScalarFieldKeys']
+    include: 'PermissionIncludeFromPermission'
+
+
+class RolePermissionIncludeFromReturnSale(TypedDict, total=False):
+    """Relational arguments for ReturnSale"""
+    permission: Union[bool, 'PermissionArgsFromReturnSale']
+
+
+class RolePermissionArgsFromReturnSale(TypedDict, total=False):
+    """Arguments for ReturnSale"""
+    include: 'RolePermissionIncludeFromRolePermission'
+
+
+class FindManyRolePermissionArgsFromReturnSale(TypedDict, total=False):
+    """Arguments for ReturnSale"""
+    take: int
+    skip: int
+    order_by: Union['RolePermissionOrderByInput', List['RolePermissionOrderByInput']]
+    where: 'RolePermissionWhereInput'
+    cursor: 'RolePermissionWhereUniqueInput'
+    distinct: List['RolePermissionScalarFieldKeys']
+    include: 'RolePermissionIncludeFromRolePermission'
+
+
+class UserPermissionOverrideIncludeFromReturnSale(TypedDict, total=False):
+    """Relational arguments for ReturnSale"""
+    user: Union[bool, 'UserArgsFromReturnSale']
+    permission: Union[bool, 'PermissionArgsFromReturnSale']
+
+
+class UserPermissionOverrideArgsFromReturnSale(TypedDict, total=False):
+    """Arguments for ReturnSale"""
+    include: 'UserPermissionOverrideIncludeFromUserPermissionOverride'
+
+
+class FindManyUserPermissionOverrideArgsFromReturnSale(TypedDict, total=False):
+    """Arguments for ReturnSale"""
+    take: int
+    skip: int
+    order_by: Union['UserPermissionOverrideOrderByInput', List['UserPermissionOverrideOrderByInput']]
+    where: 'UserPermissionOverrideWhereInput'
+    cursor: 'UserPermissionOverrideWhereUniqueInput'
+    distinct: List['UserPermissionOverrideScalarFieldKeys']
+    include: 'UserPermissionOverrideIncludeFromUserPermissionOverride'
 
 
 class BranchIncludeFromReturnSale(TypedDict, total=False):
@@ -11730,7 +14154,7 @@ class UserIncludeFromReturnItem(TypedDict, total=False):
     """Relational arguments for ReturnItem"""
     branch: Union[bool, 'BranchArgsFromReturnItem']
     auditLogs: Union[bool, 'FindManyAuditLogArgsFromReturnItem']
-    permissions: Union[bool, 'FindManyUserPermissionArgsFromReturnItem']
+    rbacOverrides: Union[bool, 'FindManyUserPermissionOverrideArgsFromReturnItem']
     notifications: Union[bool, 'FindManyNotificationArgsFromReturnItem']
     revokedTokens: Union[bool, 'FindManyRevokedTokenArgsFromReturnItem']
     stockAdjustments: Union[bool, 'FindManyStockAdjustmentArgsFromReturnItem']
@@ -11760,25 +14184,69 @@ class FindManyUserArgsFromReturnItem(TypedDict, total=False):
     include: 'UserIncludeFromUser'
 
 
-class UserPermissionIncludeFromReturnItem(TypedDict, total=False):
+class PermissionIncludeFromReturnItem(TypedDict, total=False):
     """Relational arguments for ReturnItem"""
-    user: Union[bool, 'UserArgsFromReturnItem']
+    roles: Union[bool, 'FindManyRolePermissionArgsFromReturnItem']
+    users: Union[bool, 'FindManyUserPermissionOverrideArgsFromReturnItem']
 
 
-class UserPermissionArgsFromReturnItem(TypedDict, total=False):
+class PermissionArgsFromReturnItem(TypedDict, total=False):
     """Arguments for ReturnItem"""
-    include: 'UserPermissionIncludeFromUserPermission'
+    include: 'PermissionIncludeFromPermission'
 
 
-class FindManyUserPermissionArgsFromReturnItem(TypedDict, total=False):
+class FindManyPermissionArgsFromReturnItem(TypedDict, total=False):
     """Arguments for ReturnItem"""
     take: int
     skip: int
-    order_by: Union['UserPermissionOrderByInput', List['UserPermissionOrderByInput']]
-    where: 'UserPermissionWhereInput'
-    cursor: 'UserPermissionWhereUniqueInput'
-    distinct: List['UserPermissionScalarFieldKeys']
-    include: 'UserPermissionIncludeFromUserPermission'
+    order_by: Union['PermissionOrderByInput', List['PermissionOrderByInput']]
+    where: 'PermissionWhereInput'
+    cursor: 'PermissionWhereUniqueInput'
+    distinct: List['PermissionScalarFieldKeys']
+    include: 'PermissionIncludeFromPermission'
+
+
+class RolePermissionIncludeFromReturnItem(TypedDict, total=False):
+    """Relational arguments for ReturnItem"""
+    permission: Union[bool, 'PermissionArgsFromReturnItem']
+
+
+class RolePermissionArgsFromReturnItem(TypedDict, total=False):
+    """Arguments for ReturnItem"""
+    include: 'RolePermissionIncludeFromRolePermission'
+
+
+class FindManyRolePermissionArgsFromReturnItem(TypedDict, total=False):
+    """Arguments for ReturnItem"""
+    take: int
+    skip: int
+    order_by: Union['RolePermissionOrderByInput', List['RolePermissionOrderByInput']]
+    where: 'RolePermissionWhereInput'
+    cursor: 'RolePermissionWhereUniqueInput'
+    distinct: List['RolePermissionScalarFieldKeys']
+    include: 'RolePermissionIncludeFromRolePermission'
+
+
+class UserPermissionOverrideIncludeFromReturnItem(TypedDict, total=False):
+    """Relational arguments for ReturnItem"""
+    user: Union[bool, 'UserArgsFromReturnItem']
+    permission: Union[bool, 'PermissionArgsFromReturnItem']
+
+
+class UserPermissionOverrideArgsFromReturnItem(TypedDict, total=False):
+    """Arguments for ReturnItem"""
+    include: 'UserPermissionOverrideIncludeFromUserPermissionOverride'
+
+
+class FindManyUserPermissionOverrideArgsFromReturnItem(TypedDict, total=False):
+    """Arguments for ReturnItem"""
+    take: int
+    skip: int
+    order_by: Union['UserPermissionOverrideOrderByInput', List['UserPermissionOverrideOrderByInput']]
+    where: 'UserPermissionOverrideWhereInput'
+    cursor: 'UserPermissionOverrideWhereUniqueInput'
+    distinct: List['UserPermissionOverrideScalarFieldKeys']
+    include: 'UserPermissionOverrideIncludeFromUserPermissionOverride'
 
 
 class BranchIncludeFromReturnItem(TypedDict, total=False):
@@ -12696,7 +15164,7 @@ class UserIncludeFromPayment(TypedDict, total=False):
     """Relational arguments for Payment"""
     branch: Union[bool, 'BranchArgsFromPayment']
     auditLogs: Union[bool, 'FindManyAuditLogArgsFromPayment']
-    permissions: Union[bool, 'FindManyUserPermissionArgsFromPayment']
+    rbacOverrides: Union[bool, 'FindManyUserPermissionOverrideArgsFromPayment']
     notifications: Union[bool, 'FindManyNotificationArgsFromPayment']
     revokedTokens: Union[bool, 'FindManyRevokedTokenArgsFromPayment']
     stockAdjustments: Union[bool, 'FindManyStockAdjustmentArgsFromPayment']
@@ -12726,25 +15194,69 @@ class FindManyUserArgsFromPayment(TypedDict, total=False):
     include: 'UserIncludeFromUser'
 
 
-class UserPermissionIncludeFromPayment(TypedDict, total=False):
+class PermissionIncludeFromPayment(TypedDict, total=False):
     """Relational arguments for Payment"""
-    user: Union[bool, 'UserArgsFromPayment']
+    roles: Union[bool, 'FindManyRolePermissionArgsFromPayment']
+    users: Union[bool, 'FindManyUserPermissionOverrideArgsFromPayment']
 
 
-class UserPermissionArgsFromPayment(TypedDict, total=False):
+class PermissionArgsFromPayment(TypedDict, total=False):
     """Arguments for Payment"""
-    include: 'UserPermissionIncludeFromUserPermission'
+    include: 'PermissionIncludeFromPermission'
 
 
-class FindManyUserPermissionArgsFromPayment(TypedDict, total=False):
+class FindManyPermissionArgsFromPayment(TypedDict, total=False):
     """Arguments for Payment"""
     take: int
     skip: int
-    order_by: Union['UserPermissionOrderByInput', List['UserPermissionOrderByInput']]
-    where: 'UserPermissionWhereInput'
-    cursor: 'UserPermissionWhereUniqueInput'
-    distinct: List['UserPermissionScalarFieldKeys']
-    include: 'UserPermissionIncludeFromUserPermission'
+    order_by: Union['PermissionOrderByInput', List['PermissionOrderByInput']]
+    where: 'PermissionWhereInput'
+    cursor: 'PermissionWhereUniqueInput'
+    distinct: List['PermissionScalarFieldKeys']
+    include: 'PermissionIncludeFromPermission'
+
+
+class RolePermissionIncludeFromPayment(TypedDict, total=False):
+    """Relational arguments for Payment"""
+    permission: Union[bool, 'PermissionArgsFromPayment']
+
+
+class RolePermissionArgsFromPayment(TypedDict, total=False):
+    """Arguments for Payment"""
+    include: 'RolePermissionIncludeFromRolePermission'
+
+
+class FindManyRolePermissionArgsFromPayment(TypedDict, total=False):
+    """Arguments for Payment"""
+    take: int
+    skip: int
+    order_by: Union['RolePermissionOrderByInput', List['RolePermissionOrderByInput']]
+    where: 'RolePermissionWhereInput'
+    cursor: 'RolePermissionWhereUniqueInput'
+    distinct: List['RolePermissionScalarFieldKeys']
+    include: 'RolePermissionIncludeFromRolePermission'
+
+
+class UserPermissionOverrideIncludeFromPayment(TypedDict, total=False):
+    """Relational arguments for Payment"""
+    user: Union[bool, 'UserArgsFromPayment']
+    permission: Union[bool, 'PermissionArgsFromPayment']
+
+
+class UserPermissionOverrideArgsFromPayment(TypedDict, total=False):
+    """Arguments for Payment"""
+    include: 'UserPermissionOverrideIncludeFromUserPermissionOverride'
+
+
+class FindManyUserPermissionOverrideArgsFromPayment(TypedDict, total=False):
+    """Arguments for Payment"""
+    take: int
+    skip: int
+    order_by: Union['UserPermissionOverrideOrderByInput', List['UserPermissionOverrideOrderByInput']]
+    where: 'UserPermissionOverrideWhereInput'
+    cursor: 'UserPermissionOverrideWhereUniqueInput'
+    distinct: List['UserPermissionOverrideScalarFieldKeys']
+    include: 'UserPermissionOverrideIncludeFromUserPermissionOverride'
 
 
 class BranchIncludeFromPayment(TypedDict, total=False):
@@ -13658,7 +16170,7 @@ class UserIncludeFromJournalEntry(TypedDict, total=False):
     """Relational arguments for JournalEntry"""
     branch: Union[bool, 'BranchArgsFromJournalEntry']
     auditLogs: Union[bool, 'FindManyAuditLogArgsFromJournalEntry']
-    permissions: Union[bool, 'FindManyUserPermissionArgsFromJournalEntry']
+    rbacOverrides: Union[bool, 'FindManyUserPermissionOverrideArgsFromJournalEntry']
     notifications: Union[bool, 'FindManyNotificationArgsFromJournalEntry']
     revokedTokens: Union[bool, 'FindManyRevokedTokenArgsFromJournalEntry']
     stockAdjustments: Union[bool, 'FindManyStockAdjustmentArgsFromJournalEntry']
@@ -13688,25 +16200,69 @@ class FindManyUserArgsFromJournalEntry(TypedDict, total=False):
     include: 'UserIncludeFromUser'
 
 
-class UserPermissionIncludeFromJournalEntry(TypedDict, total=False):
+class PermissionIncludeFromJournalEntry(TypedDict, total=False):
     """Relational arguments for JournalEntry"""
-    user: Union[bool, 'UserArgsFromJournalEntry']
+    roles: Union[bool, 'FindManyRolePermissionArgsFromJournalEntry']
+    users: Union[bool, 'FindManyUserPermissionOverrideArgsFromJournalEntry']
 
 
-class UserPermissionArgsFromJournalEntry(TypedDict, total=False):
+class PermissionArgsFromJournalEntry(TypedDict, total=False):
     """Arguments for JournalEntry"""
-    include: 'UserPermissionIncludeFromUserPermission'
+    include: 'PermissionIncludeFromPermission'
 
 
-class FindManyUserPermissionArgsFromJournalEntry(TypedDict, total=False):
+class FindManyPermissionArgsFromJournalEntry(TypedDict, total=False):
     """Arguments for JournalEntry"""
     take: int
     skip: int
-    order_by: Union['UserPermissionOrderByInput', List['UserPermissionOrderByInput']]
-    where: 'UserPermissionWhereInput'
-    cursor: 'UserPermissionWhereUniqueInput'
-    distinct: List['UserPermissionScalarFieldKeys']
-    include: 'UserPermissionIncludeFromUserPermission'
+    order_by: Union['PermissionOrderByInput', List['PermissionOrderByInput']]
+    where: 'PermissionWhereInput'
+    cursor: 'PermissionWhereUniqueInput'
+    distinct: List['PermissionScalarFieldKeys']
+    include: 'PermissionIncludeFromPermission'
+
+
+class RolePermissionIncludeFromJournalEntry(TypedDict, total=False):
+    """Relational arguments for JournalEntry"""
+    permission: Union[bool, 'PermissionArgsFromJournalEntry']
+
+
+class RolePermissionArgsFromJournalEntry(TypedDict, total=False):
+    """Arguments for JournalEntry"""
+    include: 'RolePermissionIncludeFromRolePermission'
+
+
+class FindManyRolePermissionArgsFromJournalEntry(TypedDict, total=False):
+    """Arguments for JournalEntry"""
+    take: int
+    skip: int
+    order_by: Union['RolePermissionOrderByInput', List['RolePermissionOrderByInput']]
+    where: 'RolePermissionWhereInput'
+    cursor: 'RolePermissionWhereUniqueInput'
+    distinct: List['RolePermissionScalarFieldKeys']
+    include: 'RolePermissionIncludeFromRolePermission'
+
+
+class UserPermissionOverrideIncludeFromJournalEntry(TypedDict, total=False):
+    """Relational arguments for JournalEntry"""
+    user: Union[bool, 'UserArgsFromJournalEntry']
+    permission: Union[bool, 'PermissionArgsFromJournalEntry']
+
+
+class UserPermissionOverrideArgsFromJournalEntry(TypedDict, total=False):
+    """Arguments for JournalEntry"""
+    include: 'UserPermissionOverrideIncludeFromUserPermissionOverride'
+
+
+class FindManyUserPermissionOverrideArgsFromJournalEntry(TypedDict, total=False):
+    """Arguments for JournalEntry"""
+    take: int
+    skip: int
+    order_by: Union['UserPermissionOverrideOrderByInput', List['UserPermissionOverrideOrderByInput']]
+    where: 'UserPermissionOverrideWhereInput'
+    cursor: 'UserPermissionOverrideWhereUniqueInput'
+    distinct: List['UserPermissionOverrideScalarFieldKeys']
+    include: 'UserPermissionOverrideIncludeFromUserPermissionOverride'
 
 
 class BranchIncludeFromJournalEntry(TypedDict, total=False):
@@ -14574,7 +17130,7 @@ class UserIncludeFromJournalEntryLine(TypedDict, total=False):
     """Relational arguments for JournalEntryLine"""
     branch: Union[bool, 'BranchArgsFromJournalEntryLine']
     auditLogs: Union[bool, 'FindManyAuditLogArgsFromJournalEntryLine']
-    permissions: Union[bool, 'FindManyUserPermissionArgsFromJournalEntryLine']
+    rbacOverrides: Union[bool, 'FindManyUserPermissionOverrideArgsFromJournalEntryLine']
     notifications: Union[bool, 'FindManyNotificationArgsFromJournalEntryLine']
     revokedTokens: Union[bool, 'FindManyRevokedTokenArgsFromJournalEntryLine']
     stockAdjustments: Union[bool, 'FindManyStockAdjustmentArgsFromJournalEntryLine']
@@ -14604,25 +17160,69 @@ class FindManyUserArgsFromJournalEntryLine(TypedDict, total=False):
     include: 'UserIncludeFromUser'
 
 
-class UserPermissionIncludeFromJournalEntryLine(TypedDict, total=False):
+class PermissionIncludeFromJournalEntryLine(TypedDict, total=False):
     """Relational arguments for JournalEntryLine"""
-    user: Union[bool, 'UserArgsFromJournalEntryLine']
+    roles: Union[bool, 'FindManyRolePermissionArgsFromJournalEntryLine']
+    users: Union[bool, 'FindManyUserPermissionOverrideArgsFromJournalEntryLine']
 
 
-class UserPermissionArgsFromJournalEntryLine(TypedDict, total=False):
+class PermissionArgsFromJournalEntryLine(TypedDict, total=False):
     """Arguments for JournalEntryLine"""
-    include: 'UserPermissionIncludeFromUserPermission'
+    include: 'PermissionIncludeFromPermission'
 
 
-class FindManyUserPermissionArgsFromJournalEntryLine(TypedDict, total=False):
+class FindManyPermissionArgsFromJournalEntryLine(TypedDict, total=False):
     """Arguments for JournalEntryLine"""
     take: int
     skip: int
-    order_by: Union['UserPermissionOrderByInput', List['UserPermissionOrderByInput']]
-    where: 'UserPermissionWhereInput'
-    cursor: 'UserPermissionWhereUniqueInput'
-    distinct: List['UserPermissionScalarFieldKeys']
-    include: 'UserPermissionIncludeFromUserPermission'
+    order_by: Union['PermissionOrderByInput', List['PermissionOrderByInput']]
+    where: 'PermissionWhereInput'
+    cursor: 'PermissionWhereUniqueInput'
+    distinct: List['PermissionScalarFieldKeys']
+    include: 'PermissionIncludeFromPermission'
+
+
+class RolePermissionIncludeFromJournalEntryLine(TypedDict, total=False):
+    """Relational arguments for JournalEntryLine"""
+    permission: Union[bool, 'PermissionArgsFromJournalEntryLine']
+
+
+class RolePermissionArgsFromJournalEntryLine(TypedDict, total=False):
+    """Arguments for JournalEntryLine"""
+    include: 'RolePermissionIncludeFromRolePermission'
+
+
+class FindManyRolePermissionArgsFromJournalEntryLine(TypedDict, total=False):
+    """Arguments for JournalEntryLine"""
+    take: int
+    skip: int
+    order_by: Union['RolePermissionOrderByInput', List['RolePermissionOrderByInput']]
+    where: 'RolePermissionWhereInput'
+    cursor: 'RolePermissionWhereUniqueInput'
+    distinct: List['RolePermissionScalarFieldKeys']
+    include: 'RolePermissionIncludeFromRolePermission'
+
+
+class UserPermissionOverrideIncludeFromJournalEntryLine(TypedDict, total=False):
+    """Relational arguments for JournalEntryLine"""
+    user: Union[bool, 'UserArgsFromJournalEntryLine']
+    permission: Union[bool, 'PermissionArgsFromJournalEntryLine']
+
+
+class UserPermissionOverrideArgsFromJournalEntryLine(TypedDict, total=False):
+    """Arguments for JournalEntryLine"""
+    include: 'UserPermissionOverrideIncludeFromUserPermissionOverride'
+
+
+class FindManyUserPermissionOverrideArgsFromJournalEntryLine(TypedDict, total=False):
+    """Arguments for JournalEntryLine"""
+    take: int
+    skip: int
+    order_by: Union['UserPermissionOverrideOrderByInput', List['UserPermissionOverrideOrderByInput']]
+    where: 'UserPermissionOverrideWhereInput'
+    cursor: 'UserPermissionOverrideWhereUniqueInput'
+    distinct: List['UserPermissionOverrideScalarFieldKeys']
+    include: 'UserPermissionOverrideIncludeFromUserPermissionOverride'
 
 
 class BranchIncludeFromJournalEntryLine(TypedDict, total=False):
@@ -15317,9 +17917,9 @@ class AccountOptionalCreateInput(TypedDict, total=False):
     id: _int
     currency: 'enums.Currency'
     balance: decimal.Decimal
-    active: _bool
     branchId: Optional[_int]
     branch: 'BranchCreateNestedWithoutRelationsInput'
+    isActive: _bool
     createdAt: datetime.datetime
     updatedAt: datetime.datetime
     entries: 'JournalEntryLineCreateManyNestedWithoutRelationsInput'
@@ -15342,8 +17942,8 @@ class AccountOptionalCreateWithoutRelationsInput(TypedDict, total=False):
     id: _int
     currency: 'enums.Currency'
     balance: decimal.Decimal
-    active: _bool
     branchId: Optional[_int]
+    isActive: _bool
     createdAt: datetime.datetime
     updatedAt: datetime.datetime
 
@@ -15382,8 +17982,8 @@ class AccountUpdateInput(TypedDict, total=False):
     type: 'enums.AccountType'
     currency: 'enums.Currency'
     balance: decimal.Decimal
-    active: _bool
     branch: 'BranchUpdateOneWithoutRelationsInput'
+    isActive: _bool
     createdAt: datetime.datetime
     updatedAt: datetime.datetime
     entries: 'JournalEntryLineUpdateManyWithoutRelationsInput'
@@ -15399,7 +17999,7 @@ class AccountUpdateManyMutationInput(TypedDict, total=False):
     type: 'enums.AccountType'
     currency: 'enums.Currency'
     balance: decimal.Decimal
-    active: _bool
+    isActive: _bool
     createdAt: datetime.datetime
     updatedAt: datetime.datetime
 
@@ -15476,18 +18076,18 @@ _Account_balance_OrderByInput = TypedDict(
     total=True
 )
 
-_Account_active_OrderByInput = TypedDict(
-    '_Account_active_OrderByInput',
-    {
-        'active': 'SortOrder',
-    },
-    total=True
-)
-
 _Account_branchId_OrderByInput = TypedDict(
     '_Account_branchId_OrderByInput',
     {
         'branchId': 'SortOrder',
+    },
+    total=True
+)
+
+_Account_isActive_OrderByInput = TypedDict(
+    '_Account_isActive_OrderByInput',
+    {
+        'isActive': 'SortOrder',
     },
     total=True
 )
@@ -15514,8 +18114,8 @@ AccountOrderByInput = Union[
     '_Account_type_OrderByInput',
     '_Account_currency_OrderByInput',
     '_Account_balance_OrderByInput',
-    '_Account_active_OrderByInput',
     '_Account_branchId_OrderByInput',
+    '_Account_isActive_OrderByInput',
     '_Account_createdAt_OrderByInput',
     '_Account_updatedAt_OrderByInput',
 ]
@@ -15556,7 +18156,7 @@ class UserIncludeFromAccount(TypedDict, total=False):
     """Relational arguments for Account"""
     branch: Union[bool, 'BranchArgsFromAccount']
     auditLogs: Union[bool, 'FindManyAuditLogArgsFromAccount']
-    permissions: Union[bool, 'FindManyUserPermissionArgsFromAccount']
+    rbacOverrides: Union[bool, 'FindManyUserPermissionOverrideArgsFromAccount']
     notifications: Union[bool, 'FindManyNotificationArgsFromAccount']
     revokedTokens: Union[bool, 'FindManyRevokedTokenArgsFromAccount']
     stockAdjustments: Union[bool, 'FindManyStockAdjustmentArgsFromAccount']
@@ -15586,25 +18186,69 @@ class FindManyUserArgsFromAccount(TypedDict, total=False):
     include: 'UserIncludeFromUser'
 
 
-class UserPermissionIncludeFromAccount(TypedDict, total=False):
+class PermissionIncludeFromAccount(TypedDict, total=False):
     """Relational arguments for Account"""
-    user: Union[bool, 'UserArgsFromAccount']
+    roles: Union[bool, 'FindManyRolePermissionArgsFromAccount']
+    users: Union[bool, 'FindManyUserPermissionOverrideArgsFromAccount']
 
 
-class UserPermissionArgsFromAccount(TypedDict, total=False):
+class PermissionArgsFromAccount(TypedDict, total=False):
     """Arguments for Account"""
-    include: 'UserPermissionIncludeFromUserPermission'
+    include: 'PermissionIncludeFromPermission'
 
 
-class FindManyUserPermissionArgsFromAccount(TypedDict, total=False):
+class FindManyPermissionArgsFromAccount(TypedDict, total=False):
     """Arguments for Account"""
     take: int
     skip: int
-    order_by: Union['UserPermissionOrderByInput', List['UserPermissionOrderByInput']]
-    where: 'UserPermissionWhereInput'
-    cursor: 'UserPermissionWhereUniqueInput'
-    distinct: List['UserPermissionScalarFieldKeys']
-    include: 'UserPermissionIncludeFromUserPermission'
+    order_by: Union['PermissionOrderByInput', List['PermissionOrderByInput']]
+    where: 'PermissionWhereInput'
+    cursor: 'PermissionWhereUniqueInput'
+    distinct: List['PermissionScalarFieldKeys']
+    include: 'PermissionIncludeFromPermission'
+
+
+class RolePermissionIncludeFromAccount(TypedDict, total=False):
+    """Relational arguments for Account"""
+    permission: Union[bool, 'PermissionArgsFromAccount']
+
+
+class RolePermissionArgsFromAccount(TypedDict, total=False):
+    """Arguments for Account"""
+    include: 'RolePermissionIncludeFromRolePermission'
+
+
+class FindManyRolePermissionArgsFromAccount(TypedDict, total=False):
+    """Arguments for Account"""
+    take: int
+    skip: int
+    order_by: Union['RolePermissionOrderByInput', List['RolePermissionOrderByInput']]
+    where: 'RolePermissionWhereInput'
+    cursor: 'RolePermissionWhereUniqueInput'
+    distinct: List['RolePermissionScalarFieldKeys']
+    include: 'RolePermissionIncludeFromRolePermission'
+
+
+class UserPermissionOverrideIncludeFromAccount(TypedDict, total=False):
+    """Relational arguments for Account"""
+    user: Union[bool, 'UserArgsFromAccount']
+    permission: Union[bool, 'PermissionArgsFromAccount']
+
+
+class UserPermissionOverrideArgsFromAccount(TypedDict, total=False):
+    """Arguments for Account"""
+    include: 'UserPermissionOverrideIncludeFromUserPermissionOverride'
+
+
+class FindManyUserPermissionOverrideArgsFromAccount(TypedDict, total=False):
+    """Arguments for Account"""
+    take: int
+    skip: int
+    order_by: Union['UserPermissionOverrideOrderByInput', List['UserPermissionOverrideOrderByInput']]
+    where: 'UserPermissionOverrideWhereInput'
+    cursor: 'UserPermissionOverrideWhereUniqueInput'
+    distinct: List['UserPermissionOverrideScalarFieldKeys']
+    include: 'UserPermissionOverrideIncludeFromUserPermissionOverride'
 
 
 class BranchIncludeFromAccount(TypedDict, total=False):
@@ -16135,9 +18779,9 @@ class AccountWhereInput(TypedDict, total=False):
     type: 'enums.AccountType'
     currency: 'enums.Currency'
     balance: Union[decimal.Decimal, 'types.DecimalFilter']
-    active: Union[_bool, 'types.BooleanFilter']
     branchId: Union[None, _int, 'types.IntFilter']
     branch: 'BranchRelationFilter'
+    isActive: Union[_bool, 'types.BooleanFilter']
     createdAt: Union[datetime.datetime, 'types.DateTimeFilter']
     updatedAt: Union[datetime.datetime, 'types.DateTimeFilter']
     entries: 'JournalEntryLineListRelationFilter'
@@ -16163,8 +18807,8 @@ class AccountScalarWhereWithAggregatesInput(TypedDict, total=False):
     type: 'enums.AccountType'
     currency: 'enums.Currency'
     balance: Union[decimal.Decimal, 'types.DecimalWithAggregatesFilter']
-    active: Union[_bool, 'types.BooleanWithAggregatesFilter']
     branchId: Union[_int, 'types.IntWithAggregatesFilter']
+    isActive: Union[_bool, 'types.BooleanWithAggregatesFilter']
     createdAt: Union[datetime.datetime, 'types.DateTimeWithAggregatesFilter']
     updatedAt: Union[datetime.datetime, 'types.DateTimeWithAggregatesFilter']
 
@@ -16180,8 +18824,8 @@ class AccountGroupByOutput(TypedDict, total=False):
     type: 'enums.AccountType'
     currency: 'enums.Currency'
     balance: decimal.Decimal
-    active: _bool
     branchId: _int
+    isActive: _bool
     createdAt: datetime.datetime
     updatedAt: datetime.datetime
     _sum: 'AccountSumAggregateOutput'
@@ -16210,8 +18854,8 @@ class AccountScalarAggregateOutput(TypedDict, total=False):
     type: 'enums.AccountType'
     currency: 'enums.Currency'
     balance: decimal.Decimal
-    active: _bool
     branchId: _int
+    isActive: _bool
     createdAt: datetime.datetime
     updatedAt: datetime.datetime
 
@@ -16227,8 +18871,8 @@ class AccountMaxAggregateInput(TypedDict, total=False):
     type: bool
     currency: bool
     balance: bool
-    active: bool
     branchId: bool
+    isActive: bool
     createdAt: bool
     updatedAt: bool
 
@@ -16240,8 +18884,8 @@ class AccountMinAggregateInput(TypedDict, total=False):
     type: bool
     currency: bool
     balance: bool
-    active: bool
     branchId: bool
+    isActive: bool
     createdAt: bool
     updatedAt: bool
 
@@ -16264,8 +18908,8 @@ AccountCountAggregateInput = TypedDict(
         'type': bool,
         'currency': bool,
         'balance': bool,
-        'active': bool,
         'branchId': bool,
+        'isActive': bool,
         'createdAt': bool,
         'updatedAt': bool,
         '_all': bool,
@@ -16281,8 +18925,8 @@ AccountCountAggregateOutput = TypedDict(
         'type': int,
         'currency': int,
         'balance': int,
-        'active': int,
         'branchId': int,
+        'isActive': int,
         'createdAt': int,
         'updatedAt': int,
         '_all': int,
@@ -16297,9 +18941,9 @@ AccountKeys = Literal[
     'type',
     'currency',
     'balance',
-    'active',
     'branchId',
     'branch',
+    'isActive',
     'createdAt',
     'updatedAt',
     'entries',
@@ -16313,8 +18957,8 @@ AccountScalarFieldKeys = Literal[
     'type',
     'currency',
     'balance',
-    'active',
     'branchId',
+    'isActive',
     'createdAt',
     'updatedAt',
 ]
@@ -16576,7 +19220,7 @@ class UserIncludeFromAccountTransfer(TypedDict, total=False):
     """Relational arguments for AccountTransfer"""
     branch: Union[bool, 'BranchArgsFromAccountTransfer']
     auditLogs: Union[bool, 'FindManyAuditLogArgsFromAccountTransfer']
-    permissions: Union[bool, 'FindManyUserPermissionArgsFromAccountTransfer']
+    rbacOverrides: Union[bool, 'FindManyUserPermissionOverrideArgsFromAccountTransfer']
     notifications: Union[bool, 'FindManyNotificationArgsFromAccountTransfer']
     revokedTokens: Union[bool, 'FindManyRevokedTokenArgsFromAccountTransfer']
     stockAdjustments: Union[bool, 'FindManyStockAdjustmentArgsFromAccountTransfer']
@@ -16606,25 +19250,69 @@ class FindManyUserArgsFromAccountTransfer(TypedDict, total=False):
     include: 'UserIncludeFromUser'
 
 
-class UserPermissionIncludeFromAccountTransfer(TypedDict, total=False):
+class PermissionIncludeFromAccountTransfer(TypedDict, total=False):
     """Relational arguments for AccountTransfer"""
-    user: Union[bool, 'UserArgsFromAccountTransfer']
+    roles: Union[bool, 'FindManyRolePermissionArgsFromAccountTransfer']
+    users: Union[bool, 'FindManyUserPermissionOverrideArgsFromAccountTransfer']
 
 
-class UserPermissionArgsFromAccountTransfer(TypedDict, total=False):
+class PermissionArgsFromAccountTransfer(TypedDict, total=False):
     """Arguments for AccountTransfer"""
-    include: 'UserPermissionIncludeFromUserPermission'
+    include: 'PermissionIncludeFromPermission'
 
 
-class FindManyUserPermissionArgsFromAccountTransfer(TypedDict, total=False):
+class FindManyPermissionArgsFromAccountTransfer(TypedDict, total=False):
     """Arguments for AccountTransfer"""
     take: int
     skip: int
-    order_by: Union['UserPermissionOrderByInput', List['UserPermissionOrderByInput']]
-    where: 'UserPermissionWhereInput'
-    cursor: 'UserPermissionWhereUniqueInput'
-    distinct: List['UserPermissionScalarFieldKeys']
-    include: 'UserPermissionIncludeFromUserPermission'
+    order_by: Union['PermissionOrderByInput', List['PermissionOrderByInput']]
+    where: 'PermissionWhereInput'
+    cursor: 'PermissionWhereUniqueInput'
+    distinct: List['PermissionScalarFieldKeys']
+    include: 'PermissionIncludeFromPermission'
+
+
+class RolePermissionIncludeFromAccountTransfer(TypedDict, total=False):
+    """Relational arguments for AccountTransfer"""
+    permission: Union[bool, 'PermissionArgsFromAccountTransfer']
+
+
+class RolePermissionArgsFromAccountTransfer(TypedDict, total=False):
+    """Arguments for AccountTransfer"""
+    include: 'RolePermissionIncludeFromRolePermission'
+
+
+class FindManyRolePermissionArgsFromAccountTransfer(TypedDict, total=False):
+    """Arguments for AccountTransfer"""
+    take: int
+    skip: int
+    order_by: Union['RolePermissionOrderByInput', List['RolePermissionOrderByInput']]
+    where: 'RolePermissionWhereInput'
+    cursor: 'RolePermissionWhereUniqueInput'
+    distinct: List['RolePermissionScalarFieldKeys']
+    include: 'RolePermissionIncludeFromRolePermission'
+
+
+class UserPermissionOverrideIncludeFromAccountTransfer(TypedDict, total=False):
+    """Relational arguments for AccountTransfer"""
+    user: Union[bool, 'UserArgsFromAccountTransfer']
+    permission: Union[bool, 'PermissionArgsFromAccountTransfer']
+
+
+class UserPermissionOverrideArgsFromAccountTransfer(TypedDict, total=False):
+    """Arguments for AccountTransfer"""
+    include: 'UserPermissionOverrideIncludeFromUserPermissionOverride'
+
+
+class FindManyUserPermissionOverrideArgsFromAccountTransfer(TypedDict, total=False):
+    """Arguments for AccountTransfer"""
+    take: int
+    skip: int
+    order_by: Union['UserPermissionOverrideOrderByInput', List['UserPermissionOverrideOrderByInput']]
+    where: 'UserPermissionOverrideWhereInput'
+    cursor: 'UserPermissionOverrideWhereUniqueInput'
+    distinct: List['UserPermissionOverrideScalarFieldKeys']
+    include: 'UserPermissionOverrideIncludeFromUserPermissionOverride'
 
 
 class BranchIncludeFromAccountTransfer(TypedDict, total=False):
@@ -17593,7 +20281,7 @@ class UserIncludeFromBranchOrder(TypedDict, total=False):
     """Relational arguments for BranchOrder"""
     branch: Union[bool, 'BranchArgsFromBranchOrder']
     auditLogs: Union[bool, 'FindManyAuditLogArgsFromBranchOrder']
-    permissions: Union[bool, 'FindManyUserPermissionArgsFromBranchOrder']
+    rbacOverrides: Union[bool, 'FindManyUserPermissionOverrideArgsFromBranchOrder']
     notifications: Union[bool, 'FindManyNotificationArgsFromBranchOrder']
     revokedTokens: Union[bool, 'FindManyRevokedTokenArgsFromBranchOrder']
     stockAdjustments: Union[bool, 'FindManyStockAdjustmentArgsFromBranchOrder']
@@ -17623,25 +20311,69 @@ class FindManyUserArgsFromBranchOrder(TypedDict, total=False):
     include: 'UserIncludeFromUser'
 
 
-class UserPermissionIncludeFromBranchOrder(TypedDict, total=False):
+class PermissionIncludeFromBranchOrder(TypedDict, total=False):
     """Relational arguments for BranchOrder"""
-    user: Union[bool, 'UserArgsFromBranchOrder']
+    roles: Union[bool, 'FindManyRolePermissionArgsFromBranchOrder']
+    users: Union[bool, 'FindManyUserPermissionOverrideArgsFromBranchOrder']
 
 
-class UserPermissionArgsFromBranchOrder(TypedDict, total=False):
+class PermissionArgsFromBranchOrder(TypedDict, total=False):
     """Arguments for BranchOrder"""
-    include: 'UserPermissionIncludeFromUserPermission'
+    include: 'PermissionIncludeFromPermission'
 
 
-class FindManyUserPermissionArgsFromBranchOrder(TypedDict, total=False):
+class FindManyPermissionArgsFromBranchOrder(TypedDict, total=False):
     """Arguments for BranchOrder"""
     take: int
     skip: int
-    order_by: Union['UserPermissionOrderByInput', List['UserPermissionOrderByInput']]
-    where: 'UserPermissionWhereInput'
-    cursor: 'UserPermissionWhereUniqueInput'
-    distinct: List['UserPermissionScalarFieldKeys']
-    include: 'UserPermissionIncludeFromUserPermission'
+    order_by: Union['PermissionOrderByInput', List['PermissionOrderByInput']]
+    where: 'PermissionWhereInput'
+    cursor: 'PermissionWhereUniqueInput'
+    distinct: List['PermissionScalarFieldKeys']
+    include: 'PermissionIncludeFromPermission'
+
+
+class RolePermissionIncludeFromBranchOrder(TypedDict, total=False):
+    """Relational arguments for BranchOrder"""
+    permission: Union[bool, 'PermissionArgsFromBranchOrder']
+
+
+class RolePermissionArgsFromBranchOrder(TypedDict, total=False):
+    """Arguments for BranchOrder"""
+    include: 'RolePermissionIncludeFromRolePermission'
+
+
+class FindManyRolePermissionArgsFromBranchOrder(TypedDict, total=False):
+    """Arguments for BranchOrder"""
+    take: int
+    skip: int
+    order_by: Union['RolePermissionOrderByInput', List['RolePermissionOrderByInput']]
+    where: 'RolePermissionWhereInput'
+    cursor: 'RolePermissionWhereUniqueInput'
+    distinct: List['RolePermissionScalarFieldKeys']
+    include: 'RolePermissionIncludeFromRolePermission'
+
+
+class UserPermissionOverrideIncludeFromBranchOrder(TypedDict, total=False):
+    """Relational arguments for BranchOrder"""
+    user: Union[bool, 'UserArgsFromBranchOrder']
+    permission: Union[bool, 'PermissionArgsFromBranchOrder']
+
+
+class UserPermissionOverrideArgsFromBranchOrder(TypedDict, total=False):
+    """Arguments for BranchOrder"""
+    include: 'UserPermissionOverrideIncludeFromUserPermissionOverride'
+
+
+class FindManyUserPermissionOverrideArgsFromBranchOrder(TypedDict, total=False):
+    """Arguments for BranchOrder"""
+    take: int
+    skip: int
+    order_by: Union['UserPermissionOverrideOrderByInput', List['UserPermissionOverrideOrderByInput']]
+    where: 'UserPermissionOverrideWhereInput'
+    cursor: 'UserPermissionOverrideWhereUniqueInput'
+    distinct: List['UserPermissionOverrideScalarFieldKeys']
+    include: 'UserPermissionOverrideIncludeFromUserPermissionOverride'
 
 
 class BranchIncludeFromBranchOrder(TypedDict, total=False):
@@ -18589,7 +21321,7 @@ class UserIncludeFromBranchOrderItem(TypedDict, total=False):
     """Relational arguments for BranchOrderItem"""
     branch: Union[bool, 'BranchArgsFromBranchOrderItem']
     auditLogs: Union[bool, 'FindManyAuditLogArgsFromBranchOrderItem']
-    permissions: Union[bool, 'FindManyUserPermissionArgsFromBranchOrderItem']
+    rbacOverrides: Union[bool, 'FindManyUserPermissionOverrideArgsFromBranchOrderItem']
     notifications: Union[bool, 'FindManyNotificationArgsFromBranchOrderItem']
     revokedTokens: Union[bool, 'FindManyRevokedTokenArgsFromBranchOrderItem']
     stockAdjustments: Union[bool, 'FindManyStockAdjustmentArgsFromBranchOrderItem']
@@ -18619,25 +21351,69 @@ class FindManyUserArgsFromBranchOrderItem(TypedDict, total=False):
     include: 'UserIncludeFromUser'
 
 
-class UserPermissionIncludeFromBranchOrderItem(TypedDict, total=False):
+class PermissionIncludeFromBranchOrderItem(TypedDict, total=False):
     """Relational arguments for BranchOrderItem"""
-    user: Union[bool, 'UserArgsFromBranchOrderItem']
+    roles: Union[bool, 'FindManyRolePermissionArgsFromBranchOrderItem']
+    users: Union[bool, 'FindManyUserPermissionOverrideArgsFromBranchOrderItem']
 
 
-class UserPermissionArgsFromBranchOrderItem(TypedDict, total=False):
+class PermissionArgsFromBranchOrderItem(TypedDict, total=False):
     """Arguments for BranchOrderItem"""
-    include: 'UserPermissionIncludeFromUserPermission'
+    include: 'PermissionIncludeFromPermission'
 
 
-class FindManyUserPermissionArgsFromBranchOrderItem(TypedDict, total=False):
+class FindManyPermissionArgsFromBranchOrderItem(TypedDict, total=False):
     """Arguments for BranchOrderItem"""
     take: int
     skip: int
-    order_by: Union['UserPermissionOrderByInput', List['UserPermissionOrderByInput']]
-    where: 'UserPermissionWhereInput'
-    cursor: 'UserPermissionWhereUniqueInput'
-    distinct: List['UserPermissionScalarFieldKeys']
-    include: 'UserPermissionIncludeFromUserPermission'
+    order_by: Union['PermissionOrderByInput', List['PermissionOrderByInput']]
+    where: 'PermissionWhereInput'
+    cursor: 'PermissionWhereUniqueInput'
+    distinct: List['PermissionScalarFieldKeys']
+    include: 'PermissionIncludeFromPermission'
+
+
+class RolePermissionIncludeFromBranchOrderItem(TypedDict, total=False):
+    """Relational arguments for BranchOrderItem"""
+    permission: Union[bool, 'PermissionArgsFromBranchOrderItem']
+
+
+class RolePermissionArgsFromBranchOrderItem(TypedDict, total=False):
+    """Arguments for BranchOrderItem"""
+    include: 'RolePermissionIncludeFromRolePermission'
+
+
+class FindManyRolePermissionArgsFromBranchOrderItem(TypedDict, total=False):
+    """Arguments for BranchOrderItem"""
+    take: int
+    skip: int
+    order_by: Union['RolePermissionOrderByInput', List['RolePermissionOrderByInput']]
+    where: 'RolePermissionWhereInput'
+    cursor: 'RolePermissionWhereUniqueInput'
+    distinct: List['RolePermissionScalarFieldKeys']
+    include: 'RolePermissionIncludeFromRolePermission'
+
+
+class UserPermissionOverrideIncludeFromBranchOrderItem(TypedDict, total=False):
+    """Relational arguments for BranchOrderItem"""
+    user: Union[bool, 'UserArgsFromBranchOrderItem']
+    permission: Union[bool, 'PermissionArgsFromBranchOrderItem']
+
+
+class UserPermissionOverrideArgsFromBranchOrderItem(TypedDict, total=False):
+    """Arguments for BranchOrderItem"""
+    include: 'UserPermissionOverrideIncludeFromUserPermissionOverride'
+
+
+class FindManyUserPermissionOverrideArgsFromBranchOrderItem(TypedDict, total=False):
+    """Arguments for BranchOrderItem"""
+    take: int
+    skip: int
+    order_by: Union['UserPermissionOverrideOrderByInput', List['UserPermissionOverrideOrderByInput']]
+    where: 'UserPermissionOverrideWhereInput'
+    cursor: 'UserPermissionOverrideWhereUniqueInput'
+    distinct: List['UserPermissionOverrideScalarFieldKeys']
+    include: 'UserPermissionOverrideIncludeFromUserPermissionOverride'
 
 
 class BranchIncludeFromBranchOrderItem(TypedDict, total=False):
@@ -19607,7 +22383,7 @@ class UserIncludeFromAuditLog(TypedDict, total=False):
     """Relational arguments for AuditLog"""
     branch: Union[bool, 'BranchArgsFromAuditLog']
     auditLogs: Union[bool, 'FindManyAuditLogArgsFromAuditLog']
-    permissions: Union[bool, 'FindManyUserPermissionArgsFromAuditLog']
+    rbacOverrides: Union[bool, 'FindManyUserPermissionOverrideArgsFromAuditLog']
     notifications: Union[bool, 'FindManyNotificationArgsFromAuditLog']
     revokedTokens: Union[bool, 'FindManyRevokedTokenArgsFromAuditLog']
     stockAdjustments: Union[bool, 'FindManyStockAdjustmentArgsFromAuditLog']
@@ -19637,25 +22413,69 @@ class FindManyUserArgsFromAuditLog(TypedDict, total=False):
     include: 'UserIncludeFromUser'
 
 
-class UserPermissionIncludeFromAuditLog(TypedDict, total=False):
+class PermissionIncludeFromAuditLog(TypedDict, total=False):
     """Relational arguments for AuditLog"""
-    user: Union[bool, 'UserArgsFromAuditLog']
+    roles: Union[bool, 'FindManyRolePermissionArgsFromAuditLog']
+    users: Union[bool, 'FindManyUserPermissionOverrideArgsFromAuditLog']
 
 
-class UserPermissionArgsFromAuditLog(TypedDict, total=False):
+class PermissionArgsFromAuditLog(TypedDict, total=False):
     """Arguments for AuditLog"""
-    include: 'UserPermissionIncludeFromUserPermission'
+    include: 'PermissionIncludeFromPermission'
 
 
-class FindManyUserPermissionArgsFromAuditLog(TypedDict, total=False):
+class FindManyPermissionArgsFromAuditLog(TypedDict, total=False):
     """Arguments for AuditLog"""
     take: int
     skip: int
-    order_by: Union['UserPermissionOrderByInput', List['UserPermissionOrderByInput']]
-    where: 'UserPermissionWhereInput'
-    cursor: 'UserPermissionWhereUniqueInput'
-    distinct: List['UserPermissionScalarFieldKeys']
-    include: 'UserPermissionIncludeFromUserPermission'
+    order_by: Union['PermissionOrderByInput', List['PermissionOrderByInput']]
+    where: 'PermissionWhereInput'
+    cursor: 'PermissionWhereUniqueInput'
+    distinct: List['PermissionScalarFieldKeys']
+    include: 'PermissionIncludeFromPermission'
+
+
+class RolePermissionIncludeFromAuditLog(TypedDict, total=False):
+    """Relational arguments for AuditLog"""
+    permission: Union[bool, 'PermissionArgsFromAuditLog']
+
+
+class RolePermissionArgsFromAuditLog(TypedDict, total=False):
+    """Arguments for AuditLog"""
+    include: 'RolePermissionIncludeFromRolePermission'
+
+
+class FindManyRolePermissionArgsFromAuditLog(TypedDict, total=False):
+    """Arguments for AuditLog"""
+    take: int
+    skip: int
+    order_by: Union['RolePermissionOrderByInput', List['RolePermissionOrderByInput']]
+    where: 'RolePermissionWhereInput'
+    cursor: 'RolePermissionWhereUniqueInput'
+    distinct: List['RolePermissionScalarFieldKeys']
+    include: 'RolePermissionIncludeFromRolePermission'
+
+
+class UserPermissionOverrideIncludeFromAuditLog(TypedDict, total=False):
+    """Relational arguments for AuditLog"""
+    user: Union[bool, 'UserArgsFromAuditLog']
+    permission: Union[bool, 'PermissionArgsFromAuditLog']
+
+
+class UserPermissionOverrideArgsFromAuditLog(TypedDict, total=False):
+    """Arguments for AuditLog"""
+    include: 'UserPermissionOverrideIncludeFromUserPermissionOverride'
+
+
+class FindManyUserPermissionOverrideArgsFromAuditLog(TypedDict, total=False):
+    """Arguments for AuditLog"""
+    take: int
+    skip: int
+    order_by: Union['UserPermissionOverrideOrderByInput', List['UserPermissionOverrideOrderByInput']]
+    where: 'UserPermissionOverrideWhereInput'
+    cursor: 'UserPermissionOverrideWhereUniqueInput'
+    distinct: List['UserPermissionOverrideScalarFieldKeys']
+    include: 'UserPermissionOverrideIncludeFromUserPermissionOverride'
 
 
 class BranchIncludeFromAuditLog(TypedDict, total=False):
@@ -20659,7 +23479,7 @@ class UserIncludeFromSystemInfo(TypedDict, total=False):
     """Relational arguments for SystemInfo"""
     branch: Union[bool, 'BranchArgsFromSystemInfo']
     auditLogs: Union[bool, 'FindManyAuditLogArgsFromSystemInfo']
-    permissions: Union[bool, 'FindManyUserPermissionArgsFromSystemInfo']
+    rbacOverrides: Union[bool, 'FindManyUserPermissionOverrideArgsFromSystemInfo']
     notifications: Union[bool, 'FindManyNotificationArgsFromSystemInfo']
     revokedTokens: Union[bool, 'FindManyRevokedTokenArgsFromSystemInfo']
     stockAdjustments: Union[bool, 'FindManyStockAdjustmentArgsFromSystemInfo']
@@ -20689,25 +23509,69 @@ class FindManyUserArgsFromSystemInfo(TypedDict, total=False):
     include: 'UserIncludeFromUser'
 
 
-class UserPermissionIncludeFromSystemInfo(TypedDict, total=False):
+class PermissionIncludeFromSystemInfo(TypedDict, total=False):
     """Relational arguments for SystemInfo"""
-    user: Union[bool, 'UserArgsFromSystemInfo']
+    roles: Union[bool, 'FindManyRolePermissionArgsFromSystemInfo']
+    users: Union[bool, 'FindManyUserPermissionOverrideArgsFromSystemInfo']
 
 
-class UserPermissionArgsFromSystemInfo(TypedDict, total=False):
+class PermissionArgsFromSystemInfo(TypedDict, total=False):
     """Arguments for SystemInfo"""
-    include: 'UserPermissionIncludeFromUserPermission'
+    include: 'PermissionIncludeFromPermission'
 
 
-class FindManyUserPermissionArgsFromSystemInfo(TypedDict, total=False):
+class FindManyPermissionArgsFromSystemInfo(TypedDict, total=False):
     """Arguments for SystemInfo"""
     take: int
     skip: int
-    order_by: Union['UserPermissionOrderByInput', List['UserPermissionOrderByInput']]
-    where: 'UserPermissionWhereInput'
-    cursor: 'UserPermissionWhereUniqueInput'
-    distinct: List['UserPermissionScalarFieldKeys']
-    include: 'UserPermissionIncludeFromUserPermission'
+    order_by: Union['PermissionOrderByInput', List['PermissionOrderByInput']]
+    where: 'PermissionWhereInput'
+    cursor: 'PermissionWhereUniqueInput'
+    distinct: List['PermissionScalarFieldKeys']
+    include: 'PermissionIncludeFromPermission'
+
+
+class RolePermissionIncludeFromSystemInfo(TypedDict, total=False):
+    """Relational arguments for SystemInfo"""
+    permission: Union[bool, 'PermissionArgsFromSystemInfo']
+
+
+class RolePermissionArgsFromSystemInfo(TypedDict, total=False):
+    """Arguments for SystemInfo"""
+    include: 'RolePermissionIncludeFromRolePermission'
+
+
+class FindManyRolePermissionArgsFromSystemInfo(TypedDict, total=False):
+    """Arguments for SystemInfo"""
+    take: int
+    skip: int
+    order_by: Union['RolePermissionOrderByInput', List['RolePermissionOrderByInput']]
+    where: 'RolePermissionWhereInput'
+    cursor: 'RolePermissionWhereUniqueInput'
+    distinct: List['RolePermissionScalarFieldKeys']
+    include: 'RolePermissionIncludeFromRolePermission'
+
+
+class UserPermissionOverrideIncludeFromSystemInfo(TypedDict, total=False):
+    """Relational arguments for SystemInfo"""
+    user: Union[bool, 'UserArgsFromSystemInfo']
+    permission: Union[bool, 'PermissionArgsFromSystemInfo']
+
+
+class UserPermissionOverrideArgsFromSystemInfo(TypedDict, total=False):
+    """Arguments for SystemInfo"""
+    include: 'UserPermissionOverrideIncludeFromUserPermissionOverride'
+
+
+class FindManyUserPermissionOverrideArgsFromSystemInfo(TypedDict, total=False):
+    """Arguments for SystemInfo"""
+    take: int
+    skip: int
+    order_by: Union['UserPermissionOverrideOrderByInput', List['UserPermissionOverrideOrderByInput']]
+    where: 'UserPermissionOverrideWhereInput'
+    cursor: 'UserPermissionOverrideWhereUniqueInput'
+    distinct: List['UserPermissionOverrideScalarFieldKeys']
+    include: 'UserPermissionOverrideIncludeFromUserPermissionOverride'
 
 
 class BranchIncludeFromSystemInfo(TypedDict, total=False):
@@ -21689,7 +24553,7 @@ class UserIncludeFromBackup(TypedDict, total=False):
     """Relational arguments for Backup"""
     branch: Union[bool, 'BranchArgsFromBackup']
     auditLogs: Union[bool, 'FindManyAuditLogArgsFromBackup']
-    permissions: Union[bool, 'FindManyUserPermissionArgsFromBackup']
+    rbacOverrides: Union[bool, 'FindManyUserPermissionOverrideArgsFromBackup']
     notifications: Union[bool, 'FindManyNotificationArgsFromBackup']
     revokedTokens: Union[bool, 'FindManyRevokedTokenArgsFromBackup']
     stockAdjustments: Union[bool, 'FindManyStockAdjustmentArgsFromBackup']
@@ -21719,25 +24583,69 @@ class FindManyUserArgsFromBackup(TypedDict, total=False):
     include: 'UserIncludeFromUser'
 
 
-class UserPermissionIncludeFromBackup(TypedDict, total=False):
+class PermissionIncludeFromBackup(TypedDict, total=False):
     """Relational arguments for Backup"""
-    user: Union[bool, 'UserArgsFromBackup']
+    roles: Union[bool, 'FindManyRolePermissionArgsFromBackup']
+    users: Union[bool, 'FindManyUserPermissionOverrideArgsFromBackup']
 
 
-class UserPermissionArgsFromBackup(TypedDict, total=False):
+class PermissionArgsFromBackup(TypedDict, total=False):
     """Arguments for Backup"""
-    include: 'UserPermissionIncludeFromUserPermission'
+    include: 'PermissionIncludeFromPermission'
 
 
-class FindManyUserPermissionArgsFromBackup(TypedDict, total=False):
+class FindManyPermissionArgsFromBackup(TypedDict, total=False):
     """Arguments for Backup"""
     take: int
     skip: int
-    order_by: Union['UserPermissionOrderByInput', List['UserPermissionOrderByInput']]
-    where: 'UserPermissionWhereInput'
-    cursor: 'UserPermissionWhereUniqueInput'
-    distinct: List['UserPermissionScalarFieldKeys']
-    include: 'UserPermissionIncludeFromUserPermission'
+    order_by: Union['PermissionOrderByInput', List['PermissionOrderByInput']]
+    where: 'PermissionWhereInput'
+    cursor: 'PermissionWhereUniqueInput'
+    distinct: List['PermissionScalarFieldKeys']
+    include: 'PermissionIncludeFromPermission'
+
+
+class RolePermissionIncludeFromBackup(TypedDict, total=False):
+    """Relational arguments for Backup"""
+    permission: Union[bool, 'PermissionArgsFromBackup']
+
+
+class RolePermissionArgsFromBackup(TypedDict, total=False):
+    """Arguments for Backup"""
+    include: 'RolePermissionIncludeFromRolePermission'
+
+
+class FindManyRolePermissionArgsFromBackup(TypedDict, total=False):
+    """Arguments for Backup"""
+    take: int
+    skip: int
+    order_by: Union['RolePermissionOrderByInput', List['RolePermissionOrderByInput']]
+    where: 'RolePermissionWhereInput'
+    cursor: 'RolePermissionWhereUniqueInput'
+    distinct: List['RolePermissionScalarFieldKeys']
+    include: 'RolePermissionIncludeFromRolePermission'
+
+
+class UserPermissionOverrideIncludeFromBackup(TypedDict, total=False):
+    """Relational arguments for Backup"""
+    user: Union[bool, 'UserArgsFromBackup']
+    permission: Union[bool, 'PermissionArgsFromBackup']
+
+
+class UserPermissionOverrideArgsFromBackup(TypedDict, total=False):
+    """Arguments for Backup"""
+    include: 'UserPermissionOverrideIncludeFromUserPermissionOverride'
+
+
+class FindManyUserPermissionOverrideArgsFromBackup(TypedDict, total=False):
+    """Arguments for Backup"""
+    take: int
+    skip: int
+    order_by: Union['UserPermissionOverrideOrderByInput', List['UserPermissionOverrideOrderByInput']]
+    where: 'UserPermissionOverrideWhereInput'
+    cursor: 'UserPermissionOverrideWhereUniqueInput'
+    distinct: List['UserPermissionOverrideScalarFieldKeys']
+    include: 'UserPermissionOverrideIncludeFromUserPermissionOverride'
 
 
 class BranchIncludeFromBackup(TypedDict, total=False):
@@ -22681,7 +25589,7 @@ class UserIncludeFromRevokedToken(TypedDict, total=False):
     """Relational arguments for RevokedToken"""
     branch: Union[bool, 'BranchArgsFromRevokedToken']
     auditLogs: Union[bool, 'FindManyAuditLogArgsFromRevokedToken']
-    permissions: Union[bool, 'FindManyUserPermissionArgsFromRevokedToken']
+    rbacOverrides: Union[bool, 'FindManyUserPermissionOverrideArgsFromRevokedToken']
     notifications: Union[bool, 'FindManyNotificationArgsFromRevokedToken']
     revokedTokens: Union[bool, 'FindManyRevokedTokenArgsFromRevokedToken']
     stockAdjustments: Union[bool, 'FindManyStockAdjustmentArgsFromRevokedToken']
@@ -22711,25 +25619,69 @@ class FindManyUserArgsFromRevokedToken(TypedDict, total=False):
     include: 'UserIncludeFromUser'
 
 
-class UserPermissionIncludeFromRevokedToken(TypedDict, total=False):
+class PermissionIncludeFromRevokedToken(TypedDict, total=False):
     """Relational arguments for RevokedToken"""
-    user: Union[bool, 'UserArgsFromRevokedToken']
+    roles: Union[bool, 'FindManyRolePermissionArgsFromRevokedToken']
+    users: Union[bool, 'FindManyUserPermissionOverrideArgsFromRevokedToken']
 
 
-class UserPermissionArgsFromRevokedToken(TypedDict, total=False):
+class PermissionArgsFromRevokedToken(TypedDict, total=False):
     """Arguments for RevokedToken"""
-    include: 'UserPermissionIncludeFromUserPermission'
+    include: 'PermissionIncludeFromPermission'
 
 
-class FindManyUserPermissionArgsFromRevokedToken(TypedDict, total=False):
+class FindManyPermissionArgsFromRevokedToken(TypedDict, total=False):
     """Arguments for RevokedToken"""
     take: int
     skip: int
-    order_by: Union['UserPermissionOrderByInput', List['UserPermissionOrderByInput']]
-    where: 'UserPermissionWhereInput'
-    cursor: 'UserPermissionWhereUniqueInput'
-    distinct: List['UserPermissionScalarFieldKeys']
-    include: 'UserPermissionIncludeFromUserPermission'
+    order_by: Union['PermissionOrderByInput', List['PermissionOrderByInput']]
+    where: 'PermissionWhereInput'
+    cursor: 'PermissionWhereUniqueInput'
+    distinct: List['PermissionScalarFieldKeys']
+    include: 'PermissionIncludeFromPermission'
+
+
+class RolePermissionIncludeFromRevokedToken(TypedDict, total=False):
+    """Relational arguments for RevokedToken"""
+    permission: Union[bool, 'PermissionArgsFromRevokedToken']
+
+
+class RolePermissionArgsFromRevokedToken(TypedDict, total=False):
+    """Arguments for RevokedToken"""
+    include: 'RolePermissionIncludeFromRolePermission'
+
+
+class FindManyRolePermissionArgsFromRevokedToken(TypedDict, total=False):
+    """Arguments for RevokedToken"""
+    take: int
+    skip: int
+    order_by: Union['RolePermissionOrderByInput', List['RolePermissionOrderByInput']]
+    where: 'RolePermissionWhereInput'
+    cursor: 'RolePermissionWhereUniqueInput'
+    distinct: List['RolePermissionScalarFieldKeys']
+    include: 'RolePermissionIncludeFromRolePermission'
+
+
+class UserPermissionOverrideIncludeFromRevokedToken(TypedDict, total=False):
+    """Relational arguments for RevokedToken"""
+    user: Union[bool, 'UserArgsFromRevokedToken']
+    permission: Union[bool, 'PermissionArgsFromRevokedToken']
+
+
+class UserPermissionOverrideArgsFromRevokedToken(TypedDict, total=False):
+    """Arguments for RevokedToken"""
+    include: 'UserPermissionOverrideIncludeFromUserPermissionOverride'
+
+
+class FindManyUserPermissionOverrideArgsFromRevokedToken(TypedDict, total=False):
+    """Arguments for RevokedToken"""
+    take: int
+    skip: int
+    order_by: Union['UserPermissionOverrideOrderByInput', List['UserPermissionOverrideOrderByInput']]
+    where: 'UserPermissionOverrideWhereInput'
+    cursor: 'UserPermissionOverrideWhereUniqueInput'
+    distinct: List['UserPermissionOverrideScalarFieldKeys']
+    include: 'UserPermissionOverrideIncludeFromUserPermissionOverride'
 
 
 class BranchIncludeFromRevokedToken(TypedDict, total=False):
@@ -23613,7 +26565,7 @@ class UserIncludeFromSystemSetting(TypedDict, total=False):
     """Relational arguments for SystemSetting"""
     branch: Union[bool, 'BranchArgsFromSystemSetting']
     auditLogs: Union[bool, 'FindManyAuditLogArgsFromSystemSetting']
-    permissions: Union[bool, 'FindManyUserPermissionArgsFromSystemSetting']
+    rbacOverrides: Union[bool, 'FindManyUserPermissionOverrideArgsFromSystemSetting']
     notifications: Union[bool, 'FindManyNotificationArgsFromSystemSetting']
     revokedTokens: Union[bool, 'FindManyRevokedTokenArgsFromSystemSetting']
     stockAdjustments: Union[bool, 'FindManyStockAdjustmentArgsFromSystemSetting']
@@ -23643,25 +26595,69 @@ class FindManyUserArgsFromSystemSetting(TypedDict, total=False):
     include: 'UserIncludeFromUser'
 
 
-class UserPermissionIncludeFromSystemSetting(TypedDict, total=False):
+class PermissionIncludeFromSystemSetting(TypedDict, total=False):
     """Relational arguments for SystemSetting"""
-    user: Union[bool, 'UserArgsFromSystemSetting']
+    roles: Union[bool, 'FindManyRolePermissionArgsFromSystemSetting']
+    users: Union[bool, 'FindManyUserPermissionOverrideArgsFromSystemSetting']
 
 
-class UserPermissionArgsFromSystemSetting(TypedDict, total=False):
+class PermissionArgsFromSystemSetting(TypedDict, total=False):
     """Arguments for SystemSetting"""
-    include: 'UserPermissionIncludeFromUserPermission'
+    include: 'PermissionIncludeFromPermission'
 
 
-class FindManyUserPermissionArgsFromSystemSetting(TypedDict, total=False):
+class FindManyPermissionArgsFromSystemSetting(TypedDict, total=False):
     """Arguments for SystemSetting"""
     take: int
     skip: int
-    order_by: Union['UserPermissionOrderByInput', List['UserPermissionOrderByInput']]
-    where: 'UserPermissionWhereInput'
-    cursor: 'UserPermissionWhereUniqueInput'
-    distinct: List['UserPermissionScalarFieldKeys']
-    include: 'UserPermissionIncludeFromUserPermission'
+    order_by: Union['PermissionOrderByInput', List['PermissionOrderByInput']]
+    where: 'PermissionWhereInput'
+    cursor: 'PermissionWhereUniqueInput'
+    distinct: List['PermissionScalarFieldKeys']
+    include: 'PermissionIncludeFromPermission'
+
+
+class RolePermissionIncludeFromSystemSetting(TypedDict, total=False):
+    """Relational arguments for SystemSetting"""
+    permission: Union[bool, 'PermissionArgsFromSystemSetting']
+
+
+class RolePermissionArgsFromSystemSetting(TypedDict, total=False):
+    """Arguments for SystemSetting"""
+    include: 'RolePermissionIncludeFromRolePermission'
+
+
+class FindManyRolePermissionArgsFromSystemSetting(TypedDict, total=False):
+    """Arguments for SystemSetting"""
+    take: int
+    skip: int
+    order_by: Union['RolePermissionOrderByInput', List['RolePermissionOrderByInput']]
+    where: 'RolePermissionWhereInput'
+    cursor: 'RolePermissionWhereUniqueInput'
+    distinct: List['RolePermissionScalarFieldKeys']
+    include: 'RolePermissionIncludeFromRolePermission'
+
+
+class UserPermissionOverrideIncludeFromSystemSetting(TypedDict, total=False):
+    """Relational arguments for SystemSetting"""
+    user: Union[bool, 'UserArgsFromSystemSetting']
+    permission: Union[bool, 'PermissionArgsFromSystemSetting']
+
+
+class UserPermissionOverrideArgsFromSystemSetting(TypedDict, total=False):
+    """Arguments for SystemSetting"""
+    include: 'UserPermissionOverrideIncludeFromUserPermissionOverride'
+
+
+class FindManyUserPermissionOverrideArgsFromSystemSetting(TypedDict, total=False):
+    """Arguments for SystemSetting"""
+    take: int
+    skip: int
+    order_by: Union['UserPermissionOverrideOrderByInput', List['UserPermissionOverrideOrderByInput']]
+    where: 'UserPermissionOverrideWhereInput'
+    cursor: 'UserPermissionOverrideWhereUniqueInput'
+    distinct: List['UserPermissionOverrideScalarFieldKeys']
+    include: 'UserPermissionOverrideIncludeFromUserPermissionOverride'
 
 
 class BranchIncludeFromSystemSetting(TypedDict, total=False):
@@ -24560,7 +27556,7 @@ class UserIncludeFromNotification(TypedDict, total=False):
     """Relational arguments for Notification"""
     branch: Union[bool, 'BranchArgsFromNotification']
     auditLogs: Union[bool, 'FindManyAuditLogArgsFromNotification']
-    permissions: Union[bool, 'FindManyUserPermissionArgsFromNotification']
+    rbacOverrides: Union[bool, 'FindManyUserPermissionOverrideArgsFromNotification']
     notifications: Union[bool, 'FindManyNotificationArgsFromNotification']
     revokedTokens: Union[bool, 'FindManyRevokedTokenArgsFromNotification']
     stockAdjustments: Union[bool, 'FindManyStockAdjustmentArgsFromNotification']
@@ -24590,25 +27586,69 @@ class FindManyUserArgsFromNotification(TypedDict, total=False):
     include: 'UserIncludeFromUser'
 
 
-class UserPermissionIncludeFromNotification(TypedDict, total=False):
+class PermissionIncludeFromNotification(TypedDict, total=False):
     """Relational arguments for Notification"""
-    user: Union[bool, 'UserArgsFromNotification']
+    roles: Union[bool, 'FindManyRolePermissionArgsFromNotification']
+    users: Union[bool, 'FindManyUserPermissionOverrideArgsFromNotification']
 
 
-class UserPermissionArgsFromNotification(TypedDict, total=False):
+class PermissionArgsFromNotification(TypedDict, total=False):
     """Arguments for Notification"""
-    include: 'UserPermissionIncludeFromUserPermission'
+    include: 'PermissionIncludeFromPermission'
 
 
-class FindManyUserPermissionArgsFromNotification(TypedDict, total=False):
+class FindManyPermissionArgsFromNotification(TypedDict, total=False):
     """Arguments for Notification"""
     take: int
     skip: int
-    order_by: Union['UserPermissionOrderByInput', List['UserPermissionOrderByInput']]
-    where: 'UserPermissionWhereInput'
-    cursor: 'UserPermissionWhereUniqueInput'
-    distinct: List['UserPermissionScalarFieldKeys']
-    include: 'UserPermissionIncludeFromUserPermission'
+    order_by: Union['PermissionOrderByInput', List['PermissionOrderByInput']]
+    where: 'PermissionWhereInput'
+    cursor: 'PermissionWhereUniqueInput'
+    distinct: List['PermissionScalarFieldKeys']
+    include: 'PermissionIncludeFromPermission'
+
+
+class RolePermissionIncludeFromNotification(TypedDict, total=False):
+    """Relational arguments for Notification"""
+    permission: Union[bool, 'PermissionArgsFromNotification']
+
+
+class RolePermissionArgsFromNotification(TypedDict, total=False):
+    """Arguments for Notification"""
+    include: 'RolePermissionIncludeFromRolePermission'
+
+
+class FindManyRolePermissionArgsFromNotification(TypedDict, total=False):
+    """Arguments for Notification"""
+    take: int
+    skip: int
+    order_by: Union['RolePermissionOrderByInput', List['RolePermissionOrderByInput']]
+    where: 'RolePermissionWhereInput'
+    cursor: 'RolePermissionWhereUniqueInput'
+    distinct: List['RolePermissionScalarFieldKeys']
+    include: 'RolePermissionIncludeFromRolePermission'
+
+
+class UserPermissionOverrideIncludeFromNotification(TypedDict, total=False):
+    """Relational arguments for Notification"""
+    user: Union[bool, 'UserArgsFromNotification']
+    permission: Union[bool, 'PermissionArgsFromNotification']
+
+
+class UserPermissionOverrideArgsFromNotification(TypedDict, total=False):
+    """Arguments for Notification"""
+    include: 'UserPermissionOverrideIncludeFromUserPermissionOverride'
+
+
+class FindManyUserPermissionOverrideArgsFromNotification(TypedDict, total=False):
+    """Arguments for Notification"""
+    take: int
+    skip: int
+    order_by: Union['UserPermissionOverrideOrderByInput', List['UserPermissionOverrideOrderByInput']]
+    where: 'UserPermissionOverrideWhereInput'
+    cursor: 'UserPermissionOverrideWhereUniqueInput'
+    distinct: List['UserPermissionOverrideScalarFieldKeys']
+    include: 'UserPermissionOverrideIncludeFromUserPermissionOverride'
 
 
 class BranchIncludeFromNotification(TypedDict, total=False):
@@ -25581,7 +28621,7 @@ class UserIncludeFromStockAdjustment(TypedDict, total=False):
     """Relational arguments for StockAdjustment"""
     branch: Union[bool, 'BranchArgsFromStockAdjustment']
     auditLogs: Union[bool, 'FindManyAuditLogArgsFromStockAdjustment']
-    permissions: Union[bool, 'FindManyUserPermissionArgsFromStockAdjustment']
+    rbacOverrides: Union[bool, 'FindManyUserPermissionOverrideArgsFromStockAdjustment']
     notifications: Union[bool, 'FindManyNotificationArgsFromStockAdjustment']
     revokedTokens: Union[bool, 'FindManyRevokedTokenArgsFromStockAdjustment']
     stockAdjustments: Union[bool, 'FindManyStockAdjustmentArgsFromStockAdjustment']
@@ -25611,25 +28651,69 @@ class FindManyUserArgsFromStockAdjustment(TypedDict, total=False):
     include: 'UserIncludeFromUser'
 
 
-class UserPermissionIncludeFromStockAdjustment(TypedDict, total=False):
+class PermissionIncludeFromStockAdjustment(TypedDict, total=False):
     """Relational arguments for StockAdjustment"""
-    user: Union[bool, 'UserArgsFromStockAdjustment']
+    roles: Union[bool, 'FindManyRolePermissionArgsFromStockAdjustment']
+    users: Union[bool, 'FindManyUserPermissionOverrideArgsFromStockAdjustment']
 
 
-class UserPermissionArgsFromStockAdjustment(TypedDict, total=False):
+class PermissionArgsFromStockAdjustment(TypedDict, total=False):
     """Arguments for StockAdjustment"""
-    include: 'UserPermissionIncludeFromUserPermission'
+    include: 'PermissionIncludeFromPermission'
 
 
-class FindManyUserPermissionArgsFromStockAdjustment(TypedDict, total=False):
+class FindManyPermissionArgsFromStockAdjustment(TypedDict, total=False):
     """Arguments for StockAdjustment"""
     take: int
     skip: int
-    order_by: Union['UserPermissionOrderByInput', List['UserPermissionOrderByInput']]
-    where: 'UserPermissionWhereInput'
-    cursor: 'UserPermissionWhereUniqueInput'
-    distinct: List['UserPermissionScalarFieldKeys']
-    include: 'UserPermissionIncludeFromUserPermission'
+    order_by: Union['PermissionOrderByInput', List['PermissionOrderByInput']]
+    where: 'PermissionWhereInput'
+    cursor: 'PermissionWhereUniqueInput'
+    distinct: List['PermissionScalarFieldKeys']
+    include: 'PermissionIncludeFromPermission'
+
+
+class RolePermissionIncludeFromStockAdjustment(TypedDict, total=False):
+    """Relational arguments for StockAdjustment"""
+    permission: Union[bool, 'PermissionArgsFromStockAdjustment']
+
+
+class RolePermissionArgsFromStockAdjustment(TypedDict, total=False):
+    """Arguments for StockAdjustment"""
+    include: 'RolePermissionIncludeFromRolePermission'
+
+
+class FindManyRolePermissionArgsFromStockAdjustment(TypedDict, total=False):
+    """Arguments for StockAdjustment"""
+    take: int
+    skip: int
+    order_by: Union['RolePermissionOrderByInput', List['RolePermissionOrderByInput']]
+    where: 'RolePermissionWhereInput'
+    cursor: 'RolePermissionWhereUniqueInput'
+    distinct: List['RolePermissionScalarFieldKeys']
+    include: 'RolePermissionIncludeFromRolePermission'
+
+
+class UserPermissionOverrideIncludeFromStockAdjustment(TypedDict, total=False):
+    """Relational arguments for StockAdjustment"""
+    user: Union[bool, 'UserArgsFromStockAdjustment']
+    permission: Union[bool, 'PermissionArgsFromStockAdjustment']
+
+
+class UserPermissionOverrideArgsFromStockAdjustment(TypedDict, total=False):
+    """Arguments for StockAdjustment"""
+    include: 'UserPermissionOverrideIncludeFromUserPermissionOverride'
+
+
+class FindManyUserPermissionOverrideArgsFromStockAdjustment(TypedDict, total=False):
+    """Arguments for StockAdjustment"""
+    take: int
+    skip: int
+    order_by: Union['UserPermissionOverrideOrderByInput', List['UserPermissionOverrideOrderByInput']]
+    where: 'UserPermissionOverrideWhereInput'
+    cursor: 'UserPermissionOverrideWhereUniqueInput'
+    distinct: List['UserPermissionOverrideScalarFieldKeys']
+    include: 'UserPermissionOverrideIncludeFromUserPermissionOverride'
 
 
 class BranchIncludeFromStockAdjustment(TypedDict, total=False):

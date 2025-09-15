@@ -416,6 +416,13 @@ async def get_profile_alias(
     user_service = create_user_service(None)
     return success_response(data=_serialize_user_plain(user_service._user_to_response_schema(current_user)), message="Profile retrieved")
 
+# Alias under /auth for compatibility (/api/v1/auth/me) used by some tests/tools
+@auth_router.get("/me", summary="Get current user profile (auth namespace alias)")
+async def get_profile_auth_alias(current_user = Depends(get_current_active_user)):
+    from app.modules.users.service import create_user_service
+    user_service = create_user_service(None)
+    return success_response(data=_serialize_user_plain(user_service._user_to_response_schema(current_user)), message="Profile retrieved")
+
 @router.put(
     "/profile",
     summary="Update current user profile"

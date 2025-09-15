@@ -40,7 +40,16 @@ GET  /api/v1/users/              # List users
 ```
 GET  /api/v1/branches/           # Branch management
 GET  /api/v1/customers/          # Customer management  
-GET  /api/v1/admin/permissions/  # Permission management
+GET  /api/v1/permissions/        # List permissions (RBAC)
+POST /api/v1/permissions/        # Create permission (RBAC)
+DELETE /api/v1/permissions/{id}  # Delete permission (RBAC)
+GET  /api/v1/permissions/roles/{role}              # List role permissions
+POST /api/v1/permissions/roles/{role}/{perm_id}    # Assign permission to role
+DELETE /api/v1/permissions/roles/{role}/{perm_id}  # Remove permission from role
+GET  /api/v1/permissions/users/{user_id}           # User direct + overrides
+PUT  /api/v1/permissions/users/{user_id}/{perm_id} # Set user override (ALLOW/DENY)
+DELETE /api/v1/permissions/users/{user_id}/{perm_id} # Remove user override
+GET  /api/v1/permissions/effective/{user_id}       # Effective permission set
 ```
 
 ### 📦 **Product & Inventory Management (10 endpoints)**

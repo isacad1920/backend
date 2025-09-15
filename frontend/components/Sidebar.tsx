@@ -21,6 +21,7 @@ import {
   ChevronRight
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
+import { usePermissions } from '../context/PermissionsContext';
 
 interface UserInfo {
   name?: string;
@@ -52,8 +53,6 @@ const navigation: NavItem[] = [
 ];
 
 interface SidebarProps {
-  currentPage: string;
-  onPageChange: (page: string) => void;
   user?: UserInfo | null;
   onLogout?: () => void;
 }
@@ -77,30 +76,60 @@ const navPermissions: Record<string, string | string[]> = {
   reports: ['reports:view'],
   audit: ['audit:view'],
   // Backend pages reference 'system:backups' elsewhere, align naming here
-  backup: ['system:backups'],
+  backup: ['system:backups','system:backup'],
   settings: ['system:settings:view']
 };
 
-export function Sidebar({ currentPage, onPageChange, user, onLogout }: SidebarProps) {
-  const { permissions } = useAuth();
+import { useLocation, useNavigate } from 'react-router-dom';
+
+export function Sidebar({ user, onLogout }: SidebarProps) {
+  const { permissions, loading: permsLoading } = usePermissions();
+  const location = useLocation();
+  const navigate = useNavigate();
+
+  const activeId = React.useMemo(() => {
+    const seg = location.pathname.split('/')[1];
+    if (!seg) return 'dashboard';
+    return seg;
+  }, [location.pathname]);
 
   const filteredNavigation = useMemo(() => {
-    if (permissions.includes('all')) return navigation;
+    // ADMIN / superuser detection: unified 'all' code or explicit role on user prop
+    if (permissions.includes('all') || (user?.role || '').toLowerCase() === 'admin') return navigation;
 
-    // Fallback: if permissions array is empty (session not enriched or legacy token),
-    // expose a safe subset instead of ONLY dashboard to avoid UX dead-end.
-    if (!permissions || permissions.length === 0) {
-      const basicIds = new Set(['dashboard','pos','sales','inventory','customers']);
-      return navigation.filter(n => !navPermissions[n.id] || basicIds.has(n.id));
+    if (import.meta.env.DEV) {
+      console.debug('[Sidebar] permissions (PermissionsContext) ->', permissions);
     }
 
-    return navigation.filter(item => {
+    // While permissions loading or empty provide permissive list to avoid trapping user
+    if (permsLoading || !permissions || permissions.length === 0) {
+      const permissiveIds = new Set(navigation.map(n => n.id)); // show EVERYTHING while loading
+      if (import.meta.env.DEV) console.debug('[Sidebar] permissive display (loading/empty)');
+      return navigation.filter(n => permissiveIds.has(n.id));
+    }
+
+    // If suspiciously small list (<=3) treat as partial fetch -> show all but log diagnostic
+    if (permissions.length <= 3 && !permissions.includes('all')) {
+      if (import.meta.env.DEV) console.debug('[Sidebar] small permission set fallback -> showing full nav');
+      return navigation;
+    }
+
+    const included: string[] = [];
+    const excludedDebug: { id: string; required: string[] }[] = [];
+    const result = navigation.filter(item => {
       const req = navPermissions[item.id];
-      if (!req) return true; // no permission mapping required
+      if (!req) { included.push(item.id); return true; }
       const reqList = Array.isArray(req) ? req : [req];
-      return reqList.some(r => permissions.includes(r));
+      const allow = reqList.some(r => permissions.includes(r));
+      if (allow) included.push(item.id); else excludedDebug.push({ id: item.id, required: reqList });
+      return allow;
     });
-  }, [permissions]);
+    if (import.meta.env.DEV) {
+      console.debug('[Sidebar] included ->', included);
+      if (excludedDebug.length) console.debug('[Sidebar] excluded ->', excludedDebug);
+    }
+    return result;
+  }, [permissions, permsLoading, user?.role]);
 
   return (
     <div className="w-64 h-full bg-white/10 backdrop-blur-md border-r border-white/20 flex flex-col">
@@ -142,8 +171,7 @@ export function Sidebar({ currentPage, onPageChange, user, onLogout }: SidebarPr
         <div className="space-y-1">
           {filteredNavigation.map((item) => {
             const Icon = item.icon;
-            const isActive = currentPage === item.id;
-            
+            const isActive = activeId === item.id;
             return (
               <Button
                 key={item.id}
@@ -153,7 +181,7 @@ export function Sidebar({ currentPage, onPageChange, user, onLogout }: SidebarPr
                     ? 'bg-white/20 text-white border border-white/30'
                     : 'text-white/70 hover:text-white hover:bg-white/10'
                 }`}
-                onClick={() => onPageChange(item.id)}
+                onClick={() => navigate(item.id === 'dashboard' ? '/dashboard' : `/${item.id}`)}
               >
                 <Icon className="w-4 h-4 mr-3" />
                 <span className="flex-1">{item.label}</span>
@@ -161,6 +189,11 @@ export function Sidebar({ currentPage, onPageChange, user, onLogout }: SidebarPr
               </Button>
             );
           })}
+          {filteredNavigation.length < navigation.length && (
+            <div className="mt-4 text-[10px] text-white/40 px-2">
+              Some pages hidden based on current permissions.
+            </div>
+          )}
         </div>
       </nav>
 

@@ -1,5 +1,6 @@
 import { apiClient, handleApiError } from '../lib/api';
-import type { InventorySummary, UnifiedInventoryItem } from '../types';
+import type { InventorySummary, UnifiedInventoryItem, Product } from '../types';
+import { productService } from './products';
 
 interface UnifiedInventoryItemsResponseMeta {
   pagination: {
@@ -77,6 +78,52 @@ export class InventoryService {
     } catch (error) {
       throw new Error(handleApiError(error));
     }
+  }
+
+  /** Dead stock convenience wrapper (if backend supports status=dead_stock) */
+  async getDeadStock(params: { page?: number; size?: number; search?: string; category_id?: number } = {}) {
+    return this.getItems({
+      status: 'dead_stock',
+      page: params.page,
+      size: params.size,
+      search: params.search,
+      category_id: params.category_id
+    });
+  }
+
+  /** Movements feed (fallback empty list if endpoint missing) */
+  async getMovements(params: { page?: number; size?: number; productId?: number } = {}) {
+    try {
+      const qp = new URLSearchParams();
+      if (params.page) qp.append('page', String(params.page));
+      if (params.size) qp.append('size', String(params.size));
+      if (params.productId) qp.append('productId', String(params.productId));
+      const q = qp.toString();
+      return await apiClient.get<any>(`/inventory/movements${q ? `?${q}` : ''}`);
+    } catch (error) {
+      return { items: [], pagination: { page: params.page || 1, size: params.size || 25, total: 0, page_count: 0 } };
+    }
+  }
+
+  /** Valuation wrapper with fallback to summary */
+  async getValuation(): Promise<InventorySummary & { valuationDerived?: boolean }> {
+    try {
+      return await apiClient.get<any>('/inventory/valuation');
+    } catch (error) {
+      // fallback to summary
+      const summary = await this.getSummary();
+      return { ...summary, valuationDerived: true } as any;
+    }
+  }
+
+  /** Adjust product stock passthrough */
+  async adjustProductStock(productId: number, adjustment: { productId: number; adjustment: number; reason: string }) {
+    return productService.adjustProductStock(productId, adjustment as any);
+  }
+
+  /** Update product (min/max stock etc.) passthrough */
+  async updateProduct(productId: number, updates: Partial<Product>) {
+    return productService.updateProduct(productId, updates);
   }
 }
 

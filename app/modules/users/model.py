@@ -484,14 +484,12 @@ class UserModel:
             if not user or not getattr(user, "isActive", getattr(user, "is_active", False)):
                 return False
             
-            from app.core.security import PermissionManager
+            from app.core.permissions import get_user_effective_permissions
             user_role = UserRole(user.role)
-            
-            for permission in required_permissions:
-                if not PermissionManager.has_permission(user_role, permission):
-                    return False
-            
-            return True
+            if user_role == UserRole.ADMIN:
+                return True
+            effective = await get_user_effective_permissions(user.id, self.db)
+            return all(p in effective for p in required_permissions)
             
         except Exception as e:
             logger.error(f"Failed to validate permissions for user {user_id}: {e}")
